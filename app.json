@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "ETACep",
+    "slug": "etacep",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#29358a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.companyname.etacep"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#29358a"
+      },
+      "package": "com.companyname.etacep"
+    }
+  }
+}
