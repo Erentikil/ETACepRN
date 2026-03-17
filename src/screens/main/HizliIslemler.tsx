@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,21 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { stokListesiniAl } from '../../api/hizliIslemlerApi';
+import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
+import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/aktifSepetStorage';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import UrunMiktariBelirleModal from '../../components/UrunMiktariBelirleModal';
+import BarcodeScannerModal from '../../components/BarcodeScannerModal';
+import StokInfoModal from '../../components/StokInfoModal';
+import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
+import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimModal';
 import { Colors } from '../../constants/Colors';
+import { paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type {
   StokListesiBilgileri,
@@ -79,6 +87,9 @@ export default function HizliIslemler() {
 
   const { yetkiBilgileri, ftBaslikListesi, calisilanSirket } = useAppStore();
 
+  const taslakFisTipiYuklendi = useRef(false);
+  const fisTipiManuelSecildi = useRef(false);
+
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [filtreli, setFiltreli] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
@@ -90,6 +101,118 @@ export default function HizliIslemler() {
   const [sepetKalemleri, setSepetKalemleri] = useState<SepetKalem[]>([]);
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [scannerAcik, setScannerAcik] = useState(false);
+  const [infoStoku, setInfoStoku] = useState<StokListesiBilgileri | null>(null);
+  const [pendingEvrak, setPendingEvrak] = useState<EvrakSecenegi | null>(null);
+  const [secilenAnaDepo, setSecilenAnaDepo] = useState(yetkiBilgileri?.anaDepo ?? '');
+  const [secilenKarsiDepo, setSecilenKarsiDepo] = useState(yetkiBilgileri?.karsiDepo ?? '');
+
+  // Uygulama yeniden açıldığında AsyncStorage'daki aktif sepeti geri yükle
+  const sepetYuklendi = useRef(false);
+  useEffect(() => {
+    if (route.params?.taslakEvrak) {
+      sepetYuklendi.current = true;
+      return;
+    }
+    if (sepetYuklendi.current) return;
+
+    aktifSepetAl().then((sepet) => {
+      sepetYuklendi.current = true;
+
+      if (!sepet || sepet.kalemler.length === 0) return;
+
+      if (sepet.cariKodu) {
+        setSecilenCari({ cariKodu: sepet.cariKodu, cariUnvan: sepet.cariUnvan });
+      }
+      const evrakSecenek =
+        TUM_SECENEKLER.find(
+          (s) => s.evrakTipi === sepet.evrakTipi && s.alimSatim === sepet.alimSatim
+        ) ?? defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
+      setSecilenEvrak(evrakSecenek);
+
+      if (sepet.fisTipiBaslikNo) {
+        const eslesen = ftBaslikListesi.find(
+          (f) => f.evrakTipi === evrakSecenek.evrakTipiAdi && f.alimSatim.trim() === evrakSecenek.alimSatimAdi
+        );
+        setSeciliFisTipi(eslesen ? {
+          ...eslesen,
+          ft: eslesen.ftListe.find((ft) => ft.fisTipiKodu === sepet.fisTipiBaslikNo) ?? eslesen.ft,
+        } : null);
+      }
+      setSepetKalemleri(sepet.kalemler);
+      setSecilenAnaDepo(sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
+      setSecilenKarsiDepo(sepet.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
+    });
+  }, []);
+
+  // Taslak param değişince tüm state'leri yükle
+  useEffect(() => {
+    const taslak = route.params?.taslakEvrak;
+    if (!taslak) return;
+
+    if (taslak.cariKodu) {
+      setSecilenCari({ cariKodu: taslak.cariKodu, cariUnvan: taslak.cariUnvan });
+    }
+    const evrakSecenek =
+      TUM_SECENEKLER.find(
+        (s) => s.evrakTipi === taslak.evrakTipi && s.alimSatim === taslak.alimSatim
+      ) ?? defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
+    taslakFisTipiYuklendi.current = true;
+    setSecilenEvrak(evrakSecenek);
+    {
+      const eslesen = ftBaslikListesi.find(
+        (f) => f.evrakTipi === evrakSecenek.evrakTipiAdi && f.alimSatim.trim() === evrakSecenek.alimSatimAdi
+      );
+      setSeciliFisTipi(eslesen ? {
+        ...eslesen,
+        ft: eslesen.ftListe.find((ft) => ft.fisTipiKodu === taslak.fisTipiBaslikNo) ?? eslesen.ft,
+      } : null);
+    }
+    setSepetKalemleri(taslak.kalemler ?? []);
+    setSecilenAnaDepo(taslak.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
+    setSecilenKarsiDepo(taslak.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
+    aktifSepetTemizle();
+    evrakiSil(taslak.id);
+  }, [route.params?.taslakEvrak]);
+
+  // Sepet değiştikçe AsyncStorage'a kaydet
+  useEffect(() => {
+    if (sepetKalemleri.length === 0) {
+      aktifSepetTemizle();
+      return;
+    }
+    aktifSepetKaydet({
+      cariKodu: secilenCari?.cariKodu ?? '',
+      cariUnvan: secilenCari?.cariUnvan ?? '',
+      evrakTipi: secilenEvrak.evrakTipi,
+      alimSatim: secilenEvrak.alimSatim,
+      fisTipiBaslikNo: seciliFisTipi?.ft?.fisTipiKodu ?? 0,
+      fisTipiAdi: seciliFisTipi?.ft?.fisTipiAdi ?? secilenEvrak.label,
+      anaDepo: secilenAnaDepo,
+      karsiDepo: secilenKarsiDepo,
+      kalemler: sepetKalemleri,
+    });
+  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo]);
+
+  // Sepet kalemlerinin güncel değerine focus effect içinden ref ile eriş
+  const sepetKalemlerRef = useRef(sepetKalemleri);
+  useEffect(() => { sepetKalemlerRef.current = sepetKalemleri; }, [sepetKalemleri]);
+
+  // Taslak olmadan ve sepet boşken sayfaya girilince sıfırla
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.taslakEvrak) return;
+      if (!sepetYuklendi.current) return; // henüz AsyncStorage restore bitmemiş, sıfırlama
+      if (sepetKalemlerRef.current.length > 0) return; // sepette ürün varsa sıfırlama
+      setSecilenCari(null);
+      setSecilenEvrak(defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura'));
+      setSeciliFisTipi(null);
+      setSepetKalemleri([]);
+      setAramaMetni('');
+      setSecilenAnaDepo(yetkiBilgileri?.anaDepo ?? '');
+      setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
+    }, [route.params?.taslakEvrak, yetkiBilgileri])
+  );
 
   // CariSecim'den geri dönünce seçilen cariyi al
   useEffect(() => {
@@ -102,7 +225,9 @@ export default function HizliIslemler() {
   const stokListesiniYukle = useCallback(async () => {
     setYukleniyor(true);
     try {
+      
       const sonuc = await stokListesiniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket);
+      
       
       if (sonuc.sonuc) {
         setStokListesi(sonuc.data);
@@ -118,15 +243,25 @@ export default function HizliIslemler() {
   }, [calisilanSirket, yetkiBilgileri?.kullaniciKodu]);
 
   useEffect(() => {
-    // İlk yükleme: ftBaslikListesi'nden eşleşen fiş tipini seç
+    // Taslaktan veya modaldan gelen fiş tipini ezme
+    if (taslakFisTipiYuklendi.current) {
+      taslakFisTipiYuklendi.current = false;
+      stokListesiniYukle();
+      return;
+    }
+    if (fisTipiManuelSecildi.current) {
+      fisTipiManuelSecildi.current = false;
+      stokListesiniYukle();
+      return;
+    }
     const eslesen = ftBaslikListesi.find(
       (f) =>
-        f.evrakTipi === secilenEvrak.evrakTipi &&
-        f.alimSatim === secilenEvrak.alimSatim
+        f.evrakTipi === secilenEvrak.evrakTipiAdi &&
+        f.alimSatim.trim() === secilenEvrak.alimSatimAdi
     );
     setSeciliFisTipi(eslesen ?? null);
     stokListesiniYukle();
-  }, [secilenEvrak]);
+  }, [secilenEvrak, ftBaslikListesi]);
 
   // Arama filtresi
   useEffect(() => {
@@ -163,13 +298,51 @@ export default function HizliIslemler() {
         ...izinli.map((s) => ({
           text: s.label,
           onPress: () => {
-            setSecilenEvrak(s);
+            setPendingEvrak(s);
             setSepetKalemleri([]); // evrak tipi değişince sepeti sıfırla
           },
         })),
         { text: 'Vazgeç', style: 'cancel' as const },
       ]
     );
+  };
+
+  // Fiş tipi + depo modal onay
+  const handleFisTipiDepoConfirm = (sonuc: FisTipiDepoSecimSonuc) => {
+    if (!pendingEvrak) return;
+    fisTipiManuelSecildi.current = true;
+    setSecilenEvrak(pendingEvrak);
+    const eslesen = ftBaslikListesi.find(
+      (f) => f.evrakTipi === pendingEvrak.evrakTipiAdi && f.alimSatim.trim() === pendingEvrak.alimSatimAdi
+    );
+    setSeciliFisTipi(eslesen ? {
+      ...eslesen,
+      ft: eslesen.ftListe.find((ft) => ft.fisTipiKodu === sonuc.fisTipiKodu) ?? eslesen.ft,
+    } : null);
+    setSecilenAnaDepo(sonuc.anaDepo);
+    setSecilenKarsiDepo(sonuc.karsiDepo);
+    setPendingEvrak(null);
+  };
+
+  // Hızlı sepete ekle (onPress) — miktar:1, varsayılan fiyat, indirim yok
+  const hizliEkle = (item: StokListesiBilgileri) => {
+    if (!secilenCari) {
+      Alert.alert('Uyarı', 'Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      return;
+    }
+    const kalem: SepetKalem = {
+      stokKodu: item.stokKodu,
+      stokCinsi: item.stokCinsi,
+      barkod: item.barkod,
+      birim: item.birim,
+      miktar: 1,
+      birimFiyat: item.fiyat,
+      kdvOrani: item.kdvOrani,
+      kalemIndirim1: 0,
+      kalemIndirim2: 0,
+      kalemIndirim3: 0,
+    };
+    kalemEkle(kalem);
   };
 
   // Sepete ekleme
@@ -197,27 +370,44 @@ export default function HizliIslemler() {
       cariUnvan: secilenCari?.cariUnvan ?? '',
       evrakTipi: secilenEvrak.evrakTipi,
       alimSatim: secilenEvrak.alimSatim,
-      fisTipiBaslikNo: seciliFisTipi?.fisTipiBaslikNo ?? 0,
-      fisTipiAdi: seciliFisTipi?.fisTipiBaslikAdi ?? secilenEvrak.label,
+      fisTipiBaslikNo: seciliFisTipi?.ft?.fisTipiKodu ?? 0,
+      fisTipiAdi: seciliFisTipi?.ft?.fisTipiAdi ?? secilenEvrak.label,
+      anaDepo: secilenAnaDepo,
+      karsiDepo: secilenKarsiDepo,
       kalemler: sepetKalemleri,
     };
-    navigation.navigate('SepetListesi', { sepet });
+    navigation.navigate('SepetListesi', {
+      sepet,
+      onKalemlerGuncellendi: setSepetKalemleri,
+    });
   };
 
   const renderStokSatiri = ({ item }: { item: StokListesiBilgileri }) => (
-    <TouchableOpacity style={styles.stokSatiri} onPress={() => setModalUrunu(item)}>
-      <View style={styles.stokBilgi}>
-        <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-        <Text style={styles.stokCinsi} numberOfLines={1}>{item.stokCinsi}</Text>
-        {item.barkod ? (
-          <Text style={styles.stokBarkod}>{item.barkod}</Text>
-        ) : null}
-      </View>
-      <View style={styles.stokSag}>
-        <Text style={styles.stokFiyat}>{item.fiyat.toFixed(2)} ₺</Text>
-        <Text style={styles.stokBakiye}>{item.bakiye.toFixed(2)} {item.birim}</Text>
-      </View>
-    </TouchableOpacity>
+    <ReanimatedSwipeable
+      renderRightActions={() => (
+        <TouchableOpacity
+          style={styles.infoBtn}
+          onPress={() => setInfoStoku(item)}
+        >
+          <Ionicons name="information-circle-outline" size={24} color={Colors.white} />
+          <Text style={styles.infoBtnText}>Bilgi</Text>
+        </TouchableOpacity>
+      )}
+    >
+      <TouchableOpacity style={styles.stokSatiri} onPress={() => hizliEkle(item)} onLongPress={() => { if (!secilenCari) { Alert.alert('Uyarı', 'Sepete ürün eklemeden önce lütfen cari seçiniz.'); return; } setModalUrunu(item); }} delayLongPress={400}>
+        <View style={styles.stokBilgi}>
+          <Text style={styles.stokKodu}>{item.stokKodu}</Text>
+          <Text style={styles.stokCinsi} numberOfLines={1}>{item.stokCinsi}</Text>
+          {item.barkod ? (
+            <Text style={styles.stokBarkod}>{item.barkod}</Text>
+          ) : null}
+        </View>
+        <View style={styles.stokSag}>
+          <Text style={styles.stokFiyat}>{paraTL(item.fiyat)}</Text>
+          <Text style={styles.stokBakiye}>{miktarFormat(item.bakiye)} {item.birim}</Text>
+        </View>
+      </TouchableOpacity>
+    </ReanimatedSwipeable>
   );
 
   return (
@@ -226,12 +416,19 @@ export default function HizliIslemler() {
       <View style={styles.ustBar}>
         <TouchableOpacity style={styles.evrakTipiBtn} onPress={evrakTipiSec}>
           <Ionicons name="document-text-outline" size={18} color={Colors.white} />
-          <Text style={styles.evrakTipiText}>{secilenEvrak.label}</Text>
+          <View style={styles.evrakTipiIcerik}>
+            <Text style={styles.evrakTipiText}>{secilenEvrak.label}</Text>
+            {seciliFisTipi && (
+              <Text style={styles.fisTipiText}>
+                {seciliFisTipi.ft?.fisTipiKodu} - {seciliFisTipi.ft?.fisTipiAdi}
+              </Text>
+            )}
+          </View>
           <Ionicons name="chevron-down" size={16} color={Colors.white} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.barkodBtn}
-          onPress={() => Alert.alert('Barkod', 'Kamera entegrasyonu yakında eklenecek.')}
+          onPress={() => setScannerAcik(true)}
         >
           <Ionicons name="barcode-outline" size={24} color={Colors.white} />
         </TouchableOpacity>
@@ -240,7 +437,13 @@ export default function HizliIslemler() {
       {/* Cari seçim */}
       <TouchableOpacity
         style={styles.cariBtn}
-        onPress={() => navigation.navigate('CariSecim')}
+        onPress={() => {
+          if (sepetKalemleri.length > 0) {
+            Alert.alert('Uyarı', 'Sepette ürün olduğu için cari değiştirilemez. Önce sepeti temizleyin.');
+            return;
+          }
+          navigation.navigate('CariSecim');
+        }}
       >
         <Ionicons
           name="person-outline"
@@ -306,7 +509,7 @@ export default function HizliIslemler() {
       >
         <Ionicons name="cart-outline" size={22} color={Colors.white} />
         <Text style={styles.sepetBtnText}>
-          SEPET ({sepetToplam.toFixed(2)} ₺)
+          SEPET ({paraTL(sepetToplam)})
         </Text>
         {sepetKalemleri.length > 0 && (
           <View style={styles.sepetBadge}>
@@ -314,6 +517,48 @@ export default function HizliIslemler() {
           </View>
         )}
       </TouchableOpacity>
+
+      {/* Fiş Tipi + Depo seçim modal */}
+      {pendingEvrak && (
+        <FisTipiDepoSecimModal
+          visible={!!pendingEvrak}
+          evrakLabel={pendingEvrak.label}
+          evrakTipiStr={pendingEvrak.evrakTipiAdi}
+          alimSatimStr={pendingEvrak.alimSatimAdi}
+          veriTabaniAdi={calisilanSirket}
+          defaultAnaDepo={secilenAnaDepo}
+          defaultKarsiDepo={secilenKarsiDepo}
+          onConfirm={handleFisTipiDepoConfirm}
+          onClose={() => setPendingEvrak(null)}
+        />
+      )}
+
+      {/* Barkod scanner */}
+      <BarcodeScannerModal
+        visible={scannerAcik}
+        onClose={() => setScannerAcik(false)}
+        onDetected={(barkod) => {
+          setScannerAcik(false);
+          const bulunan = stokListesi.find((s) => s.barkod === barkod);
+          if (bulunan) {
+            if (!secilenCari) {
+              Alert.alert('Uyarı', 'Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            } else {
+              setModalUrunu(bulunan);
+            }
+          } else {
+            Alert.alert('Bulunamadı', `"${barkod}" barkodlu ürün listede yok.`);
+          }
+        }}
+      />
+
+      {/* Stok info modal */}
+      <StokInfoModal
+        stokKodu={infoStoku?.stokKodu ?? null}
+        stokCinsi={infoStoku?.stokCinsi ?? ''}
+        veriTabaniAdi={calisilanSirket}
+        onClose={() => setInfoStoku(null)}
+      />
 
       {/* Miktar modal */}
       <UrunMiktariBelirleModal
@@ -348,11 +593,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  evrakTipiText: {
+  evrakTipiIcerik: {
     flex: 1,
+  },
+  evrakTipiText: {
     color: Colors.white,
     fontWeight: '700',
     fontSize: 15,
+  },
+  fisTipiText: {
+    color: '#FFD54F',
+    fontSize: 11,
+    marginTop: 1,
   },
   barkodBtn: {
     padding: 6,
@@ -428,6 +680,14 @@ const styles = StyleSheet.create({
   stokFiyat: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   stokBakiye: { fontSize: 11, color: Colors.gray, marginTop: 2 },
   ayirac: { height: 4 },
+  infoBtn: {
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 70,
+    gap: 2,
+  },
+  infoBtnText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   bosEkran: { alignItems: 'center', paddingTop: 60, gap: 12 },
   bosMetin: { fontSize: 14, color: Colors.gray },
   sepetBtn: {

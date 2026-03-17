@@ -11,13 +11,27 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.companyname.etacep"
+      "bundleIdentifier": "com.erentikil.etacep",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "Barkod okumak için kamera gereklidir."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#29358a"
       },
-      "package": "com.companyname.etacep"
+      "package": "com.companyname.etacep",
+      "usesCleartextTraffic": true,
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a790f117-51a9-45d4-b79c-0eb98a5bb4ac"
+      }
     }
   }
 }

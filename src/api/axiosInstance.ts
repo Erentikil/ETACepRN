@@ -41,7 +41,7 @@ export async function getApiInstance(): Promise<AxiosInstance> {
 export function buildUrl(endpoint: string, ...params: (string | number)[]): string {
   const parts = params.map((p) => {
     const s = String(p);
-    return s === '' ? "''" : encodeURIComponent(s);
+    return s === '' ? "''" : s;
   });
   return parts.length > 0 ? `${endpoint}/${parts.join('/')}` : endpoint;
 }

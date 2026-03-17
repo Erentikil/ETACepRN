@@ -8,8 +8,8 @@ import type {
   MenuYetkiBilgileri,
   VersiyonBilgileri,
   SirketBilgileri,
-  KDVKisimTablosu,
-  FisTipiBaslik,
+  KDVBilgileri,
+  FisTipiGrup,
   FiyatTipiBilgileri,
 } from '../models';
 
@@ -53,7 +53,9 @@ export async function yetkiBilgileriniAl(
     cihazKodu,
     veriTabaniAdi
   );
+  console.log(url);
   const res = await api.get<Sonuc<YetkiBilgileri>>(url);
+  
   return res.data;
 }
 
@@ -93,7 +95,6 @@ export async function sirketBilgileriniAl(veriTabaniAdi: string): Promise<Sonuc<
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('SirketIsimleriniAl', cihazKodu, veriTabaniAdi);
-  console.log(url);
  // console.log('[sirketBilgileriniAl] cihazKodu:', cihazKodu, '| veriTabaniAdi:', veriTabaniAdi, '| url:', url);
   const res = await api.get<Sonuc<SirketBilgileri>>(url);
   return res.data;
@@ -102,23 +103,24 @@ export async function sirketBilgileriniAl(veriTabaniAdi: string): Promise<Sonuc<
 // ─── KDV Bilgileri ───────────────────────────────────────────────────────────
 export async function kdvKisimBilgileriniAl(
   veriTabaniAdi: string
-): Promise<Sonuc<KDVKisimTablosu[]>> {
+): Promise<Sonuc<KDVBilgileri>> {
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('KDVKartlariniAl', cihazKodu, veriTabaniAdi);
-  const res = await api.get<Sonuc<KDVKisimTablosu[]>>(url);
+  const res = await api.get<Sonuc<KDVBilgileri>>(url);
   return res.data;
 }
 
 // ─── Fiş Tipleri ─────────────────────────────────────────────────────────────
 export async function fisTipleriniAl(
   veriTabaniAdi: string
-): Promise<Sonuc<FisTipiBaslik[]>> {
+): Promise<Sonuc<FisTipiGrup[]>> {
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('FisTipleriniAl', cihazKodu, veriTabaniAdi);
-  const res = await api.get<Sonuc<FisTipiBaslik[]>>(url);
+  const res = await api.get<Sonuc<FisTipiGrup[]>>(url);
   return res.data;
+  
 }
 
 // ─── Fiyat Tipleri ───────────────────────────────────────────────────────────

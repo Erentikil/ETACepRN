@@ -8,11 +8,13 @@ import {
   Alert,
 } from 'react-native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../store/appStore';
 import { Colors } from '../constants/Colors';
 import { Config } from '../constants/Config';
+import type { RootStackParamList } from '../navigation/types';
 
 interface MenuItem {
   id: string;
@@ -27,6 +29,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     useAppStore();
 
   const tumMenuOgeleri: MenuItem[] = [
+    {
+      id: 'anaSayfa',
+      baslik: 'Ana Sayfa',
+      icon: 'home-outline',
+      ekran: 'AnaSayfa',
+      yetki: true,
+    },
     {
       id: 'hizli',
       baslik: 'Hızlı İşlemler',
@@ -50,7 +59,7 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     },
     {
       id: 'siparisKapama',
-      baslik: 'Sipariş Kapama',
+      baslik: 'Sipariş Açma/Kapama',
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
       yetki: menuYetkiBilgileri?.siparisKapama ?? false,
@@ -96,20 +105,6 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       icon: 'trending-up-outline',
       ekran: 'KurBilgileri',
       yetki: menuYetkiBilgileri?.kurBilgileri ?? false,
-    },
-    {
-      id: 'dosya',
-      baslik: 'Dosya İşlemleri',
-      icon: 'folder-outline',
-      ekran: 'DosyaIslemleri',
-      yetki: menuYetkiBilgileri?.dosyaIslemleri ?? false,
-    },
-    {
-      id: 'dizayn',
-      baslik: 'Dizayn',
-      icon: 'brush-outline',
-      ekran: 'Dizayn',
-      yetki: menuYetkiBilgileri?.dizayn ?? false,
     },
     {
       id: 'ayarlar',
@@ -167,8 +162,14 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
             key={item.id}
             style={styles.menuItem}
             onPress={() => {
-              navigation.navigate(item.ekran as never);
               navigation.closeDrawer();
+              if (item.ekran === 'Ayarlar') {
+                navigation
+                  .getParent<StackNavigationProp<RootStackParamList>>()
+                  ?.navigate('Ayarlar');
+              } else {
+                navigation.navigate(item.ekran as never);
+              }
             }}
             activeOpacity={0.7}
           >

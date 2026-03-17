@@ -8,7 +8,8 @@
       "Bash(npm show:*)",
       "Bash(node -e \"const v=JSON.parse\\(require\\(''''fs''''\\).readFileSync\\(''''/dev/stdin'''',''''utf8''''\\)\\); console.log\\(v.filter\\(x=>x.startsWith\\(''''0.7''''\\)\\).slice\\(-5\\).join\\(''''\\\\n''''\\)\\)\")",
       "Bash(node -e \"const p=require\\(''''fs''''\\).readFileSync\\(''''/dev/stdin'''',''''utf8''''\\); const j=JSON.parse\\(p\\); console.log\\(JSON.stringify\\(j.dependencies?.[''''react-native-worklets''''] || j.peerDependencies?.[''''react-native-worklets'''']\\)\\)\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx expo:*)"
     ]
   }
 }

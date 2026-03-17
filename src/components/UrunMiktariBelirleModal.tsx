@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Alert,
   Modal,
   View,
   Text,
@@ -13,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import type { StokListesiBilgileri, SepetKalem } from '../models';
 import { Colors } from '../constants/Colors';
+import { paraTL, miktarFormat } from '../utils/format';
 
 interface Props {
   urun: StokListesiBilgileri | null;
@@ -21,6 +23,8 @@ interface Props {
   kalemIndirimYetkisi: boolean;
   onConfirm: (kalem: SepetKalem) => void;
   onClose: () => void;
+  mode?: 'ekle' | 'duzenle';
+  initialMiktar?: number;
 }
 
 export default function UrunMiktariBelirleModal({
@@ -30,12 +34,24 @@ export default function UrunMiktariBelirleModal({
   kalemIndirimYetkisi,
   onConfirm,
   onClose,
+  mode = 'ekle',
+  initialMiktar,
 }: Props) {
   const [miktar, setMiktar] = useState('1');
   const [fiyat, setFiyat] = useState(urun ? String(urun.fiyat) : '0');
   const [ind1, setInd1] = useState(urun ? String(urun.kalemIndirim1) : '0');
   const [ind2, setInd2] = useState(urun ? String(urun.kalemIndirim2) : '0');
   const [ind3, setInd3] = useState(urun ? String(urun.kalemIndirim3) : '0');
+
+  useEffect(() => {
+    if (urun) {
+      setMiktar(initialMiktar !== undefined ? String(initialMiktar) : '1');
+      setFiyat(String(urun.fiyat));
+      setInd1(String(urun.kalemIndirim1));
+      setInd2(String(urun.kalemIndirim2));
+      setInd3(String(urun.kalemIndirim3));
+    }
+  }, [urun]);
 
   if (!urun) return null;
 
@@ -56,6 +72,10 @@ export default function UrunMiktariBelirleModal({
 
   const handleEkle = () => {
     if (miktarSayi <= 0) return;
+    if (fiyatSayi <= 0) {
+      Alert.alert('Uyarı', 'Birim fiyat 0 olamaz.');
+      return;
+    }
     const kalem: SepetKalem = {
       stokKodu: urun.stokKodu,
       stokCinsi: urun.stokCinsi,
@@ -93,7 +113,7 @@ export default function UrunMiktariBelirleModal({
             {/* Bilgi satırı */}
             <View style={styles.bilgiSatiri}>
               <Text style={styles.bilgiEtiket}>Stok: </Text>
-              <Text style={styles.bilgiDeger}>{urun.bakiye.toFixed(2)} {urun.birim}</Text>
+              <Text style={styles.bilgiDeger}>{miktarFormat(urun.bakiye)} {urun.birim}</Text>
               <Text style={styles.bilgiEtiket}>  KDV: </Text>
               <Text style={styles.bilgiDeger}>%{urun.kdvOrani}</Text>
             </View>
@@ -153,18 +173,18 @@ export default function UrunMiktariBelirleModal({
               {kdvDurum !== -1 && (
                 <View style={styles.toplamSatir}>
                   <Text style={styles.toplamEtiket}>KDV Hariç</Text>
-                  <Text style={styles.toplamDeger}>{kdvHaricTutar.toFixed(2)} ₺</Text>
+                  <Text style={styles.toplamDeger}>{paraTL(kdvHaricTutar)}</Text>
                 </View>
               )}
               {kdvDurum !== -1 && (
                 <View style={styles.toplamSatir}>
                   <Text style={styles.toplamEtiket}>KDV (%{urun.kdvOrani})</Text>
-                  <Text style={styles.toplamDeger}>{kdvTutar.toFixed(2)} ₺</Text>
+                  <Text style={styles.toplamDeger}>{paraTL(kdvTutar)}</Text>
                 </View>
               )}
               <View style={[styles.toplamSatir, styles.toplamSonSatir]}>
                 <Text style={styles.toplamEtiketBold}>Toplam</Text>
-                <Text style={styles.toplamDegerBold}>{toplamTutar.toFixed(2)} ₺</Text>
+                <Text style={styles.toplamDegerBold}>{paraTL(toplamTutar)}</Text>
               </View>
             </View>
           </ScrollView>
@@ -175,8 +195,14 @@ export default function UrunMiktariBelirleModal({
             onPress={handleEkle}
             disabled={miktarSayi <= 0}
           >
-            <Ionicons name="add-circle-outline" size={20} color={Colors.white} />
-            <Text style={styles.ekleBtnText}>SEPETE EKLE</Text>
+            <Ionicons
+              name={mode === 'duzenle' ? 'checkmark-circle-outline' : 'add-circle-outline'}
+              size={20}
+              color={Colors.white}
+            />
+            <Text style={styles.ekleBtnText}>
+              {mode === 'duzenle' ? 'GÜNCELLE' : 'SEPETE EKLE'}
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

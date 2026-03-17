@@ -18,6 +18,7 @@ import { Colors } from '../../constants/Colors';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
 import ThemedButton from '../../components/ThemedButton';
+import DropdownSecim from '../../components/DropdownSecim';
 import { sirketBilgileriniAl } from '../../api/authApi';
 
 type Props = {
@@ -202,33 +203,15 @@ export default function Ayarlar({ navigation, route }: Props) {
             Şirket listesi için önce API URL girin ve senkronize edin (↻).
           </Text>
         ) : (
-          sirketListesi.map((s) => (
-            <TouchableOpacity
-              key={s}
-              style={[
-                styles.secenekBtn,
-                calisilanSirket === s && styles.secenekBtnSecili,
-              ]}
-              onPress={async () => {
-                setCalisilanSirket(s);
-                await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, s);
-              }}
-            >
-              <Ionicons
-                name={calisilanSirket === s ? 'radio-button-on' : 'radio-button-off'}
-                size={18}
-                color={calisilanSirket === s ? Colors.primary : Colors.gray}
-              />
-              <Text
-                style={[
-                  styles.secenekText,
-                  calisilanSirket === s && styles.secenekTextSecili,
-                ]}
-              >
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))
+          <DropdownSecim
+            value={calisilanSirket}
+            options={sirketListesi.map((s) => ({ label: s, value: s }))}
+            placeholder="Şirket seçiniz..."
+            onChange={async (s) => {
+              setCalisilanSirket(s);
+              await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, s);
+            }}
+          />
         )}
       </View>
 
@@ -362,27 +345,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 4,
-  },
-  secenekBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  secenekBtnSecili: {
-    backgroundColor: 'rgba(41,53,138,0.05)',
-    borderRadius: 8,
-  },
-  secenekText: {
-    fontSize: 14,
-    color: Colors.darkGray,
-  },
-  secenekTextSecili: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
   secenekRow: {
     flexDirection: 'row',

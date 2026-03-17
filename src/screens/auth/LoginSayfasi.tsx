@@ -106,6 +106,7 @@ export default function LoginSayfasi({ navigation }: Props) {
         setHata(yetkiSonuc.mesaj || 'Kullanıcı adı veya şifre hatalı.');
         return;
       }
+      console.log('[LOGIN] yetkiBilgileri RAW:', JSON.stringify(yetkiSonuc.data));
       setYetkiBilgileri(yetkiSonuc.data);
 
       // 2. Menü yetkilerini al
@@ -145,13 +146,45 @@ export default function LoginSayfasi({ navigation }: Props) {
       // 5. KDV bilgileri
       try {
         const kdvSonuc = await kdvKisimBilgileriniAl(dbAdi);
-        if (kdvSonuc.sonuc) setKdvBilgileri({ kdvListesi: kdvSonuc.data });
+        if (kdvSonuc.sonuc && kdvSonuc.data) setKdvBilgileri(kdvSonuc.data);
       } catch (e) { console.log('KDV hata:', e); }
 
-      // 6. Fiş tipleri
+      // 6. Fiş tipleri — yetkiBilgileri'ne göre default ft override
       try {
         const fisSonuc = await fisTipleriniAl(dbAdi);
-        if (fisSonuc.sonuc) setFtBaslikListesi(fisSonuc.data);
+        if (fisSonuc.sonuc && fisSonuc.data) {
+          const yetki = yetkiSonuc.data;
+          for (const ftb of fisSonuc.data) {
+            let yetkiKodu = -1;
+            switch (ftb.evrakTipi) {
+              case 'Fatura':
+                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.faturaAlis : yetki.faturasatis;
+                break;
+              case 'İrsaliye':
+                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.irsaliyeAlis : yetki.irsaliyeSatis;
+                break;
+              case 'Sipariş':
+                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.siparisAcmaAlis : yetki.siparisAcmaSatis;
+                break;
+              case 'Sipariş Kapama':
+                yetkiKodu = yetki.siparisKapama;
+                break;
+              case 'Stok':
+                if (ftb.alimSatim.trim() === 'Giriş') yetkiKodu = yetki.stokGiris;
+                else if (ftb.alimSatim.trim() === 'Çıkış') yetkiKodu = yetki.stokCikis;
+                else if (ftb.alimSatim.trim() === 'Sayım') yetkiKodu = yetki.sayim;
+                break;
+            }
+            // -1 ise API'den gelen default ft'yi koru, değilse yetkiKodu ile eşleşeni bul
+            console.log(`[LOGIN] FT Override: ${ftb.evrakTipi} ${ftb.alimSatim} → yetkiKodu=${yetkiKodu}, önceki ft=${ftb.ft?.fisTipiKodu}`);
+            if (yetkiKodu >= 0) {
+              const eslesen = ftb.ftListe.find((ft) => ft.fisTipiKodu === yetkiKodu);
+              console.log(`[LOGIN] FT Override: eslesen=${eslesen?.fisTipiKodu} ${eslesen?.fisTipiAdi}`);
+              if (eslesen) ftb.ft = eslesen;
+            }
+          }
+          setFtBaslikListesi(fisSonuc.data);
+        }
       } catch (e) { console.log('Fiş hata:', e); }
 
       // 7. Fiyat tipleri

@@ -15,9 +15,11 @@ export const Config = {
     BENI_HATIRLA: 'BeniHatirla',
     KAMERA_BARKOD: 'kameraBarkod',
     KAMERA_OKUMA: 'kameraOkuma',
+    BEKLEYEN_EVRAKLAR: 'bekleyenEvraklar',
+    AKTIF_SEPET: 'aktifSepet',
   },
 
-  DEFAULT_API_URL: 'https://hrzoneapi.com',
+  DEFAULT_API_URL: 'http://212.252.132.158/webapi',
   DEFAULT_API_URL2: 'http://192.168.1.1/webapi',
 };
 

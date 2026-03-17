@@ -7,6 +7,7 @@ import Ayarlar from '../screens/ayarlar/Ayarlar';
 import DrawerNavigator from './DrawerNavigator';
 import CariSecim from '../screens/main/CariSecim';
 import SepetListesi from '../screens/main/SepetListesi';
+import OnayDuzenleme from '../screens/main/OnayDuzenleme';
 import { Colors } from '../constants/Colors';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -46,6 +47,11 @@ export default function AppNavigator() {
           name="SepetListesi"
           component={SepetListesi}
           options={{ title: 'Sepet' }}
+        />
+        <Stack.Screen
+          name="OnayDuzenleme"
+          component={OnayDuzenleme}
+          options={{ title: 'Onay Düzenleme' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

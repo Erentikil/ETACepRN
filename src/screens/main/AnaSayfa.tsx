@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
 import { Colors } from '../../constants/Colors';
 import type { DrawerParamList } from '../../navigation/types';
+import { aktifSepetAl } from '../../utils/aktifSepetStorage';
+
+// Uygulama oturumu başına bir kez göster
+let yarımKalmisKontrolEdildi = false;
 
 type Props = {
   navigation: DrawerNavigationProp<DrawerParamList, 'AnaSayfa'>;
@@ -28,6 +33,20 @@ interface HizliErisimKarti {
 export default function AnaSayfa({ navigation }: Props) {
   const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, versiyon, onLineCalisma } =
     useAppStore();
+
+  useEffect(() => {
+    if (yarımKalmisKontrolEdildi) return;
+    yarımKalmisKontrolEdildi = true;
+
+    aktifSepetAl().then((sepet) => {
+      if (!sepet || sepet.kalemler.length === 0) return;
+      Alert.alert(
+        'Yarım Kalmış İşlem',
+        `Hızlı İşlemler sepetinizde ${sepet.kalemler.length} kalem bulunuyor.`,
+        [{ text: 'Tamam' }]
+      );
+    });
+  }, []);
 
   const tumHizliErisimler: HizliErisimKarti[] = [
     {
@@ -56,7 +75,7 @@ export default function AnaSayfa({ navigation }: Props) {
     },
     {
       id: 'siparisKapama',
-      baslik: 'Sipariş Kapama',
+      baslik: 'Sipariş Açma/Kapama',
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
       renk: '#9c27b0',
