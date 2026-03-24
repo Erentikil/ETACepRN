@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   RefreshControl,
   Modal,
   ActivityIndicator,
@@ -27,7 +26,7 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import AnimatedListItem from '../../components/AnimatedListItem';
 import { hafifTitresim } from '../../utils/haptics';
-import { useRecentSearches } from '../../hooks/useRecentSearches';
+
 import { toast } from '../../components/Toast';
 
 const ARAMA_TIPLERI = [
@@ -38,7 +37,7 @@ const ARAMA_TIPLERI = [
 
 export default function BarkodEkleme() {
   const { calisilanSirket } = useAppStore();
-  const { recentSearches, addSearch, clearAll: clearRecentSearches } = useRecentSearches();
+
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
@@ -104,7 +103,6 @@ export default function BarkodEkleme() {
       const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
       if (sonuc.sonuc) {
         setStokListesi(sonuc.data);
-        addSearch(veri);
       } else {
         toast.error(sonuc.mesaj || 'Stok aramasi basarisiz.');
         setStokListesi([]);
@@ -178,7 +176,7 @@ export default function BarkodEkleme() {
           ) : null}
         </View>
         <View style={styles.stokSag}>
-          <Text style={styles.stokBirim}>{item.birim}</Text>
+          <Text style={styles.stokBirim}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
         </View>
       </TouchableOpacity>
     </AnimatedListItem>
@@ -256,30 +254,6 @@ export default function BarkodEkleme() {
         </View>
       )}
 
-      {/* Son Aramalar */}
-      {recentSearches.length > 0 && stokListesi.length === 0 && !yukleniyor && (
-        <View style={styles.sonAramalarContainer}>
-          <View style={styles.sonAramalarBaslik}>
-            <Text style={styles.sonAramalarLabel}>Son Aramalar</Text>
-            <TouchableOpacity onPress={() => clearRecentSearches()}>
-              <Text style={styles.sonAramalarTemizle}>Temizle</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {recentSearches.map((term, i) => (
-              <TouchableOpacity
-                key={`${term}-${i}`}
-                style={styles.sonAramaChip}
-                onPress={() => { setAramaMetni(term); aramaYap(term); }}
-              >
-                <Ionicons name="time-outline" size={14} color={Colors.primary} />
-                <Text style={styles.sonAramaChipText}>{term}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
       {/* Liste baslik */}
       <View style={styles.listeBaslik}>
         <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
@@ -346,7 +320,7 @@ export default function BarkodEkleme() {
               </View>
               <View style={styles.stokDetayItem}>
                 <Text style={styles.stokDetayLabel}>Birim</Text>
-                <Text style={styles.stokDetayDeger}>{secilenStok?.birim}</Text>
+                <Text style={styles.stokDetayDeger}>{secilenStok?.birim2?.split(';')[0]?.trim() || secilenStok?.birim}</Text>
               </View>
             </View>
 
@@ -515,41 +489,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primary,
   },
-  sonAramalarContainer: {
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  sonAramalarBaslik: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  sonAramalarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.darkGray,
-  },
-  sonAramalarTemizle: {
-    fontSize: 12,
-    color: Colors.primary,
-  },
-  sonAramaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 6,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sonAramaChipText: {
-    fontSize: 12,
-    color: Colors.darkGray,
-  },
   listeBaslik: {
     flexDirection: 'row',
     paddingHorizontal: 14,
@@ -590,15 +529,17 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContainer: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 24,
+    width: '100%',
   },
   modalHeader: {
     flexDirection: 'row',

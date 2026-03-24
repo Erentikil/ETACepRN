@@ -26,7 +26,7 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import AnimatedListItem from '../../components/AnimatedListItem';
 import { hafifTitresim } from '../../utils/haptics';
-import { useRecentSearches } from '../../hooks/useRecentSearches';
+
 import { toast } from '../../components/Toast';
 
 const ARAMA_TIPLERI = [
@@ -37,7 +37,7 @@ const ARAMA_TIPLERI = [
 
 export default function FiyatGor() {
   const { yetkiBilgileri, fiyatTipListesi, calisilanSirket } = useAppStore();
-  const { recentSearches, addSearch, clearAll: clearRecentSearches } = useRecentSearches();
+
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
@@ -102,7 +102,6 @@ export default function FiyatGor() {
       const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
       if (sonuc.sonuc) {
         setStokListesi(sonuc.data);
-        addSearch(veri);
       } else {
         toast.error(sonuc.mesaj || 'Stok aramasi basarisiz.');
         setStokListesi([]);
@@ -230,30 +229,6 @@ export default function FiyatGor() {
         </View>
       )}
 
-      {/* Son Aramalar */}
-      {recentSearches.length > 0 && stokListesi.length === 0 && !yukleniyor && (
-        <View style={styles.sonAramalarContainer}>
-          <View style={styles.sonAramalarBaslik}>
-            <Text style={styles.sonAramalarLabel}>Son Aramalar</Text>
-            <TouchableOpacity onPress={() => clearRecentSearches()}>
-              <Text style={styles.sonAramalarTemizle}>Temizle</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {recentSearches.map((term, i) => (
-              <TouchableOpacity
-                key={`${term}-${i}`}
-                style={styles.sonAramaChip}
-                onPress={() => { setAramaMetni(term); aramaYap(term); }}
-              >
-                <Ionicons name="time-outline" size={14} color={Colors.primary} />
-                <Text style={styles.sonAramaChipText}>{term}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
       {/* Liste baslik */}
       <View style={styles.listeBaslik}>
         <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
@@ -357,85 +332,53 @@ export default function FiyatGor() {
               </View>
             )}
 
-            {/* Fiyat No combobox */}
+            {/* Fiyat No combobox — sadece fiyati olan secenekler */}
             <Text style={styles.fiyatNoLabel}>Fiyat Tipi</Text>
             <TouchableOpacity
               style={styles.fiyatNoSelector}
               onPress={() => setFiyatNoDropdownAcik(!fiyatNoDropdownAcik)}
             >
               <Text style={styles.fiyatNoSelectorText}>
-                {secilenFiyatNo > 0
-                  ? `${secilenFiyatNo} - ${fiyatTipListesi.find((f) => f.fiyatNo === secilenFiyatNo)?.fiyatAdi ?? 'Fiyat ' + secilenFiyatNo}`
+                {seciliFiyat
+                  ? `${seciliFiyat.fiyatNo} - ${seciliFiyat.fiyatAdi || 'Fiyat ' + seciliFiyat.fiyatNo} (${paraTL(seciliFiyat.tutar)}${seciliFiyat.dovizKodu ? ' ' + seciliFiyat.dovizKodu : ''})`
                   : 'Fiyat tipi seciniz...'}
               </Text>
               <Ionicons name={fiyatNoDropdownAcik ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.primary} />
             </TouchableOpacity>
 
-            {/* Fiyat tipi dropdown */}
+            {/* Fiyat tipi dropdown — sadece fiyati olanlar */}
             {fiyatNoDropdownAcik && (
               <View style={styles.fiyatNoDropdown}>
                 <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {fiyatTipListesi.map((ft) => {
-                    const fiyatBilgisi = stokFiyatlari.find((sf) => sf.fiyatNo === ft.fiyatNo);
-                    return (
-                      <TouchableOpacity
-                        key={ft.fiyatNo}
-                        style={[
-                          styles.fiyatNoItem,
-                          ft.fiyatNo === secilenFiyatNo && styles.fiyatNoItemActive,
-                        ]}
-                        onPress={() => {
-                          setSecilenFiyatNo(ft.fiyatNo);
-                          setFiyatNoDropdownAcik(false);
-                        }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={[
-                            styles.fiyatNoItemText,
-                            ft.fiyatNo === secilenFiyatNo && styles.fiyatNoItemTextActive,
-                          ]}>
-                            {ft.fiyatNo} - {ft.fiyatAdi}
-                          </Text>
-                          {fiyatBilgisi && (
-                            <Text style={styles.fiyatNoItemFiyat}>
-                              {paraTL(fiyatBilgisi.tutar)} {fiyatBilgisi.dovizKodu}
-                            </Text>
-                          )}
-                        </View>
-                        {ft.fiyatNo === secilenFiyatNo && (
-                          <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {stokFiyatlari.map((sf) => (
+                    <TouchableOpacity
+                      key={sf.fiyatNo}
+                      style={[
+                        styles.fiyatNoItem,
+                        sf.fiyatNo === secilenFiyatNo && styles.fiyatNoItemActive,
+                      ]}
+                      onPress={() => {
+                        setSecilenFiyatNo(sf.fiyatNo);
+                        setFiyatNoDropdownAcik(false);
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[
+                          styles.fiyatNoItemText,
+                          sf.fiyatNo === secilenFiyatNo && styles.fiyatNoItemTextActive,
+                        ]}>
+                          {sf.fiyatNo} - {sf.fiyatAdi || 'Fiyat ' + sf.fiyatNo}
+                        </Text>
+                        <Text style={styles.fiyatNoItemFiyat}>
+                          {paraTL(sf.tutar)}{sf.dovizKodu ? ' ' + sf.dovizKodu : ''}
+                        </Text>
+                      </View>
+                      {sf.fiyatNo === secilenFiyatNo && (
+                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
                 </ScrollView>
-              </View>
-            )}
-
-            {/* Tum fiyatlar listesi */}
-            {!fiyatNoDropdownAcik && stokFiyatlari.length > 0 && (
-              <View style={styles.tumFiyatlarContainer}>
-                <Text style={styles.tumFiyatlarBaslik}>Tum Fiyatlar</Text>
-                {stokFiyatlari.map((sf) => (
-                  <TouchableOpacity
-                    key={sf.fiyatNo}
-                    style={[
-                      styles.tumFiyatSatiri,
-                      sf.fiyatNo === secilenFiyatNo && styles.tumFiyatSatiriAktif,
-                    ]}
-                    onPress={() => setSecilenFiyatNo(sf.fiyatNo)}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.tumFiyatAdi}>{sf.fiyatNo} - {sf.fiyatAdi}</Text>
-                    </View>
-                    <Text style={[
-                      styles.tumFiyatTutar,
-                      sf.fiyatNo === secilenFiyatNo && { color: Colors.primary },
-                    ]}>
-                      {paraTL(sf.tutar)} {sf.dovizKodu}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
               </View>
             )}
 
@@ -589,41 +532,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primary,
   },
-  sonAramalarContainer: {
-    paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  sonAramalarBaslik: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  sonAramalarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.darkGray,
-  },
-  sonAramalarTemizle: {
-    fontSize: 12,
-    color: Colors.primary,
-  },
-  sonAramaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 6,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sonAramaChipText: {
-    fontSize: 12,
-    color: Colors.darkGray,
-  },
   listeBaslik: {
     flexDirection: 'row',
     paddingHorizontal: 14,
@@ -683,15 +591,17 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContainer: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 24,
+    width: '100%',
     maxHeight: '85%',
   },
   modalHeader: {
@@ -810,40 +720,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.gray,
     marginTop: 2,
-  },
-  tumFiyatlarContainer: {
-    marginBottom: 12,
-  },
-  tumFiyatlarBaslik: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.darkGray,
-    marginBottom: 8,
-  },
-  tumFiyatSatiri: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: Colors.lightGray ?? '#f5f5f5',
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  tumFiyatSatiriAktif: {
-    backgroundColor: `${Colors.primary}15`,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  tumFiyatAdi: {
-    fontSize: 13,
-    color: Colors.darkGray,
-    fontWeight: '500',
-  },
-  tumFiyatTutar: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.darkGray,
   },
   stokDetayRow: {
     flexDirection: 'row',

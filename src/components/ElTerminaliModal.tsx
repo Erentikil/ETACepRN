@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,38 +7,50 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { paraTL, miktarFormat } from '../utils/format';
+
+interface SonEklenenItem {
+  stokKodu: string;
+  stokCinsi: string;
+  miktar: number;
+  birim: string;
+  tutar: number;
+}
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   onBarkodOkut: (barkod: string) => void;
+  sonEklenen?: SonEklenenItem | null;
+  miktarliGiris: boolean;
+  onMiktarliGirisDegistir: (val: boolean) => void;
 }
 
-export default function ElTerminaliModal({ visible, onClose, onBarkodOkut }: Props) {
+export default function ElTerminaliModal({
+  visible, onClose, onBarkodOkut,
+  sonEklenen, miktarliGiris, onMiktarliGirisDegistir,
+}: Props) {
   const inputRef = useRef<TextInput>(null);
-  const barkodRef = useRef('');
+  const [barkod, setBarkod] = useState('');
 
-  // Modal açılınca input'a odaklan
   useEffect(() => {
     if (visible) {
+      setBarkod('');
       setTimeout(() => inputRef.current?.focus(), 300);
-    } else {
-      barkodRef.current = '';
     }
   }, [visible]);
 
   const handleSubmit = useCallback(() => {
-    const barkod = barkodRef.current.trim();
-    if (!barkod) return;
-    onBarkodOkut(barkod);
-    barkodRef.current = '';
-    inputRef.current?.clear();
-    // Tekrar odaklan — sonraki okuma için
+    const val = barkod.trim();
+    if (!val) return;
+    onBarkodOkut(val);
+    setBarkod('');
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, [onBarkodOkut]);
+  }, [barkod, onBarkodOkut]);
 
   return (
     <Modal
@@ -47,41 +59,67 @@ export default function ElTerminaliModal({ visible, onClose, onBarkodOkut }: Pro
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <StatusBar backgroundColor="#1a1a2e" barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.primary} barStyle="light-content" />
       <View style={styles.container}>
         {/* Başlık */}
         <View style={styles.header}>
-          <Ionicons name="phone-portrait-outline" size={24} color={Colors.white} />
+          <Ionicons name="phone-portrait-outline" size={20} color={Colors.white} />
           <Text style={styles.baslik}>El Terminali</Text>
           <TouchableOpacity style={styles.kapatBtn} onPress={onClose}>
-            <Ionicons name="close" size={28} color={Colors.white} />
+            <Ionicons name="close" size={26} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
-        {/* İçerik */}
-        <View style={styles.icerik}>
-          <Ionicons name="scan-outline" size={80} color="rgba(255,255,255,0.15)" />
-          <Text style={styles.aciklama}>
-            Barkod okutmak için el terminalini kullanın
-          </Text>
+        {/* Miktarlı giriş toggle */}
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Miktarlı Giriş</Text>
+          <Switch
+            value={miktarliGiris}
+            onValueChange={onMiktarliGirisDegistir}
+            trackColor={{ false: Colors.border, true: Colors.primary + '80' }}
+            thumbColor={miktarliGiris ? Colors.primary : Colors.gray}
+          />
+        </View>
 
+        {/* Barkod input + ara butonu */}
+        <View style={styles.inputRow}>
           <TextInput
             ref={inputRef}
             style={styles.input}
-            placeholder="Barkod bekleniyor..."
-            placeholderTextColor="rgba(255,255,255,0.4)"
-            onChangeText={(text) => { barkodRef.current = text; }}
+            placeholder="Barkod giriniz..."
+            placeholderTextColor={Colors.gray}
+            value={barkod}
+            onChangeText={setBarkod}
             onSubmitEditing={handleSubmit}
             blurOnSubmit={false}
-            returnKeyType="send"
+            returnKeyType="search"
             autoFocus
-            showSoftInputOnFocus={false}
           />
-
-          <Text style={styles.ipucu}>
-            Barkod okutulduğunda otomatik olarak işlenecektir
-          </Text>
+          <TouchableOpacity style={styles.araBtn} onPress={handleSubmit}>
+            <Ionicons name="search" size={22} color={Colors.white} />
+          </TouchableOpacity>
         </View>
+
+        {/* Son eklenen ürün */}
+        {sonEklenen ? (
+          <View style={styles.sonEklenenKart}>
+            <View style={styles.sonEklenenBaslik}>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.success ?? '#4CAF50'} />
+              <Text style={styles.sonEklenenBaslikText}>Son Eklenen</Text>
+            </View>
+            <Text style={styles.sonEklenenCinsi} numberOfLines={2}>{sonEklenen.stokCinsi}</Text>
+            <Text style={styles.sonEklenenKodu}>{sonEklenen.stokKodu}</Text>
+            <View style={styles.sonEklenenAlt}>
+              <Text style={styles.sonEklenenMiktar}>{miktarFormat(sonEklenen.miktar)} {sonEklenen.birim}</Text>
+              <Text style={styles.sonEklenenFiyat}>{paraTL(sonEklenen.tutar)}</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.bosState}>
+            <Ionicons name="scan-outline" size={48} color={Colors.gray} />
+            <Text style={styles.bosText}>Barkod okutarak ürün ekleyin</Text>
+          </View>
+        )}
       </View>
     </Modal>
   );
@@ -90,53 +128,124 @@ export default function ElTerminaliModal({ visible, onClose, onBarkodOkut }: Pro
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: Colors.lightGray ?? '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
     backgroundColor: Colors.primary,
     gap: 10,
   },
   baslik: {
     flex: 1,
     color: Colors.white,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
   kapatBtn: {
     padding: 4,
   },
-  icerik: {
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.white,
+    marginHorizontal: 12,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  toggleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.darkGray,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: Colors.black,
+    backgroundColor: Colors.white,
+  },
+  araBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    padding: 12,
+  },
+  sonEklenenKart: {
+    backgroundColor: Colors.white,
+    marginHorizontal: 12,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sonEklenenBaslik: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  sonEklenenBaslikText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.success ?? '#4CAF50',
+  },
+  sonEklenenCinsi: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.darkGray,
+  },
+  sonEklenenKodu: {
+    fontSize: 12,
+    color: Colors.gray,
+    marginTop: 2,
+  },
+  sonEklenenAlt: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  sonEklenenMiktar: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.darkGray,
+  },
+  sonEklenenFiyat: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  bosState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 20,
+    gap: 8,
   },
-  aciklama: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 18,
-    color: Colors.white,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  ipucu: {
-    color: 'rgba(255,255,255,0.35)',
-    fontSize: 13,
-    textAlign: 'center',
+  bosText: {
+    fontSize: 15,
+    color: Colors.gray,
   },
 });

@@ -129,6 +129,22 @@ export default function AnaSayfa({ navigation }: Props) {
       renk: '#00bcd4',
       yetki: menuYetkiBilgileri?.kurBilgileri ?? false,
     },
+    {
+      id: 'fiyatGor',
+      baslik: 'Fiyat Gör',
+      icon: 'pricetag-outline',
+      ekran: 'FiyatGor',
+      renk: '#3f51b5',
+      yetki: true,
+    },
+    {
+      id: 'barkodEkleme',
+      baslik: 'Barkod Ekleme',
+      icon: 'barcode-outline',
+      ekran: 'BarkodEkleme',
+      renk: '#ff5722',
+      yetki: true,
+    },
   ];
   const hizliErisimler = tumHizliErisimler.filter((k) => k.yetki);
 

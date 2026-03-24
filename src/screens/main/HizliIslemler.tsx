@@ -15,7 +15,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
-import { stokListesiniAl, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl } from '../../api/hizliIslemlerApi';
+import { stokListesiniAl, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
 import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -120,6 +120,7 @@ export default function HizliIslemler() {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [elTerminaliAcik, setElTerminaliAcik] = useState(false);
+  const [etSonEklenen, setEtSonEklenen] = useState<{ stokKodu: string; stokCinsi: string; miktar: number; birim: string; tutar: number } | null>(null);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
 
   // Ayarlardan varsayılan miktarlı giriş değerini yükle
@@ -364,8 +365,7 @@ export default function HizliIslemler() {
       stokListesi.filter(
         (s) =>
           s.stokKodu.toLowerCase().includes(q) ||
-          s.stokCinsi.toLowerCase().includes(q) ||
-          s.barkod.toLowerCase().includes(q)
+          s.stokCinsi.toLowerCase().includes(q)
       )
     );
   }, [aramaMetni, stokListesi]);
@@ -749,7 +749,23 @@ export default function HizliIslemler() {
               hizliEkle(bulunan);
             }
           } else {
-            toast.warning(`"${barkod}" barkodlu ürün listede yok.`);
+            // Lokalde bulunamadı — API'ye sor
+            barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+              if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+                const stok = sonuc.data[0];
+                if (!secilenCari) {
+                  toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+                } else if (miktarliGiris) {
+                  setModalUrunu(stok);
+                } else {
+                  hizliEkle(stok);
+                }
+              } else {
+                toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+              }
+            }).catch(() => {
+              toast.error('Barkod araması sırasında bir hata oluştu.');
+            });
           }
         }}
       />
@@ -757,21 +773,42 @@ export default function HizliIslemler() {
       {/* El terminali modal */}
       <ElTerminaliModal
         visible={elTerminaliAcik}
-        onClose={() => setElTerminaliAcik(false)}
+        onClose={() => { setElTerminaliAcik(false); setEtSonEklenen(null); }}
+        sonEklenen={etSonEklenen}
+        miktarliGiris={miktarliGiris}
+        onMiktarliGirisDegistir={setMiktarliGiris}
         onBarkodOkut={(barkod) => {
           hafifTitresim();
-          const bulunan = stokListesi.find((s) => s.barkod === barkod);
-          if (bulunan) {
+          const ekle = (stok: StokListesiBilgileri) => {
             if (!secilenCari) {
               toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
             } else if (miktarliGiris) {
               setElTerminaliAcik(false);
-              setModalUrunu(bulunan);
+              setModalUrunu(stok);
             } else {
-              hizliEkle(bulunan);
+              hizliEkle(stok);
+              setEtSonEklenen({
+                stokKodu: stok.stokKodu,
+                stokCinsi: stok.stokCinsi,
+                miktar: 1,
+                birim: stok.birim,
+                tutar: stok.fiyat,
+              });
             }
+          };
+          const bulunan = stokListesi.find((s) => s.barkod === barkod);
+          if (bulunan) {
+            ekle(bulunan);
           } else {
-            toast.warning(`"${barkod}" barkodlu ürün listede yok.`);
+            barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+              if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+                ekle(sonuc.data[0]);
+              } else {
+                toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+              }
+            }).catch(() => {
+              toast.error('Barkod araması sırasında bir hata oluştu.');
+            });
           }
         }}
       />

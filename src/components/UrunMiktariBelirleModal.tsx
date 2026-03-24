@@ -579,6 +579,22 @@ export default function UrunMiktariBelirleModal({
               </View>
             )}
 
+            {/* Açıklama */}
+            <View style={styles.formSatir}>
+              <Text style={styles.formEtiket}>Açıklama</Text>
+              <View style={styles.formSag}>
+                <TextInput
+                  style={[styles.formInput, { textAlignVertical: 'top', minHeight: 40 }]}
+                  placeholder="Kalem açıklaması..."
+                  placeholderTextColor={Colors.gray}
+                  value={aciklama}
+                  onChangeText={setAciklama}
+                  multiline
+                  numberOfLines={2}
+                />
+              </View>
+            </View>
+
             {/* Toplam özet */}
             <View style={styles.toplamKart}>
               <View style={styles.toplamSatir}>
@@ -605,20 +621,6 @@ export default function UrunMiktariBelirleModal({
               </View>
             </View>
           </ScrollView>
-
-          {/* Açıklama */}
-          <View style={styles.aciklamaContainer}>
-            <Text style={styles.aciklamaLabel}>Açıklama</Text>
-            <TextInput
-              style={styles.aciklamaInput}
-              placeholder="Kalem açıklaması..."
-              placeholderTextColor={Colors.gray}
-              value={aciklama}
-              onChangeText={setAciklama}
-              multiline
-              numberOfLines={2}
-            />
-          </View>
 
           {/* Tamam / Vazgeç butonları */}
           <View style={styles.butonRow}>
@@ -1004,29 +1006,6 @@ const styles = StyleSheet.create({
   toplamDeger: { fontSize: 15, color: Colors.darkGray },
   toplamEtiketBold: { fontSize: 17, fontWeight: '700', color: Colors.primary },
   toplamDegerBold: { fontSize: 17, fontWeight: '700', color: Colors.primary },
-  // Açıklama
-  aciklamaContainer: {
-    paddingHorizontal: 12,
-    marginBottom: 10,
-  },
-  aciklamaLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.darkGray,
-    marginBottom: 4,
-  },
-  aciklamaInput: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: Colors.black,
-    backgroundColor: Colors.inputBackground,
-    minHeight: 44,
-    textAlignVertical: 'top',
-  },
   // Butonlar
   butonRow: {
     flexDirection: 'row',

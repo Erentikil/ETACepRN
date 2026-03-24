@@ -120,6 +120,7 @@ export default function RenkBedenIslemleri() {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [elTerminaliAcik, setElTerminaliAcik] = useState(false);
+  const [etSonEklenen, setEtSonEklenen] = useState<{ stokKodu: string; stokCinsi: string; miktar: number; birim: string; tutar: number } | null>(null);
   const { manuelOkuma, baslangicZoom } = useTarayiciAyarlari();
   const [cariFiyatListesi, setCariFiyatListesi] = useState<CariFiyatBilgileri[]>([]);
 
@@ -696,7 +697,10 @@ export default function RenkBedenIslemleri() {
       {/* El terminali modal */}
       <ElTerminaliModal
         visible={elTerminaliAcik}
-        onClose={() => setElTerminaliAcik(false)}
+        onClose={() => { setElTerminaliAcik(false); setEtSonEklenen(null); }}
+        sonEklenen={etSonEklenen}
+        miktarliGiris={miktarliGiris}
+        onMiktarliGirisDegistir={setMiktarliGiris}
         onBarkodOkut={barkodIsle}
       />
 

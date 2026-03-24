@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +42,7 @@ import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import AnimatedListItem from '../../components/AnimatedListItem';
 import { hafifTitresim } from '../../utils/haptics';
-import { useRecentSearches } from '../../hooks/useRecentSearches';
+
 import { toast } from '../../components/Toast';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
@@ -104,7 +103,7 @@ export default function AlisSatisIslemleri() {
   const route = useRoute<RoutePropType>();
 
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket } = useAppStore();
-  const { recentSearches, addSearch, clearAll: clearRecentSearches } = useRecentSearches();
+
 
   const taslakFisTipiYuklendi = useRef(false);
   const fisTipiManuelSecildi = useRef(false);
@@ -135,6 +134,7 @@ export default function AlisSatisIslemleri() {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [elTerminaliAcik, setElTerminaliAcik] = useState(false);
+  const [etSonEklenen, setEtSonEklenen] = useState<{ stokKodu: string; stokCinsi: string; miktar: number; birim: string; tutar: number } | null>(null);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
 
   // Ayarlardan varsayılan değerleri yükle
@@ -353,7 +353,6 @@ export default function AlisSatisIslemleri() {
       const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
       if (sonuc.sonuc) {
         setStokListesi(sonuc.data);
-        addSearch(veri);
       } else {
         toast.error(sonuc.mesaj || 'Stok araması başarısız.');
         setStokListesi([]);
@@ -706,30 +705,6 @@ export default function AlisSatisIslemleri() {
         </View>
       )}
 
-      {/* Son Aramalar */}
-      {recentSearches.length > 0 && stokListesi.length === 0 && !yukleniyor && (
-        <View style={styles.sonAramalarContainer}>
-          <View style={styles.sonAramalarBaslik}>
-            <Text style={styles.sonAramalarLabel}>Son Aramalar</Text>
-            <TouchableOpacity onPress={() => { clearRecentSearches(); }}>
-              <Text style={styles.sonAramalarTemizle}>Temizle</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {recentSearches.map((term, i) => (
-              <TouchableOpacity
-                key={`${term}-${i}`}
-                style={styles.sonAramaChip}
-                onPress={() => { setAramaMetni(term); aramaYap(term); }}
-              >
-                <Ionicons name="time-outline" size={14} color={Colors.primary} />
-                <Text style={styles.sonAramaChipText}>{term}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
       {/* Stok listesi başlık */}
       <View style={styles.listeBaslik}>
         <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
@@ -842,7 +817,10 @@ export default function AlisSatisIslemleri() {
       {/* El terminali modal */}
       <ElTerminaliModal
         visible={elTerminaliAcik}
-        onClose={() => setElTerminaliAcik(false)}
+        onClose={() => { setElTerminaliAcik(false); setEtSonEklenen(null); }}
+        sonEklenen={etSonEklenen}
+        miktarliGiris={miktarliGiris}
+        onMiktarliGirisDegistir={setMiktarliGiris}
         onBarkodOkut={(barkod) => {
           hafifTitresim();
           setAramaMetni(barkod);
@@ -857,6 +835,13 @@ export default function AlisSatisIslemleri() {
                 setModalUrunu(stok);
               } else {
                 hizliEkle(stok);
+                setEtSonEklenen({
+                  stokKodu: stok.stokKodu,
+                  stokCinsi: stok.stokCinsi,
+                  miktar: 1,
+                  birim: stok.birim,
+                  tutar: stok.fiyat,
+                });
               }
             } else {
               toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
@@ -1125,10 +1110,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sepetBadgeText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
-  sonAramalarContainer: { paddingHorizontal: 12, paddingVertical: 6 },
-  sonAramalarBaslik: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 6 },
-  sonAramalarLabel: { fontSize: 12, color: Colors.darkGray, fontWeight: '600' as const },
-  sonAramalarTemizle: { fontSize: 12, color: Colors.error, fontWeight: '600' as const },
-  sonAramaChip: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: Colors.lightGray, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8, gap: 4, borderWidth: 1, borderColor: Colors.border },
-  sonAramaChipText: { fontSize: 12, color: Colors.darkGray },
 });
