@@ -42,7 +42,7 @@ export default function AnaSayfa({ navigation }: Props) {
       if (!sepet || sepet.kalemler.length === 0) return;
       Alert.alert(
         'Yarım Kalmış İşlem',
-        `Hızlı İşlemler sepetinizde ${sepet.kalemler.length} kalem bulunuyor.`,
+        `Alış/Satış sepetinizde ${sepet.kalemler.length} kalem bulunuyor.`,
         [{ text: 'Tamam' }]
       );
     });
@@ -51,7 +51,7 @@ export default function AnaSayfa({ navigation }: Props) {
   const tumHizliErisimler: HizliErisimKarti[] = [
     {
       id: 'hizli',
-      baslik: 'Hızlı İşlemler',
+      baslik: 'Alış/Satış',
       icon: 'flash-outline',
       ekran: 'HizliIslemler',
       renk: '#4caf50',
@@ -59,7 +59,7 @@ export default function AnaSayfa({ navigation }: Props) {
     },
     {
       id: 'alimSatim',
-      baslik: 'Alış / Satış',
+      baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
       renk: '#2196f3',
@@ -75,7 +75,7 @@ export default function AnaSayfa({ navigation }: Props) {
     },
     {
       id: 'siparisKapama',
-      baslik: 'Sipariş Açma/Kapama',
+      baslik: 'Sipariş Kapama',
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
       renk: '#9c27b0',

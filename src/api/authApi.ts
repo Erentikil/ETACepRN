@@ -53,7 +53,6 @@ export async function yetkiBilgileriniAl(
     cihazKodu,
     veriTabaniAdi
   );
-  console.log(url);
   const res = await api.get<Sonuc<YetkiBilgileri>>(url);
   
   return res.data;
@@ -95,7 +94,6 @@ export async function sirketBilgileriniAl(veriTabaniAdi: string): Promise<Sonuc<
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('SirketIsimleriniAl', cihazKodu, veriTabaniAdi);
- // console.log('[sirketBilgileriniAl] cihazKodu:', cihazKodu, '| veriTabaniAdi:', veriTabaniAdi, '| url:', url);
   const res = await api.get<Sonuc<SirketBilgileri>>(url);
   return res.data;
 }

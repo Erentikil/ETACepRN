@@ -15,11 +15,13 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import { paraTL } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
 import { onayListesiniAl, onaylamaDurumunuGuncelle } from '../../api/onayApi';
 import type { OnayListesiBilgileri } from '../../models';
 import type { RootStackParamList } from '../../navigation/types';
+import EmptyState from '../../components/EmptyState';
 
 type Bolum = { title: string; data: OnayListesiBilgileri[] };
 
@@ -71,10 +73,10 @@ export default function OnayIslemleri() {
         setTumListe(liste);
         setBolumler(grupla(liste));
       } else {
-        Alert.alert('Hata', sonuc.mesaj || 'Onay listesi alınamadı.');
+        toast.error(sonuc.mesaj || 'Onay listesi alınamadı.');
       }
     } catch (e: any) {
-      Alert.alert('Hata', e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || 'Bağlantı hatası.');
     } finally {
       setYukleniyor(false);
     }
@@ -100,11 +102,11 @@ export default function OnayIslemleri() {
         item.guidId, durum, item.onaylayan, not, calisilanSirket
       );
       if (!sonuc.sonuc) {
-        Alert.alert('Hata', sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
+        toast.error(sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
       }
       await listeYukle();
     } catch (e: any) {
-      Alert.alert('Hata', e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || 'Bağlantı hatası.');
     } finally {
       setIslemYapiliyor(false);
     }
@@ -140,7 +142,7 @@ export default function OnayIslemleri() {
         ]
       );
     } else {
-      Alert.alert('Hata', 'Seçili evrak listeden çıkarılamaz.');
+      toast.error('Seçili evrak listeden çıkarılamaz.');
     }
   };
 
@@ -149,11 +151,7 @@ export default function OnayIslemleri() {
     if (isAdmin) {
       navigation.navigate('OnayDuzenleme', { item });
     } else {
-      Alert.alert(
-        item.cariUnvani,
-        `${item.evrakTipi} — ${item.fisTipi}\nKullanıcı: ${item.kullaniciKodu}\nŞirket: ${item.sirketAdi}\nTarih: ${formatTarih(item.tarih)}\nToplam: ${paraTL(item.genelToplam)}\nDurum: ${item.durum}\nOnaylayan: ${item.onaylayan || '—'}`,
-        [{ text: 'Tamam' }]
-      );
+      toast.info(`${item.cariUnvani}\n${item.evrakTipi} — ${item.fisTipi}\nKullanıcı: ${item.kullaniciKodu}\nŞirket: ${item.sirketAdi}\nTarih: ${formatTarih(item.tarih)}\nToplam: ${paraTL(item.genelToplam)}\nDurum: ${item.durum}\nOnaylayan: ${item.onaylayan || '—'}`);
     }
   };
 
@@ -213,7 +211,7 @@ export default function OnayIslemleri() {
           <View style={styles.notSatir}>
             <Text style={styles.notMetin} numberOfLines={1}>{item.not}</Text>
             <TouchableOpacity
-              onPress={() => Alert.alert('Onay Notu', item.not || '—')}
+              onPress={() => toast.info(item.not || '—')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="information-circle-outline" size={18} color="#e65100" />
@@ -278,10 +276,7 @@ export default function OnayIslemleri() {
             />
           }
           ListEmptyComponent={
-            <View style={styles.merkezle}>
-              <Ionicons name="checkmark-done-circle-outline" size={56} color={Colors.border} />
-              <Text style={styles.bosMetin}>Onay listesi boş</Text>
-            </View>
+            <EmptyState icon="checkmark-done-circle-outline" baslik="Onay listesi boş" aciklama="Bekleyen onay işlemi bulunmamaktadır" />
           }
         />
       )}

@@ -5,15 +5,18 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TextInput,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
+import { toast } from '../../components/Toast';
 import { cariListesiniAl } from '../../api/hizliIslemlerApi';
 import { Colors } from '../../constants/Colors';
 import type { CariKartBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 function f(n: number) {
   return (n ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,26 +28,29 @@ export default function CariBakiye() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const sonuc = await cariListesiniAl(
-          calisilanSirket,
-          yetkiBilgileri?.saticiBazliCariKart ?? false,
-          yetkiBilgileri?.kullaniciKodu ?? '',
-          yetkiBilgileri?.saticiKontrolKolonu ?? ''
-        );
-        if (sonuc.sonuc) {
-          setListe(sonuc.data ?? []);
-        } else {
-          Alert.alert('Hata', sonuc.mesaj || 'Cari listesi alınamadı.');
-        }
-      } catch (err: any) {
-        Alert.alert('Hata', err.message || 'Cari listesi yüklenirken hata oluştu.');
-      } finally {
-        setYukleniyor(false);
+  const veriYukle = async () => {
+    setYukleniyor(true);
+    try {
+      const sonuc = await cariListesiniAl(
+        calisilanSirket,
+        yetkiBilgileri?.saticiBazliCariKart ?? false,
+        yetkiBilgileri?.kullaniciKodu ?? '',
+        yetkiBilgileri?.saticiKontrolKolonu ?? ''
+      );
+      if (sonuc.sonuc) {
+        setListe(sonuc.data ?? []);
+      } else {
+        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
       }
-    })();
+    } catch (err: any) {
+      toast.error(err.message || 'Cari listesi yüklenirken hata oluştu.');
+    } finally {
+      setYukleniyor(false);
+    }
+  };
+
+  useEffect(() => {
+    veriYukle();
   }, [calisilanSirket]);
 
   const filtreli = useMemo(() => {
@@ -64,10 +70,7 @@ export default function CariBakiye() {
 
   if (yukleniyor) {
     return (
-      <View style={styles.merkez}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.yukleniyorText}>Yükleniyor...</Text>
-      </View>
+      <SkeletonLoader satirSayisi={6} />
     );
   }
 
@@ -101,6 +104,13 @@ export default function CariBakiye() {
       <FlatList
         data={filtreli}
         keyExtractor={(item) => item.cariKodu}
+        refreshControl={
+          <RefreshControl
+            refreshing={yukleniyor}
+            onRefresh={veriYukle}
+            colors={[Colors.primary]}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.satir}>
             <View style={styles.satırSol}>
@@ -121,10 +131,7 @@ export default function CariBakiye() {
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <View style={styles.merkez}>
-            <Ionicons name="wallet-outline" size={48} color={Colors.border} />
-            <Text style={styles.bosText}>Cari bulunamadı</Text>
-          </View>
+          <EmptyState icon="wallet-outline" baslik="Cari bulunamadı" aciklama="Bakiye bilgisi bulunmamaktadır" />
         }
       />
     </View>
@@ -163,6 +170,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   satırSol: { flex: 1 },
   cariKodu: { fontSize: 13, fontWeight: '700', color: Colors.primary },

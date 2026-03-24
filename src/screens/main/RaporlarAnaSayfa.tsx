@@ -5,12 +5,12 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { DrawerParamList } from '../../navigation/types';
 
 type Props = {
@@ -136,7 +136,7 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
         navigation.navigate('BekleyenSiparisler');
         break;
       default:
-        Alert.alert(rapor.baslik, 'Bu rapor yakında eklenecek.');
+        toast.info('Bu rapor yakında eklenecek.');
     }
   };
 

@@ -1,6 +1,34 @@
 import { getApiInstance, buildUrl } from './axiosInstance';
 import { getCihazKodu } from './authApi';
-import type { Sonuc, AcmaSiparisHareketBilgileri, KapamaEvrak } from '../models';
+import type { Sonuc, AcmaSiparisFisBilgileri, AcmaSiparisHareketBilgileri, KapamaEvrak } from '../models';
+
+// ─── Cari Sipariş Fiş Listesini Al ──────────────────────────────────────────
+// MAUI: "AcmaSiparisleriniAl/{cariKod}/{cihazKodu}/{veriTabaniAdi}/{alSat}"
+export async function cariSiparisListesiniAl(
+  cariKodu: string,
+  veriTabaniAdi: string,
+  alimSatim: number
+): Promise<Sonuc<AcmaSiparisFisBilgileri[]>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('AcmaSiparisleriniAl', cariKodu, cihazKodu, veriTabaniAdi, alimSatim);
+  const res = await api.get<Sonuc<AcmaSiparisFisBilgileri[]>>(url);
+  return res.data;
+}
+
+// ─── Sipariş Evrak Numarasını Kontrol Et ────────────────────────────────────
+// MAUI: "SiparisEvrakNoyuKontrolEt/{evrakNo}/{cihazKodu}/{veriTabaniAdi}/{alSat}"
+export async function siparisEvrakNumarasiniKontrolEt(
+  evrakNo: string,
+  veriTabaniAdi: string,
+  alimSatim: number
+): Promise<Sonuc<AcmaSiparisFisBilgileri[]>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('SiparisEvrakNoyuKontrolEt', evrakNo, cihazKodu, veriTabaniAdi, alimSatim);
+  const res = await api.get<Sonuc<AcmaSiparisFisBilgileri[]>>(url);
+  return res.data;
+}
 
 // ─── Cari Açma Hareketlerini Oku ─────────────────────────────────────────────
 // MAUI: "CariAcmaHareketleriniOku/{cariKod}/{cihazKodu}/{veriTabaniAdi}/{alSat}"

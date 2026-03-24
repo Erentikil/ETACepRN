@@ -5,7 +5,6 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TextInput,
   TouchableOpacity,
 } from 'react-native';
@@ -14,8 +13,10 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../../store/appStore';
 import { cariListesiniAl } from '../../api/hizliIslemlerApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { CariKartBilgileri } from '../../models';
 import type { DrawerParamList } from '../../navigation/types';
+import EmptyState from '../../components/EmptyState';
 
 type RoutePropType = RouteProp<DrawerParamList, 'CariSecimliRapor'>;
 
@@ -42,10 +43,10 @@ export default function CariSecimliRapor() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          Alert.alert('Hata', sonuc.mesaj || 'Cari listesi alınamadı.');
+          toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
         }
       } catch (err: any) {
-        Alert.alert('Hata', err.message || 'Cari listesi yüklenirken hata oluştu.');
+        toast.error(err.message || 'Cari listesi yüklenirken hata oluştu.');
       } finally {
         setYukleniyor(false);
       }
@@ -120,10 +121,7 @@ export default function CariSecimliRapor() {
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <View style={styles.merkez}>
-            <Ionicons name="people-outline" size={48} color={Colors.border} />
-            <Text style={styles.bosText}>Cari bulunamadı</Text>
-          </View>
+          <EmptyState icon="people-outline" baslik="Cari bulunamadı" aciklama="Arama kriterlerine uygun cari bulunmamaktadır" />
         }
       />
     </View>
@@ -161,6 +159,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   satırSol: { flex: 1 },
   cariKodu: { fontSize: 13, fontWeight: '700', color: Colors.primary },

@@ -7,35 +7,21 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { kurFormat } from '../../utils/format';
 import { useFocusEffect } from '@react-navigation/native';
-
-const PARA_BIRIMLERI = [
-  { kod: 'USD', ad: 'Amerikan Doları',        bayrak: '🇺🇸' },
-  { kod: 'EUR', ad: 'Euro',                   bayrak: '🇪🇺' },
-  { kod: 'GBP', ad: 'İngiliz Sterlini',       bayrak: '🇬🇧' },
-  { kod: 'CHF', ad: 'İsviçre Frankı',         bayrak: '🇨🇭' },
-  { kod: 'JPY', ad: 'Japon Yeni',             bayrak: '🇯🇵' },
-  { kod: 'CAD', ad: 'Kanada Doları',          bayrak: '🇨🇦' },
-  { kod: 'AUD', ad: 'Avustralya Doları',      bayrak: '🇦🇺' },
-  { kod: 'CNY', ad: 'Çin Yuanı',             bayrak: '🇨🇳' },
-  { kod: 'SAR', ad: 'S. Arabistan Riyali',   bayrak: '🇸🇦' },
-  { kod: 'AED', ad: 'BAE Dirhemi',            bayrak: '🇦🇪' },
-];
-
-interface KurSatiri {
-  kod: string;
-  ad: string;
-  bayrak: string;
-  kur: number;
-  oncekiKur?: number;
-}
+import { useAppStore } from '../../store/appStore';
+import { kurBilgileriniAl } from '../../api/hizliIslemlerApi';
+import type { KurBilgileri as KurBilgileriModel } from '../../models';
+import EmptyState from '../../components/EmptyState';
+import AnimatedListItem from '../../components/AnimatedListItem';
 
 export default function KurBilgileri() {
-  const [kurlar, setKurlar] = useState<KurSatiri[]>([]);
+  const { calisilanSirket } = useAppStore();
+  const [kurlar, setKurlar] = useState<KurBilgileriModel[]>([]);
   const [guncelleme, setGuncelleme] = useState<string | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
@@ -44,32 +30,22 @@ export default function KurBilgileri() {
     setYukleniyor(true);
     setHata(null);
     try {
-      const response = await fetch(
-        `https://api.frankfurter.app/latest?base=TRY&symbols=${PARA_BIRIMLERI.map((p) => p.kod).join(',')}`
-      );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const json = await response.json();
-
-      const yeniKurlar: KurSatiri[] = PARA_BIRIMLERI.map((p) => {
-        const rate: number = json.rates[p.kod];
-        return {
-          ...p,
-          kur: rate > 0 ? 1 / rate : 0,
-          oncekiKur: kurlar.find((k) => k.kod === p.kod)?.kur,
-        };
-      });
-
-      setKurlar(yeniKurlar);
-      const tarih = new Date(json.date);
-      setGuncelleme(
-        tarih.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })
-      );
+      const sonuc = await kurBilgileriniAl(calisilanSirket);
+      if (sonuc.sonuc) {
+        setKurlar(sonuc.data ?? []);
+        setGuncelleme(
+          new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        );
+      } else {
+        setHata(sonuc.mesaj || 'Kur bilgileri alınamadı.');
+      }
     } catch (e: any) {
-      setHata('Kur bilgileri alınamadı. İnternet bağlantınızı kontrol edin.');
+      const mesaj = e instanceof Error ? e.message : 'Bağlantı hatası.';
+      setHata(`Kur bilgileri alınamadı. ${mesaj}`);
     } finally {
       setYukleniyor(false);
     }
-  }, [kurlar]);
+  }, [calisilanSirket]);
 
   useFocusEffect(
     useCallback(() => {
@@ -77,38 +53,26 @@ export default function KurBilgileri() {
     }, [])
   );
 
-  const renderKur = ({ item }: { item: KurSatiri }) => {
-    const trend =
-      item.oncekiKur == null
-        ? null
-        : item.kur > item.oncekiKur
-        ? 'up'
-        : item.kur < item.oncekiKur
-        ? 'down'
-        : null;
-
+  const renderKur = ({ item, index }: { item: KurBilgileriModel; index: number }) => {
     return (
-      <View style={styles.satirKart}>
-        <View style={styles.solTaraf}>
-          <Text style={styles.bayrak}>{item.bayrak}</Text>
-          <View>
-            <Text style={styles.kurKod}>{item.kod}</Text>
-            <Text style={styles.kurAd}>{item.ad}</Text>
+      <AnimatedListItem index={index}>
+        <View style={styles.satirKart}>
+          <View style={styles.solTaraf}>
+            <View style={styles.dovizIcon}>
+              <Ionicons name="cash-outline" size={22} color={Colors.primary} />
+            </View>
+            <View>
+              <Text style={styles.kurKod}>{item.dovizKodu}</Text>
+              <Text style={styles.kurAd}>{item.dovizTuru}</Text>
+            </View>
+          </View>
+          <View style={styles.sagTaraf}>
+            <Text style={styles.kurDeger}>
+              {kurFormat(item.dovizKuru)} ₺
+            </Text>
           </View>
         </View>
-        <View style={styles.sagTaraf}>
-          <Text style={styles.kurDeger}>
-            {kurFormat(item.kur)} ₺
-          </Text>
-          {trend && (
-            <Ionicons
-              name={trend === 'up' ? 'trending-up' : 'trending-down'}
-              size={16}
-              color={trend === 'up' ? '#e53935' : '#43a047'}
-            />
-          )}
-        </View>
-      </View>
+      </AnimatedListItem>
     );
   };
 
@@ -119,7 +83,7 @@ export default function KurBilgileri() {
         <View style={styles.bilgiSol}>
           <Ionicons name="globe-outline" size={18} color={Colors.primary} />
           <View>
-            <Text style={styles.bilgiBaslik}>Canlı Döviz Kurları</Text>
+            <Text style={styles.bilgiBaslik}>Döviz Kurları</Text>
             {guncelleme && (
               <Text style={styles.bilgiTarih}>Son güncelleme: {guncelleme}</Text>
             )}
@@ -136,8 +100,8 @@ export default function KurBilgileri() {
 
       {/* Başlık satırı */}
       <View style={styles.listeBaslik}>
-        <Text style={[styles.listeBaslikText, { flex: 1 }]}>PARA BİRİMİ</Text>
-        <Text style={[styles.listeBaslikText, { textAlign: 'right' }]}>1 BİRİM = ? ₺</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1 }]}>DÖVİZ</Text>
+        <Text style={[styles.listeBaslikText, { textAlign: 'right' }]}>KUR</Text>
       </View>
 
       {hata ? (
@@ -151,7 +115,7 @@ export default function KurBilgileri() {
       ) : (
         <FlatList
           data={kurlar}
-          keyExtractor={(item) => item.kod}
+          keyExtractor={(item, index) => item.kurID != null ? String(item.kurID) : `kur-${index}`}
           renderItem={renderKur}
           refreshControl={
             <RefreshControl
@@ -164,9 +128,7 @@ export default function KurBilgileri() {
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
             yukleniyor ? null : (
-              <View style={styles.merkezle}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-              </View>
+              <EmptyState icon="cash-outline" baslik="Kur bilgisi bulunamadı" aciklama="Döviz kuru bilgisi bulunmamaktadır" />
             )
           }
         />
@@ -228,7 +190,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   solTaraf: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bayrak: { fontSize: 28 },
+  dovizIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   kurKod: { fontSize: 15, fontWeight: '700', color: Colors.darkGray },
   kurAd: { fontSize: 12, color: Colors.gray, marginTop: 2 },
 

@@ -38,17 +38,31 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     },
     {
       id: 'hizli',
-      baslik: 'Hızlı İşlemler',
+      baslik: 'Alış/Satış',
       icon: 'flash-outline',
       ekran: 'HizliIslemler',
       yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
     },
     {
       id: 'alimSatim',
-      baslik: 'Alış Satış İşlemleri',
+      baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+    },
+    {
+      id: 'fiyatGor',
+      baslik: 'Fiyat Gor',
+      icon: 'pricetag-outline',
+      ekran: 'FiyatGor',
+      yetki: true,
+    },
+    {
+      id: 'barkodEkleme',
+      baslik: 'Barkod Ekleme',
+      icon: 'barcode-outline',
+      ekran: 'BarkodEkleme',
+      yetki: true,
     },
     {
       id: 'renkBeden',
@@ -59,7 +73,7 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     },
     {
       id: 'siparisKapama',
-      baslik: 'Sipariş Açma/Kapama',
+      baslik: 'Sipariş Kapama',
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
       yetki: menuYetkiBilgileri?.siparisKapama ?? false,

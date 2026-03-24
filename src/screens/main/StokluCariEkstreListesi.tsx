@@ -6,10 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
   SafeAreaView,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -22,7 +22,9 @@ import { useAppStore } from '../../store/appStore';
 import { stokluCariEkstreBilgileriAl } from '../../api/stokluCariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { StokluCariEkstreBilgileri, CariKartBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'StokluCariEkstreListesi'>;
@@ -108,13 +110,13 @@ export default function StokluCariEkstreListesi() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          Alert.alert('Hata', sonuc.mesaj || 'Ekstre alınamadı.');
+          toast.error(sonuc.mesaj || 'Ekstre alınamadı.');
         }
       } catch (err: any) {
         const mesaj = err?.response?.data
           ? JSON.stringify(err.response.data)
           : err?.message ?? String(err);
-        Alert.alert('Hata', mesaj);
+        toast.error(mesaj);
       } finally {
         setYukleniyor(false);
       }
@@ -155,7 +157,7 @@ export default function StokluCariEkstreListesi() {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setPdfYukleniyor(false);
     }
@@ -306,12 +308,16 @@ export default function StokluCariEkstreListesi() {
           keyExtractor={(item, idx) => `${item.evrakNo}-${idx}`}
           renderItem={renderKalem}
           contentContainerStyle={styles.liste}
+          refreshControl={
+            <RefreshControl
+              refreshing={yukleniyor}
+              onRefresh={() => { if (secilenCari) ekstreYukle(secilenCari, secilenAy); }}
+              colors={[Colors.primary]}
+            />
+          }
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
-            <View style={styles.merkez}>
-              <Ionicons name="document-text-outline" size={56} color={Colors.border} />
-              <Text style={styles.merkezMetin}>Bu dönemde kayıt bulunamadı</Text>
-            </View>
+            <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
           }
         />
       )}

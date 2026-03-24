@@ -6,10 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
   SafeAreaView,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -19,7 +19,9 @@ import { useAppStore } from '../../store/appStore';
 import { cekSenetListesiniAl } from '../../api/cekSenetApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { CekSenetBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
 
 function sayiFormatla(n: number): string {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,13 +58,13 @@ export default function CekSenetListesi() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        Alert.alert('Çek Senet', sonuc.mesaj || 'Veri alınamadı.');
+        toast.warning(sonuc.mesaj || 'Veri alınamadı.');
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setYukleniyor(false);
     }
@@ -89,7 +91,7 @@ export default function CekSenetListesi() {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setPdfYukleniyor(false);
     }
@@ -182,12 +184,16 @@ export default function CekSenetListesi() {
           keyExtractor={(item, idx) => `${item.pozisyon}-${idx}`}
           renderItem={renderKalem}
           contentContainerStyle={styles.liste}
+          refreshControl={
+            <RefreshControl
+              refreshing={yukleniyor}
+              onRefresh={veriYukle}
+              colors={[Colors.primary]}
+            />
+          }
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
-            <View style={styles.merkez}>
-              <Ionicons name="receipt-outline" size={56} color={Colors.border} />
-              <Text style={styles.merkezMetin}>Kayıt bulunamadı</Text>
-            </View>
+            <EmptyState icon="receipt-outline" baslik="Kayıt bulunamadı" aciklama="Çek/senet kaydı bulunmamaktadır" />
           }
         />
       )}

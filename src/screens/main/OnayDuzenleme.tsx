@@ -15,6 +15,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Colors } from '../../constants/Colors';
 import { paraFormat, paraTL, kurFormat } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
+import { toast } from '../../components/Toast';
 import { onayEvraginiAl, onaylamaDurumunuGuncelle } from '../../api/onayApi';
 import type { OnayEvrakDetay } from '../../models';
 
@@ -55,7 +56,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
         setNot(sonuc.data.onaylamaNotu || item.not || '');
       }
     } catch (e: any) {
-      Alert.alert('Hata', e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || 'Bağlantı hatası.');
     } finally {
       setYukleniyor(false);
     }
@@ -78,10 +79,10 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
           [{ text: 'Tamam', onPress: () => navigation.goBack() }]
         );
       } else {
-        Alert.alert('Hata', sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
+        toast.error(sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
       }
     } catch (e: any) {
-      Alert.alert('Hata', e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || 'Bağlantı hatası.');
     } finally {
       setIslem(false);
     }

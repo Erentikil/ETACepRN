@@ -5,13 +5,16 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
+import { toast } from '../../components/Toast';
 import { kasaKartListesiniAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
 import type { KasaKartBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 function f(n: number) {
   return (n ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -22,29 +25,29 @@ export default function KasaBakiye() {
   const [liste, setListe] = useState<KasaKartBilgileri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const sonuc = await kasaKartListesiniAl(calisilanSirket);
-        if (sonuc.sonuc) {
-          setListe(sonuc.data ?? []);
-        } else {
-          Alert.alert('Hata', sonuc.mesaj || 'Kasa listesi alınamadı.');
-        }
-      } catch (err: any) {
-        Alert.alert('Hata', err.message || 'Kasa listesi yüklenirken hata oluştu.');
-      } finally {
-        setYukleniyor(false);
+  const veriYukle = async () => {
+    setYukleniyor(true);
+    try {
+      const sonuc = await kasaKartListesiniAl(calisilanSirket);
+      if (sonuc.sonuc) {
+        setListe(sonuc.data ?? []);
+      } else {
+        toast.error(sonuc.mesaj || 'Kasa listesi alınamadı.');
       }
-    })();
+    } catch (err: any) {
+      toast.error(err.message || 'Kasa listesi yüklenirken hata oluştu.');
+    } finally {
+      setYukleniyor(false);
+    }
+  };
+
+  useEffect(() => {
+    veriYukle();
   }, [calisilanSirket]);
 
   if (yukleniyor) {
     return (
-      <View style={styles.merkez}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.yukleniyorText}>Yükleniyor...</Text>
-      </View>
+      <SkeletonLoader satirSayisi={5} />
     );
   }
 
@@ -53,6 +56,13 @@ export default function KasaBakiye() {
       <FlatList
         data={liste}
         keyExtractor={(item) => item.kasaKodu}
+        refreshControl={
+          <RefreshControl
+            refreshing={yukleniyor}
+            onRefresh={veriYukle}
+            colors={[Colors.primary]}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.kart}>
             <View style={styles.kartUst}>
@@ -78,10 +88,7 @@ export default function KasaBakiye() {
         )}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <View style={styles.merkez}>
-            <Ionicons name="cash-outline" size={48} color={Colors.border} />
-            <Text style={styles.bosText}>Kasa kaydı bulunamadı</Text>
-          </View>
+          <EmptyState icon="cash-outline" baslik="Kasa kaydı bulunamadı" aciklama="Kayıtlı kasa hesabı bulunmamaktadır" />
         }
       />
     </View>

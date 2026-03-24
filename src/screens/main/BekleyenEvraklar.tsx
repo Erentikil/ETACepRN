@@ -25,6 +25,8 @@ import { Colors } from '../../constants/Colors';
 import { paraTL } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type { BekleyenEvrakKaydi } from '../../models';
+import EmptyState from '../../components/EmptyState';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 type NavProp = CompositeNavigationProp<
   DrawerNavigationProp<DrawerParamList, 'BekleyenEvraklar'>,
@@ -150,7 +152,14 @@ export default function BekleyenEvraklar() {
   };
 
   const handleEvrakAc = (kayit: BekleyenEvrakKaydi) => {
-    navigation.navigate('HizliIslemler', { taslakEvrak: kayit });
+    Alert.alert(
+      'Evrak Aç',
+      'Bu evrak sepete aktarılacak ve taslaktan silinecektir. Devam etmek istiyor musunuz?',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Devam', onPress: () => navigation.navigate('HizliIslemler', { taslakEvrak: kayit }) },
+      ]
+    );
   };
 
   const renderEvrak = ({ item }: { item: BekleyenEvrakKaydi }) => (
@@ -215,12 +224,11 @@ export default function BekleyenEvraklar() {
           <RefreshControl refreshing={yukleniyor} onRefresh={() => yukle(aramaMetni)} colors={[Colors.primary]} />
         }
         ListEmptyComponent={
-          <View style={styles.bosEkran}>
-            <Ionicons name="document-text-outline" size={48} color={Colors.border} />
-            <Text style={styles.bosMetin}>
-              {yukleniyor ? 'Yükleniyor...' : 'Bekleyen evrak bulunamadı'}
-            </Text>
-          </View>
+          yukleniyor ? (
+            <SkeletonLoader satirSayisi={5} />
+          ) : (
+            <EmptyState icon="document-text-outline" baslik="Bekleyen evrak bulunamadı" aciklama="Taslak olarak kaydedilmiş evrak bulunmamaktadır" />
+          )
         }
       />
     </View>

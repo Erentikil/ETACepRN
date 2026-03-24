@@ -6,15 +6,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Alert,
+  Switch,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
 import ThemedButton from '../../components/ThemedButton';
@@ -26,54 +28,80 @@ type Props = {
   route: RouteProp<RootStackParamList, 'Ayarlar'>;
 };
 
-const KAMERA_BARKOD_SECENEKLER = [
-  { label: 'Google ML Kit', value: 'google' },
-  { label: 'ZXing', value: 'zxing' },
-];
-
-const KAMERA_OKUMA_SECENEKLER = [
-  { label: 'Otomatik', value: 'otomatik' },
-  { label: 'Elle', value: 'elle' },
-];
-
 export default function Ayarlar({ navigation, route }: Props) {
-  const { setOnLineCalisma, sirketBilgileri, setSirketBilgileri } = useAppStore();
+  const { sirketBilgileri, setSirketBilgileri, setCalisilanSirket: storeSetCalisilanSirket, fiyatTipListesi } = useAppStore();
 
   const [apiUrl, setApiUrl] = useState('');
   const [apiUrl2, setApiUrl2] = useState('');
-  const [hibrit, setHibrit] = useState(false);
   const [calisilanSirket, setCalisilanSirket] = useState('');
   const [sirketListesi, setSirketListesi] = useState<string[]>([]);
-  const [kameraBarkod, setKameraBarkod] = useState('google');
-  const [kameraOkuma, setKameraOkuma] = useState('otomatik');
   const [sirketYukleniyor, setSirketYukleniyor] = useState(false);
   const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [manuelTarama, setManuelTarama] = useState(false);
+  const [baslangicZoom, setBaslangicZoom] = useState(0);
+  const [miktarliGirisVarsayilan, setMiktarliGirisVarsayilan] = useState(false);
+  const [varsayilanAramaTipi, setVarsayilanAramaTipi] = useState(3);
+  const [sepetSes, setSepetSes] = useState(true);
+  const [varsayilanFiyatNo, setVarsayilanFiyatNo] = useState(0);
+
+  const fromLogin = route.params?.fromLogin === true;
 
   useEffect(() => {
     (async () => {
       const u1 = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL);
       const u2 = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL2);
-      const mod = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISMA_MODU);
       const sirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
-      const kBarKod = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_BARKOD);
-      const kOku = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_OKUMA);
+
+      const okumaModu = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_OKUMA);
+      const zoomStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_BASLANGIC_ZOOM);
 
       if (u1) setApiUrl(u1);
       if (u2) setApiUrl2(u2);
-      setHibrit(mod === 'Hibrit');
       if (sirket) setCalisilanSirket(sirket);
-      if (kBarKod) setKameraBarkod(kBarKod);
-      if (kOku) setKameraOkuma(kOku);
+      if (okumaModu === 'elle') setManuelTarama(true);
+      if (zoomStr) setBaslangicZoom(parseFloat(zoomStr) || 0);
+
+      const miktarliStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.MIKTARLI_GIRIS_VARSAYILAN);
+      if (miktarliStr === 'true') setMiktarliGirisVarsayilan(true);
+
+      const aramaTipiStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI);
+      if (aramaTipiStr !== null) setVarsayilanAramaTipi(parseInt(aramaTipiStr, 10));
+
+      const sepetSesStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.SEPET_SES);
+      if (sepetSesStr === 'false') setSepetSes(false);
+
+      const fiyatNoStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO);
+      if (fiyatNoStr !== null) setVarsayilanFiyatNo(parseInt(fiyatNoStr, 10));
 
       if (sirketBilgileri?.sirketListesi) {
         setSirketListesi(sirketBilgileri.sirketListesi);
+      }
+
+      // Login'den gelindiyse ve API URL varsa otomatik şirket listesini çek
+      if (fromLogin && u1?.trim()) {
+        setSirketYukleniyor(true);
+        try {
+          const sonuc = await sirketBilgileriniAl("");
+          if (sonuc.sonuc) {
+            setSirketListesi(sonuc.data.sirketListesi);
+            setSirketBilgileri(sonuc.data);
+            if (sonuc.data.varsayilanSirket && !sirket) {
+              setCalisilanSirket(sonuc.data.varsayilanSirket);
+              await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, sonuc.data.varsayilanSirket);
+            }
+          }
+        } catch (_) {
+          // Sessizce geç — kullanıcı manuel sync yapabilir
+        } finally {
+          setSirketYukleniyor(false);
+        }
       }
     })();
   }, []);
 
   const sirketleriFetch = async () => {
     if (!apiUrl.trim()) {
-      Alert.alert('Hata', 'Önce API URL giriniz.');
+      toast.error('Önce API URL giriniz.');
       return;
     }
     setSirketYukleniyor(true);
@@ -87,13 +115,13 @@ export default function Ayarlar({ navigation, route }: Props) {
           setCalisilanSirket(sonuc.data.varsayilanSirket);
           await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, sonuc.data.varsayilanSirket);
         }
-        Alert.alert('Bağlantı Başarılı', `${sonuc.data.sirketListesi?.length ?? 0} şirket bulundu.`);
+        toast.success(`${sonuc.data.sirketListesi?.length ?? 0} şirket bulundu.`);
       } else {
-        Alert.alert('Sunucu Hatası', sonuc.mesaj || 'Bilinmeyen hata');
+        toast.error(sonuc.mesaj || 'Bilinmeyen hata');
       }
     } catch (err: unknown) {
       const mesaj = err instanceof Error ? err.message : 'Bağlantı hatası.';
-      Alert.alert('Bağlantı Hatası', mesaj);
+      toast.error(mesaj);
     } finally {
       setSirketYukleniyor(false);
     }
@@ -101,25 +129,35 @@ export default function Ayarlar({ navigation, route }: Props) {
 
   const handleKaydet = async () => {
     if (!apiUrl.trim()) {
-      Alert.alert('Hata', 'API URL zorunludur.');
+      toast.error('API URL zorunludur.');
       return;
     }
     setKaydediliyor(true);
     try {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL, apiUrl.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL2, apiUrl2.trim());
-      await AsyncStorage.setItem(
-        Config.STORAGE_KEYS.CALISMA_MODU,
-        hibrit ? 'Hibrit' : 'Online'
-      );
       await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, calisilanSirket);
-      await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_BARKOD, kameraBarkod);
-      await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_OKUMA, kameraOkuma);
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_OKUMA, manuelTarama ? 'elle' : 'otomatik');
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_BASLANGIC_ZOOM, baslangicZoom.toString());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.MIKTARLI_GIRIS_VARSAYILAN, miktarliGirisVarsayilan.toString());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI, varsayilanAramaTipi.toString());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.SEPET_SES, sepetSes.toString());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO, varsayilanFiyatNo.toString());
 
-      setOnLineCalisma(!hibrit);
+      // Store'u da güncelle ki yeniden giriş yapmaya gerek kalmasın
+      storeSetCalisilanSirket(calisilanSirket);
 
       Alert.alert('Başarılı', 'Ayarlar kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
+        {
+          text: 'Tamam',
+          onPress: () => {
+            if (fromLogin) {
+              navigation.goBack();
+            } else {
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            }
+          },
+        },
       ]);
     } finally {
       setKaydediliyor(false);
@@ -172,27 +210,6 @@ export default function Ayarlar({ navigation, route }: Props) {
         />
       </View>
 
-      {/* Çalışma Modu */}
-      <View style={styles.bolum}>
-        <Text style={styles.bolumBaslik}>
-          <Ionicons name="swap-horizontal-outline" size={16} /> Çalışma Modu
-        </Text>
-        <View style={styles.switchRow}>
-          <View>
-            <Text style={styles.label}>Hibrit Mod</Text>
-            <Text style={styles.aciklama}>
-              {hibrit ? 'Offline + Online karma çalışma' : 'Sadece online çalışma'}
-            </Text>
-          </View>
-          <Switch
-            value={hibrit}
-            onValueChange={setHibrit}
-            trackColor={{ false: Colors.border, true: Colors.accent }}
-            thumbColor={Colors.white}
-          />
-        </View>
-      </View>
-
       {/* Şirket Seçimi */}
       <View style={styles.bolum}>
         <Text style={styles.bolumBaslik}>
@@ -215,57 +232,118 @@ export default function Ayarlar({ navigation, route }: Props) {
         )}
       </View>
 
-      {/* Kamera Ayarları */}
+      {/* Tarayıcı Ayarları */}
       <View style={styles.bolum}>
         <Text style={styles.bolumBaslik}>
-          <Ionicons name="camera-outline" size={16} /> Barkod Okuyucu
+          <Ionicons name="scan-outline" size={16} /> Tarayıcı Ayarları
         </Text>
 
-        <Text style={styles.label}>Kamera Tipi</Text>
-        <View style={styles.secenekRow}>
-          {KAMERA_BARKOD_SECENEKLER.map((s) => (
-            <TouchableOpacity
-              key={s.value}
-              style={[
-                styles.chipBtn,
-                kameraBarkod === s.value && styles.chipBtnSecili,
-              ]}
-              onPress={() => setKameraBarkod(s.value)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  kameraBarkod === s.value && styles.chipTextSecili,
-                ]}
-              >
-                {s.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.taramaModRow}>
+          <View style={styles.taramaModBilgi}>
+            <Text style={styles.label}>Manuel Tarama</Text>
+            <Text style={styles.aciklama}>
+              {manuelTarama ? 'Barkod okunduğunda butona basarak onaylayın' : 'Barkod algılandığında otomatik okunur'}
+            </Text>
+          </View>
+          <Switch
+            value={manuelTarama}
+            onValueChange={setManuelTarama}
+            trackColor={{ false: Colors.border, true: Colors.primary }}
+            thumbColor={Colors.white}
+          />
         </View>
 
-        <Text style={styles.label}>Okuma Modu</Text>
-        <View style={styles.secenekRow}>
-          {KAMERA_OKUMA_SECENEKLER.map((s) => (
-            <TouchableOpacity
-              key={s.value}
-              style={[
-                styles.chipBtn,
-                kameraOkuma === s.value && styles.chipBtnSecili,
-              ]}
-              onPress={() => setKameraOkuma(s.value)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  kameraOkuma === s.value && styles.chipTextSecili,
-                ]}
-              >
-                {s.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <Text style={[styles.label, { marginTop: 16 }]}>Başlangıç Zoom</Text>
+        <View style={styles.zoomRow}>
+          <Text style={styles.zoomDeger}>{(1 + baslangicZoom * 9).toFixed(1)}x</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={1}
+            step={0.05}
+            value={baslangicZoom}
+            onValueChange={setBaslangicZoom}
+            minimumTrackTintColor={Colors.primary}
+            maximumTrackTintColor={Colors.border}
+            thumbTintColor={Colors.primary}
+          />
         </View>
+        <Text style={styles.aciklama}>
+          Kamera açıldığında bu zoom seviyesinden başlar. Kullanıcı isterse değiştirebilir.
+        </Text>
+      </View>
+
+      {/* Genel Ayarlar */}
+      <View style={styles.bolum}>
+        <Text style={styles.bolumBaslik}>
+          <Ionicons name="settings-outline" size={16} /> Genel Ayarlar
+        </Text>
+
+        <View style={styles.taramaModRow}>
+          <View style={styles.taramaModBilgi}>
+            <Text style={styles.label}>Miktarlı Giriş Varsayılan</Text>
+            <Text style={styles.aciklama}>
+              {miktarliGirisVarsayilan
+                ? 'Ekranlar açıldığında miktarlı giriş seçili gelir'
+                : 'Ekranlar açıldığında miktarlı giriş kapalı gelir'}
+            </Text>
+          </View>
+          <Switch
+            value={miktarliGirisVarsayilan}
+            onValueChange={setMiktarliGirisVarsayilan}
+            trackColor={{ false: Colors.border, true: Colors.primary }}
+            thumbColor={Colors.white}
+          />
+        </View>
+
+        <View style={[styles.taramaModRow, { marginTop: 16 }]}>
+          <View style={styles.taramaModBilgi}>
+            <Text style={styles.label}>Sepet Sesi</Text>
+            <Text style={styles.aciklama}>
+              {sepetSes
+                ? 'Sepete ürün eklendiğinde ses çalar'
+                : 'Sepete ürün eklendiğinde ses çalmaz'}
+            </Text>
+          </View>
+          <Switch
+            value={sepetSes}
+            onValueChange={setSepetSes}
+            trackColor={{ false: Colors.border, true: Colors.primary }}
+            thumbColor={Colors.white}
+          />
+        </View>
+
+        <Text style={[styles.label, { marginTop: 16 }]}>Fiyat Gör - Varsayılan Fiyat No</Text>
+        <Text style={styles.aciklama}>
+          Fiyat Gör sayfasında stoklara girildiğinde öncelikli gösterilecek fiyat tipi
+        </Text>
+        {fiyatTipListesi.length > 0 ? (
+          <DropdownSecim
+            value={varsayilanFiyatNo.toString()}
+            options={fiyatTipListesi.map((f) => ({ label: `${f.fiyatNo} - ${f.fiyatAdi}`, value: f.fiyatNo.toString() }))}
+            placeholder="Fiyat tipi seçiniz..."
+            onChange={(v) => setVarsayilanFiyatNo(parseInt(v, 10))}
+          />
+        ) : (
+          <Text style={styles.aciklama}>
+            Fiyat tipleri giriş yapıldıktan sonra yüklenir.
+          </Text>
+        )}
+
+        <Text style={[styles.label, { marginTop: 16 }]}>Varsayılan Arama Tipi</Text>
+        <Text style={styles.aciklama}>
+          Alış/Satış işlemlerinde stok ararken varsayılan arama kriteri
+        </Text>
+        <DropdownSecim
+          value={varsayilanAramaTipi.toString()}
+          options={[
+            { label: 'Başlayan', value: '1' },
+            { label: 'Biten', value: '2' },
+            { label: 'İçeren', value: '3' },
+          ]}
+          placeholder="Arama tipi seçiniz..."
+          onChange={(v) => setVarsayilanAramaTipi(parseInt(v, 10))}
+        />
       </View>
 
       {/* Kaydet Butonu */}
@@ -340,36 +418,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  switchRow: {
+  taramaModRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
-  secenekRow: {
+  taramaModBilgi: {
+    flex: 1,
+    marginRight: 12,
+  },
+  zoomRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    flexWrap: 'wrap',
+    marginTop: 4,
   },
-  chipBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
+  zoomDeger: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.primary,
+    width: 44,
   },
-  chipBtnSecili: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    color: Colors.gray,
-  },
-  chipTextSecili: {
-    color: Colors.white,
-    fontWeight: '600',
+  slider: {
+    flex: 1,
+    height: 40,
   },
   kaydetContainer: {
     margin: 16,

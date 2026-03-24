@@ -7,7 +7,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -16,8 +15,11 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { useAppStore } from '../../store/appStore';
 import { bekleyenSiparisleriAl } from '../../api/hizliIslemlerApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type { BekleyenSiparisBilgileri, CariKartBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'BekleyenSiparisler'>;
@@ -54,10 +56,10 @@ export default function BekleyenSiparisler() {
       if (sonuc.sonuc) {
         setSiparisler(sonuc.data ?? []);
       } else {
-        Alert.alert('Hata', sonuc.mesaj || 'Siparişler alınamadı.');
+        toast.error(sonuc.mesaj || 'Siparişler alınamadı.');
       }
     } catch {
-      Alert.alert('Hata', 'Bağlantı hatası oluştu.');
+      toast.error('Bağlantı hatası oluştu.');
     } finally {
       setYukleniyor(false);
     }
@@ -179,14 +181,9 @@ export default function BekleyenSiparisler() {
           }
           ListEmptyComponent={
             yukleniyor ? (
-              <View style={styles.bosEkran}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-              </View>
+              <SkeletonLoader satirSayisi={5} />
             ) : (
-              <View style={styles.bosEkran}>
-                <Ionicons name="checkmark-done-circle-outline" size={56} color={Colors.border} />
-                <Text style={styles.bosMetin}>Bekleyen sipariş bulunamadı</Text>
-              </View>
+              <EmptyState icon="checkmark-done-circle-outline" baslik="Bekleyen sipariş bulunamadı" aciklama="Bu cari için bekleyen sipariş bulunmamaktadır" />
             )
           }
         />

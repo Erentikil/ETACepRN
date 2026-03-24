@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { RootStackParamList } from './types';
 import LoginSayfasi from '../screens/auth/LoginSayfasi';
 import Ayarlar from '../screens/ayarlar/Ayarlar';
@@ -18,9 +19,16 @@ export default function AppNavigator() {
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
-          headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
           headerTitleStyle: { fontWeight: 'bold' },
+          headerBackground: () => (
+            <LinearGradient
+              colors={[Colors.primary, '#1a1f5e']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1 }}
+            />
+          ),
         }}
       >
         <Stack.Screen

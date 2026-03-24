@@ -20,6 +20,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { useAppStore } from '../../store/appStore';
 import { cariBakiyeAl, islemTipleriniAl, tahsilatKaydet } from '../../api/tahsilatApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { CariKartBilgileri, IslemTipleri } from '../../models';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
@@ -152,20 +153,20 @@ export default function TahsilatEkrani() {
 
   const kaydet = async () => {
     if (!secilenCari) {
-      Alert.alert('Hata', 'Lütfen cari seçiniz.');
+      toast.error('Lütfen cari seçiniz.');
       return;
     }
     if (!secilenIslem) {
-      Alert.alert('Hata', 'Lütfen işlem tipi seçiniz.');
+      toast.error('Lütfen işlem tipi seçiniz.');
       return;
     }
     const tutarSayi = parseFloat(tutar.replace(',', '.'));
     if (!tutar || isNaN(tutarSayi) || tutarSayi <= 0) {
-      Alert.alert('Hata', 'Tutar 0 ve 0\'dan küçük olamaz.');
+      toast.error('Tutar 0 ve 0\'dan küçük olamaz.');
       return;
     }
     if (!strToDate(vadeTarihi)) {
-      Alert.alert('Hata', 'Geçerli bir vade tarihi giriniz (gg.aa.yyyy).');
+      toast.error('Geçerli bir vade tarihi giriniz (gg.aa.yyyy).');
       return;
     }
 
@@ -197,13 +198,13 @@ export default function TahsilatEkrani() {
           { text: 'Tamam', onPress: temizle },
         ]);
       } else {
-        Alert.alert('Hata', sonuc.mesaj || 'Kayıt başarısız.');
+        toast.error(sonuc.mesaj || 'Kayıt başarısız.');
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setKaydediliyor(false);
     }

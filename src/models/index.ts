@@ -182,6 +182,34 @@ export interface DepoListesi {
   dkListe: DepoKarti[];
 }
 
+// ─── Stok Fiyat Bilgileri (fiyat tipi bazlı) ─────────────────────────────────
+export interface StokFiyatBilgileri {
+  stokFiyatID?: number;
+  stokKodu: string;
+  fiyatNo: number;
+  fiyatAdi: string;
+  tutar: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  kalemIndirim1: number;
+  kalemIndirim2: number;
+  kalemIndirim3: number;
+}
+
+// ─── Cari Fiyat Bilgileri (Cari Fiyat Listesi) ──────────────────────────────
+export interface CariFiyatBilgileri {
+  fiyatKodu: string;
+  stokKodu: string;
+  stokTipi: number;
+  fiyatNo: string;
+  tutar: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  kalemIndirim1: number;
+  kalemIndirim2: number;
+  kalemIndirim3: number;
+}
+
 // ─── Fiyat Tipi ──────────────────────────────────────────────────────────────
 export interface FiyatTipiBilgileri {
   fiyatTipiID?: number;
@@ -203,16 +231,30 @@ export interface StokListesiBilgileri {
   stokID: number;
   stokKodu: string;
   stokCinsi: string;
-  barkod: string;
-  fiyat: number;
-  kdvOrani: number;
   birim: string;
-  bakiye: number;
+  fiyat: number;
+  fiyatNo: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  barkod: string;
   carpan: number;
-  miktar: number;
+  kdvOrani: number;
+  bakiye: number;
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
+  birim2: string;
+  carpan2: string;
+  renkKodu: number;
+  bedenKodu: number;
+  renk: string;
+  beden: string;
+  digerBirimler: string[];
+  digerCarpanlar: number[];
+  digerMiktarlar: number[];
+  birimNo: number[];
+  miktar: number;
+  seciliFiyatNo: number;
 }
 
 export interface CariKartBilgileri {
@@ -289,6 +331,12 @@ export interface SepetKalem {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
+  aciklama?: string;
+  // Modal'da birim/fiyat tipi seçimi korumak için
+  birim2?: string;
+  carpan?: number;
+  carpan2?: string;
+  seciliFiyatNo?: number;
 }
 
 // ─── Stok Ek Bilgileri ────────────────────────────────────────────────────────
@@ -314,6 +362,20 @@ export interface StokKartDepoBakiyeBilgileri {
 export interface StokKartEkBilgileri {
   skbb: StokKartBakiyeBilgileri;
   skdbbListe: StokKartDepoBakiyeBilgileri[];
+}
+
+// ─── Son Satış Fiyat Bilgileri ─────────────────────────────────────────────────
+export interface SonSatisFiyatBilgileri {
+  stokKodu: string;
+  tarih: string;
+  fiyat: number;
+  miktar: number;
+  dovizFiyat: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  indirimYuzde1: number;
+  indirimYuzde2: number;
+  indirimYuzde3: number;
 }
 
 // ─── Onay İşlemleri ───────────────────────────────────────────────────────────
@@ -435,6 +497,14 @@ export interface RaporEvrak {
   telefonCihazKodu?: string;
 }
 
+// ─── Kur Bilgileri ───────────────────────────────────────────────────────────
+export interface KurBilgileri {
+  kurID: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  dovizKuru: number;
+}
+
 export interface BekleyenEvrakKaydi extends SepetBaslik {
   id: string;
   tarih: string; // ISO date string
@@ -521,7 +591,37 @@ export interface SepetRBKalem {
   guidID: string;
 }
 
+// ─── Cari Kart Kaydet ────────────────────────────────────────────────────────
+export interface CariEvrak {
+  cariKodu: string;
+  cariUnvan: string;
+  yetkili: string;
+  tcKimlikNo: string;
+  vergiDairesi: string;
+  vergiNumarasi: string;
+  adres1: string;
+  adres2: string;
+  adres3: string;
+  ilce: string;
+  il: string;
+  ulke: string;
+  eposta1: string;
+  postaKodu: string;
+  telefon1: string;
+  kullaniciKodu: string;
+  veriTabaniAdi?: string;
+  telefonCihazKodu?: string;
+}
+
 // ─── Sipariş Açma/Kapama ─────────────────────────────────────────────────────
+export interface AcmaSiparisFisBilgileri {
+  refno: number;
+  tarih: string;
+  cariKodu: string;
+  evrakNo: string;
+  genelToplam: number;
+}
+
 export interface AcmaSiparisHareketBilgileri {
   tarih: string;
   cariKodu: string;

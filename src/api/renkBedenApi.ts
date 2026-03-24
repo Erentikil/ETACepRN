@@ -34,6 +34,14 @@ export interface EvrakRBKaydetOptions {
   anaDepo: string;
   karsiDepo: string;
   guidId: string;
+  genelIndirimYuzde: number;
+  genelIndirimTutar: number;
+  aciklama1: string;
+  aciklama2: string;
+  dovizKodu: string;
+  dovizTuru: string;
+  dovizKuru: number;
+  belgeTipi: 'eevrak' | 'normal' | 'diger';
 }
 
 export async function evrakRBKaydet(
@@ -74,7 +82,7 @@ export async function evrakRBKaydet(
     sbListe: null,
     sRBbListe,
     ckb: { cariKodu: sepet.cariKodu, cariUnvan: sepet.cariUnvan },
-    indirim: 0,
+    indirim: opts.genelIndirimTutar > 0 ? opts.genelIndirimTutar : opts.genelIndirimYuzde,
     alimSatimFlag: sepet.alimSatim,
     fisTipi: sepet.fisTipiBaslikNo,
     anaDepo: opts.anaDepo,
@@ -83,13 +91,13 @@ export async function evrakRBKaydet(
     evrakTipi: evrakIslemAdi(sepet.evrakTipi),
     saticiKodu: opts.saticiKodu,
     genelKDV: 0,
-    eevrak: 0,
-    aciklama1: '',
-    aciklama2: '',
-    dovizTuru: '',
-    dovizKodu: '',
-    dovizKuru: 0,
-    indirimTipi: '',
+    eevrak: opts.belgeTipi === 'eevrak' ? 1 : 0,
+    aciklama1: opts.aciklama1,
+    aciklama2: opts.aciklama2,
+    dovizTuru: opts.dovizTuru,
+    dovizKodu: opts.dovizKodu,
+    dovizKuru: opts.dovizKuru,
+    indirimTipi: opts.genelIndirimTutar > 0 ? '' : (opts.genelIndirimYuzde > 0 ? 'Yüzde' : ''),
     kdvDurum: opts.kdvDurum,
     adresNo: 0,
     telefonCihazKodu: cihazKodu,

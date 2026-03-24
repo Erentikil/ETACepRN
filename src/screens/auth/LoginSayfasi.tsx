@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
 import {
@@ -101,41 +102,33 @@ export default function LoginSayfasi({ navigation }: Props) {
 
       // 1. Yetki bilgilerini al
       const yetkiSonuc = await yetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi);
-     // console.log("YETKİ SONUÇ:" + yetkiSonuc.mesaj + yetkiSonuc.sonuc)
       if (!yetkiSonuc.sonuc) {
         setHata(yetkiSonuc.mesaj || 'Kullanıcı adı veya şifre hatalı.');
         return;
       }
-      console.log('[LOGIN] yetkiBilgileri RAW:', JSON.stringify(yetkiSonuc.data));
       setYetkiBilgileri(yetkiSonuc.data);
 
       // 2. Menü yetkilerini al
       const menuSonuc = await menuYetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi);
-     // console.log("MENU SONUÇ:" +menuSonuc.mesaj + menuSonuc.sonuc)
       if (menuSonuc.sonuc) {
         setMenuYetkiBilgileri(menuSonuc.data);
       }
 
       // 3. Versiyon kontrolü
       const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
-     // console.log("VERSİYON SONUÇ:" + versiyonSonuc.mesaj + versiyonSonuc.sonuc)
       if (versiyonSonuc.sonuc) {
         setVersiyon(versiyonSonuc.data);
         if (versiyonSonuc.data.kalanGunSayisi <= 0) {
-          Alert.alert('Lisans', 'Lisansınızın süresi dolmuştur. Lütfen yenileyin.');
+          toast.error('Lisansınızın süresi dolmuştur. Lütfen yenileyin.');
           return;
         }
         if (versiyonSonuc.data.kalanGunSayisi <= 10) {
-          Alert.alert(
-            'Lisans Uyarısı',
-            `Lisansınızın bitmesine ${versiyonSonuc.data.kalanGunSayisi} gün kaldı.`
-          );
+          toast.warning(`Lisansınızın bitmesine ${versiyonSonuc.data.kalanGunSayisi} gün kaldı.`);
         }
       }
 
       // 4. Şirket bilgilerini al
       const sirketSonuc = await sirketBilgileriniAl(dbAdi);
-    //  console.log("ŞİRKET SONUÇ" +sirketSonuc.mesaj + sirketSonuc.sonuc)
       if (sirketSonuc.sonuc) {
         setSirketBilgileri(sirketSonuc.data);
         const sirket = veriTabaniAdi || sirketSonuc.data.varsayilanSirket || dbAdi;
@@ -147,7 +140,7 @@ export default function LoginSayfasi({ navigation }: Props) {
       try {
         const kdvSonuc = await kdvKisimBilgileriniAl(dbAdi);
         if (kdvSonuc.sonuc && kdvSonuc.data) setKdvBilgileri(kdvSonuc.data);
-      } catch (e) { console.log('KDV hata:', e); }
+      } catch { }
 
       // 6. Fiş tipleri — yetkiBilgileri'ne göre default ft override
       try {
@@ -176,22 +169,20 @@ export default function LoginSayfasi({ navigation }: Props) {
                 break;
             }
             // -1 ise API'den gelen default ft'yi koru, değilse yetkiKodu ile eşleşeni bul
-            console.log(`[LOGIN] FT Override: ${ftb.evrakTipi} ${ftb.alimSatim} → yetkiKodu=${yetkiKodu}, önceki ft=${ftb.ft?.fisTipiKodu}`);
             if (yetkiKodu >= 0) {
               const eslesen = ftb.ftListe.find((ft) => ft.fisTipiKodu === yetkiKodu);
-              console.log(`[LOGIN] FT Override: eslesen=${eslesen?.fisTipiKodu} ${eslesen?.fisTipiAdi}`);
               if (eslesen) ftb.ft = eslesen;
             }
           }
           setFtBaslikListesi(fisSonuc.data);
         }
-      } catch (e) { console.log('Fiş hata:', e); }
+      } catch { }
 
       // 7. Fiyat tipleri
       try {
         const fiyatSonuc = await fiyatTipleriniAl(dbAdi);
         if (fiyatSonuc.sonuc) setFiyatTipListesi(fiyatSonuc.data);
-      } catch (e) { console.log('Fiyat hata:', e); }
+      } catch { }
 
       // Beni hatırla
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KULLANICI_KODU, kullaniciKodu);
@@ -205,7 +196,6 @@ export default function LoginSayfasi({ navigation }: Props) {
       // Ana sayfaya yönlendir
       navigation.replace('Drawer');
     } catch (err: unknown) {
-      console.log('[handleGiris] CATCH err:', err);
       const axiosErr = err as { response?: { status?: number; data?: unknown }; message?: string };
       const sunucuData = axiosErr?.response?.data;
       const sunucuMesaj = sunucuData && typeof sunucuData === 'object' && 'mesaj' in sunucuData

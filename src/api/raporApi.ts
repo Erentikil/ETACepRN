@@ -12,13 +12,32 @@ export async function raporPdfAl(
     ...evrak,
     telefonCihazKodu: cihazKodu,
   };
-  console.log('raporPdfAl URL: RaporDosyaAlSirket, payload:', JSON.stringify(payload));
   const res = await api.post<Sonuc<string>>('RaporDosyaAlSirket', payload);
   const sonuc = res.data;
   if (!sonuc.sonuc) {
     throw new Error(sonuc.mesaj || 'PDF alınamadı.');
   }
 
+  return sonuc.data;
+}
+
+// Fatura/İrsaliye (e-evrak) → DosyaYollaByte, diğerleri → EvrakDosyaYolla
+export async function evrakPdfAl(
+  refno: number,
+  evrakTipi: string,
+  veriTabaniAdi: string
+): Promise<string> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const endpoint = (evrakTipi === 'Fatura' || evrakTipi === 'İrsaliye' || evrakTipi === 'Irsaliye')
+    ? 'DosyaYollaByte'
+    : 'EvrakDosyaYolla';
+  const url = buildUrl(endpoint, refno, evrakTipi, cihazKodu, veriTabaniAdi);
+  const res = await api.get<Sonuc<string>>(url);
+  const sonuc = res.data;
+  if (!sonuc.sonuc) {
+    throw new Error(sonuc.mesaj || 'PDF alınamadı.');
+  }
   return sonuc.data;
 }
 

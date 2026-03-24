@@ -16,25 +16,32 @@ interface Props {
   visible: boolean;
   onDetected: (barkod: string) => void;
   onClose: () => void;
+  manuelOkuma?: boolean;
+  baslangicZoom?: number;
 }
 
-export default function BarcodeScannerModal({ visible, onDetected, onClose }: Props) {
+export default function BarcodeScannerModal({ visible, onDetected, onClose, manuelOkuma = false, baslangicZoom = 0 }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
-  const [zoom, setZoom] = useState(0);
+  const initialZoom = Math.min(Math.max(baslangicZoom, 0), 1);
+  const [zoom, setZoom] = useState(initialZoom);
   const [zoomGoster, setZoomGoster] = useState(false);
+  const [taramaAktif, setTaramaAktif] = useState(!manuelOkuma);
   const tarandiRef = useRef(false);
   const zoomGosterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const startZoom = useSharedValue(0);
-  const zoomValue = useSharedValue(0);
+  const startZoom = useSharedValue(initialZoom);
+  const zoomValue = useSharedValue(initialZoom);
 
   useEffect(() => {
     if (visible) {
       tarandiRef.current = false;
       setTorchOn(false);
-      setZoom(0);
-      zoomValue.value = 0;
+      const z = Math.min(Math.max(baslangicZoom, 0), 1);
+      setZoom(z);
+      zoomValue.value = z;
+      startZoom.value = z;
+      setTaramaAktif(!manuelOkuma);
     }
   }, [visible]);
 
@@ -59,10 +66,24 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose }: Pr
       runOnJS(updateZoom)(newZoom);
     });
 
+  const sonTarananRef = useRef<string | null>(null);
+
   const handleBarkod = ({ data }: { data: string }) => {
     if (tarandiRef.current) return;
+    if (manuelOkuma) {
+      sonTarananRef.current = data;
+      return;
+    }
     tarandiRef.current = true;
     onDetected(data);
+  };
+
+  const handleManuelOku = () => {
+    if (tarandiRef.current) return;
+    if (sonTarananRef.current) {
+      tarandiRef.current = true;
+      onDetected(sonTarananRef.current);
+    }
   };
 
   return (
@@ -141,6 +162,12 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose }: Pr
             {/* Alt mesaj */}
             <View style={styles.altBar}>
               <Text style={styles.altMesaj}>Barkodu çerçeve içine hizalayın</Text>
+              {manuelOkuma && (
+                <TouchableOpacity style={styles.manuelBtn} onPress={handleManuelOku}>
+                  <Ionicons name="scan-outline" size={22} color={Colors.white} />
+                  <Text style={styles.manuelBtnText}>Oku</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         )}
@@ -261,6 +288,21 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 14,
     opacity: 0.8,
+  },
+  manuelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffa500',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 12,
+    gap: 8,
+  },
+  manuelBtnText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   merkezle: {

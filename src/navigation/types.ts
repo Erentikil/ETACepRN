@@ -1,13 +1,16 @@
-import type { SepetBaslik, SepetKalem, CariKartBilgileri, OnayListesiBilgileri, BekleyenEvrakKaydi } from '../models';
+import type { SepetBaslik, SepetKalem, SepetRBKalem, CariKartBilgileri, OnayListesiBilgileri, BekleyenEvrakKaydi } from '../models';
 
 export type RootStackParamList = {
   Login: undefined;
   Drawer: undefined;
   Ayarlar: { fromLogin?: boolean };
-  CariSecim: { returnScreen?: keyof DrawerParamList } | undefined;
+  CariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean } | undefined;
   SepetListesi: {
     sepet: SepetBaslik;
+    genelIndirimYuzde?: number;
     onKalemlerGuncellendi?: (kalemler: SepetKalem[]) => void;
+    rbKalemler?: SepetRBKalem[];
+    onRBKalemlerGuncellendi?: (kalemler: SepetRBKalem[]) => void;
   };
   OnayDuzenleme: {
     item: OnayListesiBilgileri;
@@ -17,16 +20,16 @@ export type RootStackParamList = {
 export type DrawerParamList = {
   AnaSayfa: undefined;
   HizliIslemler: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
-  AlisSatisIslemleri: undefined;
+  AlisSatisIslemleri: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
   RenkBedenIslemleri: { secilenCari?: CariKartBilgileri } | undefined;
   SiparisKapama: { secilenCari?: CariKartBilgileri } | undefined;
   Tahsilatlar: { secilenCari?: CariKartBilgileri } | undefined;
   Raporlar: undefined;
   BekleyenEvraklar: undefined;
-  CariEkstreListesi: { secilenCari?: CariKartBilgileri } | undefined;
+  CariEkstreListesi: { secilenCari?: CariKartBilgileri; kaynakEkran?: string } | undefined;
   CekSenetListesi: undefined;
-  StokluCariEkstreListesi: { secilenCari?: CariKartBilgileri } | undefined;
-  BekleyenSiparisler: { secilenCari?: CariKartBilgileri } | undefined;
+  StokluCariEkstreListesi: { secilenCari?: CariKartBilgileri; kaynakEkran?: string } | undefined;
+  BekleyenSiparisler: { secilenCari?: CariKartBilgileri; kaynakEkran?: string } | undefined;
   ZiyaretIslemleri: undefined;
   OnayIslemleri: undefined;
   KurBilgileri: undefined;
@@ -42,6 +45,8 @@ export type DrawerParamList = {
   KasaBakiye: undefined;
   BankaBakiye: undefined;
   CariBakiye: undefined;
+  FiyatGor: undefined;
+  BarkodEkleme: undefined;
   StokRapor: { mod: 'bakiye' | 'fiyat' } | undefined;
   CariSecimliRapor: {
     dizaynAdi: string;

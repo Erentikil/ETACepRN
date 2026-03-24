@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TouchableOpacity,
   SafeAreaView,
   Modal,
@@ -17,6 +16,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../../store/appStore';
 import { raporPdfAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { DrawerParamList } from '../../navigation/types';
 
 type RoutePropType = RouteProp<DrawerParamList, 'PDFRaporGoster'>;
@@ -71,7 +71,7 @@ export default function PDFRaporGoster() {
     try {
       await Sharing.shareAsync(pdfDosyaUri, { mimeType: 'application/pdf' });
     } catch {
-      Alert.alert('Hata', 'PDF paylaşılamadı.');
+      toast.error('PDF paylaşılamadı.');
     }
   };
 

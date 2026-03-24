@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import type { DrawerParamList } from './types';
 import DrawerMenu from '../components/DrawerMenu';
@@ -21,6 +22,7 @@ import CariEkstreListesi from '../screens/main/CariEkstreListesi';
 import CekSenetListesi from '../screens/main/CekSenetListesi';
 import StokluCariEkstreListesi from '../screens/main/StokluCariEkstreListesi';
 import TahsilatEkrani from '../screens/main/TahsilatEkrani';
+import AlisSatisIslemleri from '../screens/main/AlisSatisIslemleri';
 import RenkBedenIslemleri from '../screens/main/RenkBedenIslemleri';
 import PDFRaporGoster from '../screens/main/PDFRaporGoster';
 import KasaBakiye from '../screens/main/KasaBakiye';
@@ -28,13 +30,21 @@ import BankaBakiye from '../screens/main/BankaBakiye';
 import CariBakiye from '../screens/main/CariBakiye';
 import StokRapor from '../screens/main/StokRapor';
 import CariSecimliRapor from '../screens/main/CariSecimliRapor';
+import FiyatGor from '../screens/main/FiyatGor';
+import BarkodEkleme from '../screens/main/BarkodEkleme';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
-function RaporGeriButonu({ navigation }: { navigation: DrawerNavigationProp<DrawerParamList> }) {
+function RaporGeriButonu({ navigation, kaynakEkran }: { navigation: DrawerNavigationProp<DrawerParamList>; kaynakEkran?: string }) {
   return (
     <TouchableOpacity
-      onPress={() => navigation.navigate('Raporlar')}
+      onPress={() => {
+        if (kaynakEkran) {
+          navigation.getParent()?.goBack();
+        } else {
+          navigation.navigate('Raporlar');
+        }
+      }}
       style={{ paddingHorizontal: 12 }}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -49,9 +59,16 @@ export default function DrawerNavigator() {
       initialRouteName="AnaSayfa"
       drawerContent={(props) => <DrawerMenu {...props} />}
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
         headerTintColor: Colors.white,
         headerTitleStyle: { fontWeight: 'bold' },
+        headerBackground: () => (
+          <LinearGradient
+            colors={[Colors.primary, '#1a1f5e']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1 }}
+          />
+        ),
         drawerStyle: { width: 280 },
         swipeEnabled: true,
       }}
@@ -64,12 +81,12 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="HizliIslemler"
         component={HizliIslemler}
-        options={{ title: 'Hızlı İşlemler' }}
+        options={{ title: 'Alış/Satış' }}
       />
       <Drawer.Screen
         name="AlisSatisIslemleri"
-        component={PlaceholderEkrani}
-        options={{ title: 'Alış Satış İşlemleri' }}
+        component={AlisSatisIslemleri}
+        options={{ title: 'Evrak Oluştur' }}
       />
       <Drawer.Screen
         name="RenkBedenIslemleri"
@@ -79,7 +96,7 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="SiparisKapama"
         component={SiparisKapama}
-        options={{ title: 'Sipariş Açma/Kapama' }}
+        options={{ title: 'Sipariş Kapama' }}
       />
       <Drawer.Screen
         name="Tahsilatlar"
@@ -94,9 +111,9 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="CariEkstreListesi"
         component={CariEkstreListesi}
-        options={({ navigation }) => ({
+        options={({ navigation, route }) => ({
           title: 'Cari Ekstre',
-          headerLeft: () => <RaporGeriButonu navigation={navigation} />,
+          headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
@@ -110,9 +127,9 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="StokluCariEkstreListesi"
         component={StokluCariEkstreListesi}
-        options={({ navigation }) => ({
+        options={({ navigation, route }) => ({
           title: 'Stoklu Cari Ekstre',
-          headerLeft: () => <RaporGeriButonu navigation={navigation} />,
+          headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
@@ -123,9 +140,9 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="BekleyenSiparisler"
         component={BekleyenSiparisler}
-        options={({ navigation }) => ({
+        options={({ navigation, route }) => ({
           title: 'Bekleyen Siparişler',
-          headerLeft: () => <RaporGeriButonu navigation={navigation} />,
+          headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
@@ -153,7 +170,7 @@ export default function DrawerNavigator() {
         component={PDFRaporGoster}
         options={({ navigation, route }) => ({
           title: (route.params as any)?.baslik ?? 'Rapor',
-          headerLeft: () => <RaporGeriButonu navigation={navigation} />,
+          headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
@@ -179,6 +196,16 @@ export default function DrawerNavigator() {
           title: 'Cari Bakiye',
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
+      />
+      <Drawer.Screen
+        name="FiyatGor"
+        component={FiyatGor}
+        options={{ title: 'Fiyat Gor' }}
+      />
+      <Drawer.Screen
+        name="BarkodEkleme"
+        component={BarkodEkleme}
+        options={{ title: 'Barkod Ekleme' }}
       />
       <Drawer.Screen
         name="StokRapor"

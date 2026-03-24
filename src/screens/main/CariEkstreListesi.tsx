@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Modal,
   SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +21,9 @@ import { useAppStore } from '../../store/appStore';
 import { cariEkstreBilgileriAl } from '../../api/cariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { toast } from '../../components/Toast';
 import type { CariEkstreBilgileri, CariKartBilgileri } from '../../models';
+import EmptyState from '../../components/EmptyState';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'CariEkstreListesi'>;
@@ -87,13 +89,13 @@ export default function CariEkstreListesi() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        Alert.alert('Hata', sonuc.mesaj || 'Ekstre alınamadı.');
+        toast.error(sonuc.mesaj || 'Ekstre alınamadı.');
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setYukleniyor(false);
     }
@@ -128,7 +130,7 @@ export default function CariEkstreListesi() {
       const mesaj = err?.response?.data
         ? JSON.stringify(err.response.data)
         : err?.message ?? String(err);
-      Alert.alert('Hata', mesaj);
+      toast.error(mesaj);
     } finally {
       setPdfYukleniyor(false);
     }
@@ -302,12 +304,16 @@ export default function CariEkstreListesi() {
           keyExtractor={(item, idx) => `${item.evrakNo}-${idx}`}
           renderItem={renderKalem}
           contentContainerStyle={styles.liste}
+          refreshControl={
+            <RefreshControl
+              refreshing={yukleniyor}
+              onRefresh={() => { if (secilenCari) ekstreYukle(secilenCari, secilenAy); }}
+              colors={[Colors.primary]}
+            />
+          }
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
-            <View style={styles.beklemeEkran}>
-              <Ionicons name="document-text-outline" size={56} color={Colors.border} />
-              <Text style={styles.beklemeMetin}>Bu dönemde kayıt bulunamadı</Text>
-            </View>
+            <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
           }
         />
       )}

@@ -16,6 +16,7 @@ interface Props {
   visible: boolean;
   stok: StokListesiBilgileri | null;
   barkodListesi: BarkodBilgileri[];
+  stokListesi: StokListesiBilgileri[];
   onSelect: (variant: BarkodBilgileri) => void;
   onClose: () => void;
 }
@@ -24,6 +25,7 @@ export default function RenkBedenSecimModal({
   visible,
   stok,
   barkodListesi,
+  stokListesi,
   onSelect,
   onClose,
 }: Props) {
@@ -31,12 +33,40 @@ export default function RenkBedenSecimModal({
 
   const filtrelenmis = useMemo(() => {
     if (!stok) return [];
-    const stokVariantlari = barkodListesi.filter(
+
+    // Barkod listesindeki varyantlar
+    const barkodVariantlari = barkodListesi.filter(
       (b) => b.stokKodu === stok.stokKodu
     );
-    if (!arama.trim()) return stokVariantlari;
+
+    // Stok listesindeki aynı stokKodu'na sahip kayıtlar (farklı barkod = farklı varyant)
+    const stokVariantlari = stokListesi.filter(
+      (s) => s.stokKodu === stok.stokKodu
+    );
+
+    // Barkod bazlı dedup — barkodListesi'nde zaten olan barkodları ekleme
+    const mevcutBarkodlar = new Set(
+      barkodVariantlari.map((b) => b.barkod)
+    );
+
+    const stoktenEklenen: BarkodBilgileri[] = stokVariantlari
+      .filter((s) => s.barkod && !mevcutBarkodlar.has(s.barkod))
+      .map((s) => ({
+        barkod: s.barkod,
+        stokKodu: s.stokKodu,
+        birim: s.birim,
+        renkKodu: s.renkKodu,
+        bedenKodu: s.bedenKodu,
+        renk: s.renk || '',
+        beden: s.beden || '',
+        katsayi: s.carpan || 1,
+      }));
+
+    const tumVariantlar = [...barkodVariantlari, ...stoktenEklenen];
+
+    if (!arama.trim()) return tumVariantlar;
     const q = arama.toLowerCase();
-    return stokVariantlari.filter(
+    return tumVariantlar.filter(
       (b) =>
         b.renk.toLowerCase().includes(q) ||
         b.beden.toLowerCase().includes(q) ||
@@ -44,7 +74,7 @@ export default function RenkBedenSecimModal({
         String(b.bedenKodu).includes(q) ||
         b.barkod.toLowerCase().includes(q)
     );
-  }, [stok, barkodListesi, arama]);
+  }, [stok, barkodListesi, stokListesi, arama]);
 
   const handleClose = () => {
     setArama('');

@@ -5,17 +5,18 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TextInput,
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { toast } from '../../components/Toast';
 import { useAppStore } from '../../store/appStore';
 import { stokListesiniAl } from '../../api/hizliIslemlerApi';
 import { Colors } from '../../constants/Colors';
 import type { StokListesiBilgileri } from '../../models';
 import type { DrawerParamList } from '../../navigation/types';
+import EmptyState from '../../components/EmptyState';
 
 type RoutePropType = RouteProp<DrawerParamList, 'StokRapor'>;
 
@@ -33,6 +34,7 @@ export default function StokRapor() {
   const [arama, setArama] = useState('');
 
   useEffect(() => {
+    if (!calisilanSirket) return;
     (async () => {
       try {
         const sonuc = await stokListesiniAl(
@@ -42,10 +44,10 @@ export default function StokRapor() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          Alert.alert('Hata', sonuc.mesaj || 'Stok listesi alınamadı.');
+          toast.error(sonuc.mesaj || 'Stok listesi alınamadı.');
         }
       } catch (err: any) {
-        Alert.alert('Hata', err.message || 'Stok listesi yüklenirken hata oluştu.');
+        toast.error(err.message || 'Stok listesi yüklenirken hata oluştu.');
       } finally {
         setYukleniyor(false);
       }
@@ -124,10 +126,7 @@ export default function StokRapor() {
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <View style={styles.merkez}>
-            <Ionicons name="cube-outline" size={48} color={Colors.border} />
-            <Text style={styles.bosText}>Stok bulunamadı</Text>
-          </View>
+          <EmptyState icon="cube-outline" baslik="Stok bulunamadı" aciklama="Arama kriterlerine uygun stok bulunmamaktadır" />
         }
         ListHeaderComponent={
           <Text style={styles.sayac}>Toplam {filtreli.length} stok</Text>
@@ -168,6 +167,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   stokKodu: { fontSize: 13, fontWeight: '700', color: Colors.primary },
   stokCinsi: { fontSize: 11, color: Colors.darkGray, marginTop: 1 },

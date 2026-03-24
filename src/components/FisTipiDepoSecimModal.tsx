@@ -30,6 +30,8 @@ interface Props {
   veriTabaniAdi: string;
   defaultAnaDepo: string;
   defaultKarsiDepo: string;
+  fisTipiReadOnly?: boolean;
+  depoReadOnly?: boolean;
   onConfirm: (sonuc: FisTipiDepoSecimSonuc) => void;
   onClose: () => void;
 }
@@ -42,6 +44,8 @@ export default function FisTipiDepoSecimModal({
   veriTabaniAdi,
   defaultAnaDepo,
   defaultKarsiDepo,
+  fisTipiReadOnly = false,
+  depoReadOnly = false,
   onConfirm,
   onClose,
 }: Props) {
@@ -129,51 +133,81 @@ export default function FisTipiDepoSecimModal({
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               {/* Fiş Tipi */}
               {fisTipleri.length > 0 && (
-                <View style={styles.satirGrup}>
+                <View style={[styles.satirGrup, fisTipiReadOnly && styles.readOnlyGrup]}>
                   <Text style={styles.bolumBaslik}>FİŞ TİPİ</Text>
-                  <DropdownSecim
-                    value={seciliFisTipiKodu}
-                    options={fisTipleri.map((ft) => ({
-                      label: `${ft.fisTipiKodu} - ${ft.fisTipiAdi}`,
-                      value: String(ft.fisTipiKodu),
-                    }))}
-                    placeholder="Fiş tipi seçiniz..."
-                    onChange={setSeciliFisTipiKodu}
-                  />
+                  {fisTipiReadOnly ? (
+                    <View style={styles.readOnlyDeger}>
+                      <Text style={styles.readOnlyText}>
+                        {fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)
+                          ? `${seciliFisTipiKodu} - ${fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)!.fisTipiAdi}`
+                          : 'Fiş tipi seçilmedi'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <DropdownSecim
+                      value={seciliFisTipiKodu}
+                      options={fisTipleri.map((ft) => ({
+                        label: `${ft.fisTipiKodu} - ${ft.fisTipiAdi}`,
+                        value: String(ft.fisTipiKodu),
+                      }))}
+                      placeholder="Fiş tipi seçiniz..."
+                      onChange={setSeciliFisTipiKodu}
+                    />
+                  )}
                 </View>
               )}
 
               {/* Ana Depo */}
               {depolar.length > 0 && (
-                <View style={styles.satirGrup}>
+                <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
                   <Text style={styles.bolumBaslik}>ANA DEPO</Text>
-                  <DropdownSecim
-                    value={secilenAnaDepo}
-                    options={depolar.map((d) => ({
-                      label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
-                      value: d.depoKod,
-                    }))}
-                    placeholder="Depo seçiniz..."
-                    onChange={setSecilenAnaDepo}
-                  />
+                  {depoReadOnly ? (
+                    <View style={styles.readOnlyDeger}>
+                      <Text style={styles.readOnlyText}>
+                        {depolar.find((d) => d.depoKod === secilenAnaDepo)
+                          ? `${depolar.find((d) => d.depoKod === secilenAnaDepo)!.depoAdi || ''} (${secilenAnaDepo})`
+                          : secilenAnaDepo || 'Depo seçilmedi'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <DropdownSecim
+                      value={secilenAnaDepo}
+                      options={depolar.map((d) => ({
+                        label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
+                        value: d.depoKod,
+                      }))}
+                      placeholder="Depo seçiniz..."
+                      onChange={setSecilenAnaDepo}
+                    />
+                  )}
                 </View>
               )}
 
-              {/* Karşı Depo */}
-              {depolar.length > 0 && (
-                <View style={styles.satirGrup}>
+              {/* Karşı Depo — şimdilik gizli */}
+              {/* {depolar.length > 0 && (
+                <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
                   <Text style={styles.bolumBaslik}>KARŞI DEPO</Text>
-                  <DropdownSecim
-                    value={secilenKarsiDepo}
-                    options={depolar.map((d) => ({
-                      label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
-                      value: d.depoKod,
-                    }))}
-                    placeholder="Depo seçiniz..."
-                    onChange={setSecilenKarsiDepo}
-                  />
+                  {depoReadOnly ? (
+                    <View style={styles.readOnlyDeger}>
+                      <Text style={styles.readOnlyText}>
+                        {depolar.find((d) => d.depoKod === secilenKarsiDepo)
+                          ? `${depolar.find((d) => d.depoKod === secilenKarsiDepo)!.depoAdi || ''} (${secilenKarsiDepo})`
+                          : secilenKarsiDepo || 'Depo seçilmedi'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <DropdownSecim
+                      value={secilenKarsiDepo}
+                      options={depolar.map((d) => ({
+                        label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
+                        value: d.depoKod,
+                      }))}
+                      placeholder="Depo seçiniz..."
+                      onChange={setSecilenKarsiDepo}
+                    />
+                  )}
                 </View>
-              )}
+              )} */}
 
               <View style={{ height: 8 }} />
             </ScrollView>
@@ -221,6 +255,21 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     letterSpacing: 1,
     marginBottom: 6,
+  },
+  readOnlyGrup: {
+    opacity: 0.6,
+  },
+  readOnlyDeger: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: Colors.inputBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  readOnlyText: {
+    fontSize: 14,
+    color: Colors.gray,
   },
   onaylaBtn: {
     backgroundColor: Colors.primary,
