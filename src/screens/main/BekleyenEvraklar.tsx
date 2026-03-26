@@ -20,6 +20,7 @@ import {
   evrakiSil,
   tumEvraklariSil,
 } from '../../utils/bekleyenEvraklarStorage';
+import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Colors } from '../../constants/Colors';
 import { paraTL } from '../../utils/format';
@@ -27,6 +28,7 @@ import { EvrakTipi, AlimSatim } from '../../models';
 import type { BekleyenEvrakKaydi } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { useAppStore } from '../../store/appStore';
 
 type NavProp = CompositeNavigationProp<
   DrawerNavigationProp<DrawerParamList, 'BekleyenEvraklar'>,
@@ -66,6 +68,7 @@ function tarihFormat(iso: string): string {
 
 export default function BekleyenEvraklar() {
   const navigation = useNavigation<NavProp>();
+  const { calisilanSirket } = useAppStore();
   const [evraklar, setEvraklar] = useState<BekleyenEvrakKaydi[]>([]);
   const [filtreli, setFiltreli] = useState<BekleyenEvrakKaydi[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
@@ -151,15 +154,33 @@ export default function BekleyenEvraklar() {
     );
   };
 
-  const handleEvrakAc = (kayit: BekleyenEvrakKaydi) => {
-    Alert.alert(
-      'Evrak Aç',
-      'Bu evrak sepete aktarılacak ve taslaktan silinecektir. Devam etmek istiyor musunuz?',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Devam', onPress: () => navigation.navigate('HizliIslemler', { taslakEvrak: kayit }) },
-      ]
-    );
+  const handleEvrakAc = async (kayit: BekleyenEvrakKaydi) => {
+    const sepet = await aktifSepetAl(calisilanSirket);
+    const sepetDolu = sepet && sepet.kalemler.length > 0;
+
+    const devamEt = () => {
+      Alert.alert(
+        'Evrak Aç',
+        'Bu evrak sepete aktarılacak ve taslaktan silinecektir. Devam etmek istiyor musunuz?',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Devam', onPress: () => navigation.navigate('HizliIslemler', { taslakEvrak: kayit }) },
+        ]
+      );
+    };
+
+    if (sepetDolu) {
+      Alert.alert(
+        'Sepet Dolu',
+        'Sepetinizde ürünler bulunmaktadır. Devam ederseniz mevcut sepet silinecektir. Emin misiniz?',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Devam', onPress: devamEt },
+        ]
+      );
+    } else {
+      devamEt();
+    }
   };
 
   const renderEvrak = ({ item }: { item: BekleyenEvrakKaydi }) => (

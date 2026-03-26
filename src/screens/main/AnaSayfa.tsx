@@ -38,7 +38,7 @@ export default function AnaSayfa({ navigation }: Props) {
     if (yarımKalmisKontrolEdildi) return;
     yarımKalmisKontrolEdildi = true;
 
-    aktifSepetAl().then((sepet) => {
+    aktifSepetAl(calisilanSirket).then((sepet) => {
       if (!sepet || sepet.kalemler.length === 0) return;
       Alert.alert(
         'Yarım Kalmış İşlem',
@@ -221,16 +221,10 @@ export default function AnaSayfa({ navigation }: Props) {
           </View>
         )}
 
-        {/* Yönetici İşlemleri */}
-        {yetkiBilgileri?.admin && (
-          <TouchableOpacity
-            style={styles.adminBtn}
-            onPress={() => navigation.navigate('Panel')}
-          >
-            <Ionicons name="construct-outline" size={20} color={Colors.white} />
-            <Text style={styles.adminBtnText}>Kontrol Panel (Admin)</Text>
-          </TouchableOpacity>
-        )}
+        {/* Horizon Software */}
+        <View style={styles.adminBtn}>
+          <Text style={styles.adminBtnText}>Horizon Software</Text>
+        </View>
       </ScrollView>
     </View>
   );

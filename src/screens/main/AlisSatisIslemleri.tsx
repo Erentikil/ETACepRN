@@ -21,7 +21,6 @@ import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/a
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import UrunMiktariBelirleModal from '../../components/UrunMiktariBelirleModal';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
-import ElTerminaliModal from '../../components/ElTerminaliModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import StokInfoModal from '../../components/StokInfoModal';
 import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
@@ -72,6 +71,7 @@ const ARAMA_TIPLERI = [
   { label: 'Başlayan', value: 1 },
   { label: 'Biten', value: 2 },
   { label: 'İçeren', value: 3 },
+  { label: 'Barkod', value: 4 },
 ];
 
 function defaultEvrakSecenek(defaultEvrakTipi: string): EvrakSecenegi {
@@ -112,6 +112,7 @@ export default function AlisSatisIslemleri() {
   const [aramaMetni, setAramaMetni] = useState('');
   const [aramaTipi, setAramaTipi] = useState(3); // varsayılan: içeren
   const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
+  const aramaInputRef = useRef<TextInput>(null);
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
   const [secilenEvrak, setSecilenEvrak] = useState<EvrakSecenegi>(
     defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura')
@@ -133,8 +134,6 @@ export default function AlisSatisIslemleri() {
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
-  const [elTerminaliAcik, setElTerminaliAcik] = useState(false);
-  const [etSonEklenen, setEtSonEklenen] = useState<{ stokKodu: string; stokCinsi: string; miktar: number; birim: string; tutar: number } | null>(null);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
 
   // Ayarlardan varsayılan değerleri yükle
@@ -164,7 +163,7 @@ export default function AlisSatisIslemleri() {
     }
     if (sepetYuklendi.current) return;
 
-    aktifSepetAl().then((sepet) => {
+    aktifSepetAl(calisilanSirket).then((sepet) => {
       sepetYuklendi.current = true;
 
       if (!sepet || sepet.kalemler.length === 0) return;
@@ -218,7 +217,7 @@ export default function AlisSatisIslemleri() {
     setSepetKalemleri(taslak.kalemler ?? []);
     setSecilenAnaDepo(taslak.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
     setSecilenKarsiDepo(taslak.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
-    aktifSepetTemizle();
+    aktifSepetTemizle(calisilanSirket);
     evrakiSil(taslak.id);
   };
 
@@ -243,7 +242,7 @@ export default function AlisSatisIslemleri() {
   // Sepet değiştikçe AsyncStorage'a kaydet
   useEffect(() => {
     if (sepetKalemleri.length === 0) {
-      aktifSepetTemizle();
+      aktifSepetTemizle(calisilanSirket);
       return;
     }
     aktifSepetKaydet({
@@ -256,8 +255,8 @@ export default function AlisSatisIslemleri() {
       anaDepo: secilenAnaDepo,
       karsiDepo: secilenKarsiDepo,
       kalemler: sepetKalemleri,
-    });
-  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo]);
+    }, calisilanSirket);
+  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo, calisilanSirket]);
 
   const sepetKalemlerRef = useRef(sepetKalemleri);
   useEffect(() => { sepetKalemlerRef.current = sepetKalemleri; }, [sepetKalemleri]);
@@ -350,12 +349,40 @@ export default function AlisSatisIslemleri() {
     }
     setYukleniyor(true);
     try {
-      const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
-      if (sonuc.sonuc) {
-        setStokListesi(sonuc.data);
+      if (aramaTipi === 4) {
+        // Barkod araması
+        const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
+        let modalAcilacak = false;
+        if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+          setStokListesi(sonuc.data);
+          if (sonuc.data.length === 1) {
+            const stok = sonuc.data[0];
+            if (!secilenCari) {
+              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            } else if (miktarliGiris) {
+              setModalUrunu(stok);
+              modalAcilacak = true;
+            } else {
+              hizliEkle(stok);
+            }
+          }
+        } else {
+          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          setStokListesi([]);
+        }
+        // Barkod arama sonrası inputu temizle ve focusla (modal açılacaksa onClose'da yapılacak)
+        setAramaMetni('');
+        if (!modalAcilacak) {
+          setTimeout(() => aramaInputRef.current?.focus(), 100);
+        }
       } else {
-        toast.error(sonuc.mesaj || 'Stok araması başarısız.');
-        setStokListesi([]);
+        const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
+        if (sonuc.sonuc) {
+          setStokListesi(sonuc.data);
+        } else {
+          toast.error(sonuc.mesaj || 'Stok araması başarısız.');
+          setStokListesi([]);
+        }
       }
     } catch (e: any) {
       toast.error(`Stok araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
@@ -363,7 +390,7 @@ export default function AlisSatisIslemleri() {
     } finally {
       setYukleniyor(false);
     }
-  }, [aramaMetni, aramaTipi, calisilanSirket]);
+  }, [aramaMetni, aramaTipi, calisilanSirket, miktarliGiris, secilenCari]);
 
   // Arama metni temizlenince listeyi sıfırla
   useEffect(() => {
@@ -519,6 +546,7 @@ export default function AlisSatisIslemleri() {
       return [...prev, kalem];
     });
     setModalUrunu(null);
+    setTimeout(() => aramaInputRef.current?.focus(), 100);
   };
 
   const sepetToplam = sepetToplamHesapla(sepetKalemleri, yetkiBilgileri?.kdvDurum ?? 0, secilenCari?.indirimYuzde ?? 0);
@@ -587,15 +615,6 @@ export default function AlisSatisIslemleri() {
 
   return (
     <View style={styles.ekran}>
-      {/* El Terminali */}
-      <TouchableOpacity
-        style={styles.elTerminaliBar}
-        onPress={() => setElTerminaliAcik(true)}
-      >
-        <Ionicons name="phone-portrait-outline" size={18} color={Colors.white} />
-        <Text style={styles.elTerminaliText}>El Terminali</Text>
-      </TouchableOpacity>
-
       {/* Evrak tipi + Barkod */}
       <View style={styles.ustBar}>
         <TouchableOpacity style={styles.evrakTipiBtn} onPress={evrakTipiSec}>
@@ -653,6 +672,7 @@ export default function AlisSatisIslemleri() {
           <Ionicons name="chevron-down" size={14} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
+          ref={aramaInputRef}
           style={styles.aramaInput}
           placeholder="Stok kodu, ürün adı veya barkod..."
           placeholderTextColor={Colors.gray}
@@ -814,44 +834,6 @@ export default function AlisSatisIslemleri() {
         }}
       />
 
-      {/* El terminali modal */}
-      <ElTerminaliModal
-        visible={elTerminaliAcik}
-        onClose={() => { setElTerminaliAcik(false); setEtSonEklenen(null); }}
-        sonEklenen={etSonEklenen}
-        miktarliGiris={miktarliGiris}
-        onMiktarliGirisDegistir={setMiktarliGiris}
-        onBarkodOkut={(barkod) => {
-          hafifTitresim();
-          setAramaMetni(barkod);
-          barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
-            if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
-              const stok = sonuc.data[0];
-              setStokListesi(sonuc.data);
-              if (!secilenCari) {
-                toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
-              } else if (miktarliGiris) {
-                setElTerminaliAcik(false);
-                setModalUrunu(stok);
-              } else {
-                hizliEkle(stok);
-                setEtSonEklenen({
-                  stokKodu: stok.stokKodu,
-                  stokCinsi: stok.stokCinsi,
-                  miktar: 1,
-                  birim: stok.birim,
-                  tutar: stok.fiyat,
-                });
-              }
-            } else {
-              toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
-              setStokListesi([]);
-            }
-          }).catch(() => {
-            toast.error('Barkod araması sırasında bir hata oluştu.');
-          });
-        }}
-      />
 
       {/* Stok info modal */}
       <StokInfoModal
@@ -874,7 +856,7 @@ export default function AlisSatisIslemleri() {
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
         onConfirm={kalemEkle}
-        onClose={() => setModalUrunu(null)}
+        onClose={() => { setModalUrunu(null); setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
     </View>
   );
@@ -882,20 +864,6 @@ export default function AlisSatisIslemleri() {
 
 const styles = StyleSheet.create({
   ekran: { flex: 1, backgroundColor: Colors.lightGray ?? '#f5f5f5' },
-  elTerminaliBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingTop: 6,
-    gap: 6,
-  },
-  elTerminaliText: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '600',
-  },
   ustBar: {
     flexDirection: 'row',
     alignItems: 'center',

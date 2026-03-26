@@ -127,13 +127,6 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       ekran: 'Ayarlar',
       yetki: menuYetkiBilgileri?.ayarlar ?? true,
     },
-    {
-      id: 'panel',
-      baslik: 'Kontrol Panel',
-      icon: 'construct-outline',
-      ekran: 'Panel',
-      yetki: yetkiBilgileri?.admin ?? false,
-    },
   ];
   const menuOgeleri = tumMenuOgeleri.filter((m) => m.yetki);
 

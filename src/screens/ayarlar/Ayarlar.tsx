@@ -43,7 +43,6 @@ export default function Ayarlar({ navigation, route }: Props) {
   const [varsayilanAramaTipi, setVarsayilanAramaTipi] = useState(3);
   const [sepetSes, setSepetSes] = useState(true);
   const [varsayilanFiyatNo, setVarsayilanFiyatNo] = useState(0);
-
   const fromLogin = route.params?.fromLogin === true;
 
   useEffect(() => {
@@ -143,7 +142,6 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI, varsayilanAramaTipi.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.SEPET_SES, sepetSes.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO, varsayilanFiyatNo.toString());
-
       // Store'u da güncelle ki yeniden giriş yapmaya gerek kalmasın
       storeSetCalisilanSirket(calisilanSirket);
 
@@ -340,6 +338,7 @@ export default function Ayarlar({ navigation, route }: Props) {
             { label: 'Başlayan', value: '1' },
             { label: 'Biten', value: '2' },
             { label: 'İçeren', value: '3' },
+            { label: 'Barkod', value: '4' },
           ]}
           placeholder="Arama tipi seçiniz..."
           onChange={(v) => setVarsayilanAramaTipi(parseInt(v, 10))}

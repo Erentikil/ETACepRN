@@ -143,7 +143,7 @@ export default function SepetListesi() {
 
   const [kaydetYukleniyor, setKaydetYukleniyor] = useState(false);
   const [taslakYukleniyor, setTaslakYukleniyor] = useState(false);
-  const [duzenleUrunu, setDuzenleUrunu] = useState<{ stok: StokListesiBilgileri; miktar: number } | null>(null);
+  const [duzenleUrunu, setDuzenleUrunu] = useState<{ stok: StokListesiBilgileri; miktar: number; aciklama?: string } | null>(null);
   const [duzenleIndex, setDuzenleIndex] = useState<number | null>(null);
   const evrakGuidRef = useRef(generateGuid());
   const [yuzerMenuAcik, setYuzerMenuAcik] = useState(false);
@@ -164,7 +164,7 @@ export default function SepetListesi() {
         } else {
           route.params.onKalemlerGuncellendi?.([]);
         }
-        aktifSepetTemizle();
+        aktifSepetTemizle(calisilanSirket);
       }
     });
     return unsubscribe;
@@ -335,7 +335,7 @@ export default function SepetListesi() {
       birimNo: [],
       seciliFiyatNo: item.seciliFiyatNo || 0,
     };
-    setDuzenleUrunu({ stok, miktar: item.miktar });
+    setDuzenleUrunu({ stok, miktar: item.miktar, aciklama: item.aciklama });
   };
 
   const handleDuzenleConfirm = (kalem: SepetKalem) => {
@@ -469,7 +469,7 @@ export default function SepetListesi() {
           } else {
             route.params.onKalemlerGuncellendi?.([]);
           }
-          aktifSepetTemizle();
+          aktifSepetTemizle(calisilanSirket);
           navigation.goBack();
         },
       },
@@ -493,7 +493,7 @@ export default function SepetListesi() {
       } else {
         route.params.onKalemlerGuncellendi?.([]);
       }
-      aktifSepetTemizle();
+      aktifSepetTemizle(calisilanSirket);
       Alert.alert('Başarılı', 'Evrak taslak olarak kaydedildi.', [
         { text: 'Tamam', onPress: () => navigation.goBack() },
       ]);
@@ -962,6 +962,11 @@ export default function SepetListesi() {
           {/* Stok cinsi */}
           <Text style={styles.kartStokCinsi}>{item.stokCinsi}</Text>
 
+          {/* Açıklama */}
+          {item.aciklama ? (
+            <Text style={styles.kartAciklama}>{item.aciklama}</Text>
+          ) : null}
+
           {/* Renk-Beden bilgisi (sadece RB modda) */}
           {rbItem && (
             <View style={styles.kartRBRow}>
@@ -1023,7 +1028,7 @@ export default function SepetListesi() {
       <FlatList
         data={sepet.kalemler}
         keyExtractor={(item, idx) => item.stokKodu.trim() || String(idx)}
-        extraData={[sepet.kalemler.length, genelIndirimYuzde, fisAcik, adreslerAcik]}
+        extraData={[sepet.kalemler, genelIndirimYuzde, fisAcik, adreslerAcik]}
         renderItem={renderKalem}
         ListHeaderComponent={renderListHeader}
         ListFooterComponent={sepet.kalemler.length > 0 ? renderOzetKarti : undefined}
@@ -1045,6 +1050,7 @@ export default function SepetListesi() {
         cariKodu={route.params.sepet.cariKodu}
         mode="duzenle"
         initialMiktar={duzenleUrunu?.miktar}
+        initialAciklama={duzenleUrunu?.aciklama}
         onConfirm={handleDuzenleConfirm}
         onClose={() => setDuzenleUrunu(null)}
       />
@@ -1435,6 +1441,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: Colors.darkGray,
+    marginTop: 2,
+  },
+  kartAciklama: {
+    fontSize: 12,
+    color: Colors.gray,
+    fontStyle: 'italic',
     marginTop: 2,
   },
   kartRBRow: {

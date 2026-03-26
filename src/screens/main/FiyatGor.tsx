@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../../store/appStore';
-import { stokKartlariniKodCinsBarkoddanBul, tekStokFiyatBilgisiniAl } from '../../api/hizliIslemlerApi';
+import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul, stokKartlariniKodCinsBarkoddanBul } from '../../api/hizliIslemlerApi';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import { Colors } from '../../constants/Colors';
 import { Config } from '../../constants/Config';
-import { paraTL, miktarFormat } from '../../utils/format';
+import { paraTL, paraFormat, miktarFormat } from '../../utils/format';
 import type { StokListesiBilgileri, StokFiyatBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -29,10 +29,12 @@ import { hafifTitresim } from '../../utils/haptics';
 
 import { toast } from '../../components/Toast';
 
+
 const ARAMA_TIPLERI = [
-  { label: 'Baslayan', value: 1 },
+  { label: 'Başlayan', value: 1 },
   { label: 'Biten', value: 2 },
-  { label: 'Iceren', value: 3 },
+  { label: 'İçeren', value: 3 },
+  { label: 'Barkod', value: 4 },
 ];
 
 export default function FiyatGor() {
@@ -41,9 +43,10 @@ export default function FiyatGor() {
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
-  const [aramaTipi, setAramaTipi] = useState(3);
+  const [aramaTipi, setAramaTipi] = useState(4); // varsayılan: barkod
   const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const aramaInputRef = useRef<TextInput>(null);
   const [scannerAcik, setScannerAcik] = useState(false);
 
   // Fiyat detay modal state
@@ -67,7 +70,6 @@ export default function FiyatGor() {
       } else if (yetkiBilgileri?.fiyatNo) {
         setSecilenFiyatNo(yetkiBilgileri.fiyatNo);
       }
-
       const aramaTipiStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI);
       if (aramaTipiStr !== null) setAramaTipi(parseInt(aramaTipiStr, 10));
     })();
@@ -90,7 +92,9 @@ export default function FiyatGor() {
       .finally(() => setFiyatYukleniyor(false));
   }, [secilenStok]);
 
-  // Arama
+  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'Barkod';
+
+  // Arama — API'ye istek at
   const aramaYap = useCallback(async (veriOverride?: string) => {
     const veri = (veriOverride ?? aramaMetni).trim();
     if (!veri || !calisilanSirket) {
@@ -99,15 +103,35 @@ export default function FiyatGor() {
     }
     setYukleniyor(true);
     try {
-      const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
-      if (sonuc.sonuc) {
-        setStokListesi(sonuc.data);
+      if (aramaTipi === 4) {
+        // Barkod araması
+        const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
+        if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+          setStokListesi(sonuc.data);
+          if (sonuc.data.length === 1) {
+            setSecilenStok(sonuc.data[0]);
+          }
+        } else {
+          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          setStokListesi([]);
+        }
+        // Barkod arama sonrası inputu temizle ve focusla
+        setAramaMetni('');
+        setTimeout(() => aramaInputRef.current?.focus(), 100);
       } else {
-        toast.error(sonuc.mesaj || 'Stok aramasi basarisiz.');
-        setStokListesi([]);
+        const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
+        if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+          setStokListesi(sonuc.data);
+          if (sonuc.data.length === 1) {
+            setSecilenStok(sonuc.data[0]);
+          }
+        } else {
+          toast.warning(`"${veri}" ile eşleşen ürün bulunamadı.`);
+          setStokListesi([]);
+        }
       }
     } catch (e: any) {
-      toast.error(`Stok aramasi sirasinda bir hata olustu.\n${e?.message ?? e}`);
+      toast.error(`Arama sırasında bir hata oluştu.\n${e?.message ?? e}`);
       setStokListesi([]);
     } finally {
       setYukleniyor(false);
@@ -120,10 +144,16 @@ export default function FiyatGor() {
 
   // Secili fiyat bilgisi
   const seciliFiyat = stokFiyatlari.find((f) => f.fiyatNo === secilenFiyatNo);
+  const seciliFiyatTipi = fiyatTipListesi.find((f) => f.fiyatNo === secilenFiyatNo);
   const gosterilecekFiyat = seciliFiyat?.tutar ?? secilenStok?.fiyat ?? 0;
   const gosterilecekDoviz = seciliFiyat?.dovizKodu ?? secilenStok?.dovizKodu ?? '';
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'Iceren';
+  const isTL = (kod?: string) => {
+    const k = (kod ?? '').trim();
+    return !k || k === 'TL' || k === 'TRY';
+  };
+  const fiyatGoster = (tutar: number, dovizKodu?: string) =>
+    isTL(dovizKodu) ? paraTL(tutar) : `${paraFormat(tutar)} ${dovizKodu}`;
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -167,7 +197,7 @@ export default function FiyatGor() {
         </TouchableOpacity>
       </View>
 
-      {/* Arama satirii */}
+      {/* Arama satırı — tip seçici + input + ara butonu */}
       <View style={styles.aramaRow}>
         <TouchableOpacity
           style={styles.aramaTipiBtn}
@@ -177,8 +207,9 @@ export default function FiyatGor() {
           <Ionicons name="chevron-down" size={14} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
+          ref={aramaInputRef}
           style={styles.aramaInput}
-          placeholder="Stok kodu, urun adi veya barkod..."
+          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı...'}
           placeholderTextColor={Colors.gray}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -300,10 +331,10 @@ export default function FiyatGor() {
                 <ActivityIndicator size="large" color={Colors.primary} />
               ) : (
                 <>
-                  <Text style={styles.buyukFiyat}>{paraTL(gosterilecekFiyat)}</Text>
-                  {gosterilecekDoviz ? (
-                    <Text style={styles.dovizKodu}>{gosterilecekDoviz}</Text>
-                  ) : null}
+                  <Text style={styles.buyukFiyat}>{paraFormat(gosterilecekFiyat)}</Text>
+                  <Text style={[styles.dovizKodu, !isTL(gosterilecekDoviz) && styles.dovizKoduAccent]}>
+                    {isTL(gosterilecekDoviz) ? '₺' : gosterilecekDoviz}
+                  </Text>
                   {seciliFiyat && (
                     <Text style={styles.fiyatAdi}>{seciliFiyat.fiyatAdi}</Text>
                   )}
@@ -339,45 +370,51 @@ export default function FiyatGor() {
               onPress={() => setFiyatNoDropdownAcik(!fiyatNoDropdownAcik)}
             >
               <Text style={styles.fiyatNoSelectorText}>
-                {seciliFiyat
-                  ? `${seciliFiyat.fiyatNo} - ${seciliFiyat.fiyatAdi || 'Fiyat ' + seciliFiyat.fiyatNo} (${paraTL(seciliFiyat.tutar)}${seciliFiyat.dovizKodu ? ' ' + seciliFiyat.dovizKodu : ''})`
+                {seciliFiyatTipi
+                  ? `${seciliFiyatTipi.fiyatNo} - ${seciliFiyatTipi.fiyatAdi} (${fiyatGoster(seciliFiyat?.tutar ?? 0, seciliFiyat?.dovizKodu)})`
                   : 'Fiyat tipi seciniz...'}
               </Text>
               <Ionicons name={fiyatNoDropdownAcik ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.primary} />
             </TouchableOpacity>
 
-            {/* Fiyat tipi dropdown — sadece fiyati olanlar */}
+            {/* Fiyat tipi dropdown — fiyatTipListesi'nden, stokFiyatlari'nda karşılığı olanlar */}
             {fiyatNoDropdownAcik && (
               <View style={styles.fiyatNoDropdown}>
                 <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {stokFiyatlari.map((sf) => (
-                    <TouchableOpacity
-                      key={sf.fiyatNo}
-                      style={[
-                        styles.fiyatNoItem,
-                        sf.fiyatNo === secilenFiyatNo && styles.fiyatNoItemActive,
-                      ]}
-                      onPress={() => {
-                        setSecilenFiyatNo(sf.fiyatNo);
-                        setFiyatNoDropdownAcik(false);
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[
-                          styles.fiyatNoItemText,
-                          sf.fiyatNo === secilenFiyatNo && styles.fiyatNoItemTextActive,
-                        ]}>
-                          {sf.fiyatNo} - {sf.fiyatAdi || 'Fiyat ' + sf.fiyatNo}
-                        </Text>
-                        <Text style={styles.fiyatNoItemFiyat}>
-                          {paraTL(sf.tutar)}{sf.dovizKodu ? ' ' + sf.dovizKodu : ''}
-                        </Text>
-                      </View>
-                      {sf.fiyatNo === secilenFiyatNo && (
-                        <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                  {fiyatTipListesi.filter((ft) => stokFiyatlari.some((sf) => sf.fiyatNo === ft.fiyatNo)).map((ft) => {
+                    const sfb = stokFiyatlari.find((sf) => sf.fiyatNo === ft.fiyatNo);
+                    const aktif = ft.fiyatNo === secilenFiyatNo;
+                    return (
+                      <TouchableOpacity
+                        key={ft.fiyatNo}
+                        style={[
+                          styles.fiyatNoItem,
+                          aktif && styles.fiyatNoItemActive,
+                        ]}
+                        onPress={() => {
+                          setSecilenFiyatNo(ft.fiyatNo);
+                          setFiyatNoDropdownAcik(false);
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[
+                            styles.fiyatNoItemText,
+                            aktif && styles.fiyatNoItemTextActive,
+                          ]}>
+                            {ft.fiyatNo} - {ft.fiyatAdi}
+                          </Text>
+                          {sfb && (
+                            <Text style={[styles.fiyatNoItemFiyat, !isTL(sfb.dovizKodu) && styles.dovizKoduAccent]}>
+                              {fiyatGoster(sfb.tutar, sfb.dovizKodu)}
+                            </Text>
+                          )}
+                        </View>
+                        {aktif && (
+                          <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               </View>
             )}
@@ -410,10 +447,8 @@ export default function FiyatGor() {
         onDetected={(barkod) => {
           setScannerAcik(false);
           hafifTitresim();
-          setAramaMetni(barkod);
-          setAramaTipi(0);
-          stokKartlariniKodCinsBarkoddanBul(barkod, 0, calisilanSirket).then((sonuc) => {
-            if (sonuc.sonuc && sonuc.data.length > 0) {
+          barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+            if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
               setStokListesi(sonuc.data);
               if (sonuc.data.length === 1) {
                 setSecilenStok(sonuc.data[0]);
@@ -475,7 +510,7 @@ const styles = StyleSheet.create({
   aramaTipiBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.lightGray ?? '#f5f5f5',
+    backgroundColor: `${Colors.primary}15`,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
@@ -498,11 +533,11 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   aramaTipiDropdown: {
-    backgroundColor: Colors.white,
     marginHorizontal: 10,
     marginTop: -6,
     marginBottom: 6,
-    borderRadius: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
@@ -517,7 +552,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -529,7 +564,7 @@ const styles = StyleSheet.create({
     color: Colors.darkGray,
   },
   aramaTipiItemTextActive: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.primary,
   },
   listeBaslik: {
@@ -637,6 +672,10 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     fontWeight: '600',
     marginTop: 4,
+  },
+  dovizKoduAccent: {
+    color: Colors.accent,
+    fontWeight: '700',
   },
   fiyatAdi: {
     fontSize: 13,

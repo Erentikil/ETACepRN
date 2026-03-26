@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
@@ -21,7 +22,6 @@ import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/a
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import UrunMiktariBelirleModal from '../../components/UrunMiktariBelirleModal';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
-import ElTerminaliModal from '../../components/ElTerminaliModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import StokInfoModal from '../../components/StokInfoModal';
 import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
@@ -79,6 +79,13 @@ function defaultEvrakSecenek(defaultEvrakTipi: string): EvrakSecenegi {
 }
 
 // Bileşen remount edilse bile evrak/fiş tipi seçimini korumak için module-level değişkenler
+const ARAMA_TIPLERI = [
+  { label: 'Başlayan', value: 1 },
+  { label: 'Biten', value: 2 },
+  { label: 'İçeren', value: 3 },
+  { label: 'Barkod', value: 4 },
+];
+
 let _savedEvrak: EvrakSecenegi | null = null;
 let _savedFisTipi: FisTipiBaslik | null = null;
 let _savedAnaDepo: string | null = null;
@@ -110,6 +117,9 @@ export default function HizliIslemler() {
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [filtreli, setFiltreli] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
+  const [aramaTipi, setAramaTipi] = useState(3); // varsayılan: içeren
+  const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
+  const aramaInputRef = useRef<TextInput>(null);
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
   const [secilenEvrak, setSecilenEvrak] = useState<EvrakSecenegi>(
     defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura')
@@ -119,14 +129,15 @@ export default function HizliIslemler() {
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
-  const [elTerminaliAcik, setElTerminaliAcik] = useState(false);
-  const [etSonEklenen, setEtSonEklenen] = useState<{ stokKodu: string; stokCinsi: string; miktar: number; birim: string; tutar: number } | null>(null);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
 
-  // Ayarlardan varsayılan miktarlı giriş değerini yükle
+  // Ayarlardan varsayılan miktarlı giriş ve arama tipi değerini yükle
   useEffect(() => {
     AsyncStorage.getItem(Config.STORAGE_KEYS.MIKTARLI_GIRIS_VARSAYILAN).then((v) => {
       if (v === 'true') setMiktarliGiris(true);
+    });
+    AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI).then((v) => {
+      if (v !== null) setAramaTipi(parseInt(v, 10));
     });
   }, []);
 
@@ -157,7 +168,7 @@ export default function HizliIslemler() {
     }
     if (sepetYuklendi.current) return;
 
-    aktifSepetAl().then((sepet) => {
+    aktifSepetAl(calisilanSirket).then((sepet) => {
       sepetYuklendi.current = true;
 
       if (!sepet || sepet.kalemler.length === 0) return;
@@ -212,14 +223,14 @@ export default function HizliIslemler() {
     setSepetKalemleri(taslak.kalemler ?? []);
     setSecilenAnaDepo(taslak.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
     setSecilenKarsiDepo(taslak.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
-    aktifSepetTemizle();
+    aktifSepetTemizle(calisilanSirket);
     evrakiSil(taslak.id);
   }, [route.params?.taslakEvrak]);
 
   // Sepet değiştikçe AsyncStorage'a kaydet
   useEffect(() => {
     if (sepetKalemleri.length === 0) {
-      aktifSepetTemizle();
+      aktifSepetTemizle(calisilanSirket);
       return;
     }
     aktifSepetKaydet({
@@ -232,8 +243,8 @@ export default function HizliIslemler() {
       anaDepo: secilenAnaDepo,
       karsiDepo: secilenKarsiDepo,
       kalemler: sepetKalemleri,
-    });
-  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo]);
+    }, calisilanSirket);
+  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo, calisilanSirket]);
 
   // Sepet kalemlerinin güncel değerine focus effect içinden ref ile eriş
   const sepetKalemlerRef = useRef(sepetKalemleri);
@@ -354,21 +365,69 @@ export default function HizliIslemler() {
     stokListesiniYukle();
   }, [secilenEvrak, ftBaslikListesi]);
 
-  // Arama filtresi
+  // Arama filtresi (lokal) — Barkod hariç
   useEffect(() => {
+    if (aramaTipi === 4) return; // Barkod aramada lokal filtre yok
     if (!aramaMetni.trim()) {
       setFiltreli(stokListesi);
       return;
     }
     const q = aramaMetni.toLowerCase();
+    const filtre = (val: string) => {
+      const v = val.toLowerCase();
+      if (aramaTipi === 1) return v.startsWith(q);
+      if (aramaTipi === 2) return v.endsWith(q);
+      return v.includes(q); // 3 = İçeren
+    };
     setFiltreli(
       stokListesi.filter(
-        (s) =>
-          s.stokKodu.toLowerCase().includes(q) ||
-          s.stokCinsi.toLowerCase().includes(q)
+        (s) => filtre(s.stokKodu) || filtre(s.stokCinsi)
       )
     );
-  }, [aramaMetni, stokListesi]);
+  }, [aramaMetni, stokListesi, aramaTipi]);
+
+  // Barkod araması — API'ye istek at
+  const barkodAramaYap = useCallback(async (veriOverride?: string) => {
+    const veri = (veriOverride ?? aramaMetni).trim();
+    if (!veri || !calisilanSirket) {
+      setFiltreli(stokListesi);
+      return;
+    }
+    setYukleniyor(true);
+    try {
+      const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
+      let modalAcilacak = false;
+      if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+        setFiltreli(sonuc.data);
+        if (sonuc.data.length === 1) {
+          const stok = sonuc.data[0];
+          if (miktarliGiris) {
+            setModalUrunu(stok);
+            modalAcilacak = true;
+          } else if (!secilenCari) {
+            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          } else {
+            hizliEkle(stok);
+          }
+        }
+      } else {
+        toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+        setFiltreli([]);
+      }
+      // Barkod arama sonrası inputu temizle ve focusla (modal açılacaksa onClose'da yapılacak)
+      setAramaMetni('');
+      if (!modalAcilacak) {
+        setTimeout(() => aramaInputRef.current?.focus(), 100);
+      }
+    } catch (e: any) {
+      toast.error(`Barkod araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
+      setFiltreli([]);
+    } finally {
+      setYukleniyor(false);
+    }
+  }, [aramaMetni, calisilanSirket, stokListesi, miktarliGiris, secilenCari]);
+
+  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
 
   // Evrak tipi seçimi ActionSheet
   const evrakTipiSec = () => {
@@ -512,6 +571,10 @@ export default function HizliIslemler() {
 
   // Sepete ekleme
   const kalemEkle = (kalem: SepetKalem) => {
+    if (!secilenCari) {
+      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      return;
+    }
     hafifTitresim();
     setSepetKalemleri((prev) => {
       const idx = prev.findIndex((k) => k.stokKodu === kalem.stokKodu);
@@ -526,6 +589,7 @@ export default function HizliIslemler() {
       return [...prev, kalem];
     });
     setModalUrunu(null);
+    setTimeout(() => aramaInputRef.current?.focus(), 100);
   };
 
   const sepetToplam = sepetToplamHesapla(sepetKalemleri, yetkiBilgileri?.kdvDurum ?? 0, secilenCari?.indirimYuzde ?? 0);
@@ -565,7 +629,7 @@ export default function HizliIslemler() {
           </TouchableOpacity>
         )}
       >
-        <TouchableOpacity style={styles.stokSatiri} onPress={() => hizliEkle(item)} onLongPress={() => { if (!secilenCari) { toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.'); return; } setModalUrunu(item); }} delayLongPress={400}>
+        <TouchableOpacity style={styles.stokSatiri} onPress={() => hizliEkle(item)} onLongPress={() => setModalUrunu(item)} delayLongPress={400}>
           <View style={styles.stokBilgi}>
             <Text style={styles.stokKodu}>{item.stokKodu}</Text>
             <Text style={styles.stokCinsi} numberOfLines={1}>{item.stokCinsi}</Text>
@@ -583,16 +647,7 @@ export default function HizliIslemler() {
   );
 
   return (
-    <View style={styles.ekran}>
-      {/* El Terminali */}
-      <TouchableOpacity
-        style={styles.elTerminaliBar}
-        onPress={() => setElTerminaliAcik(true)}
-      >
-        <Ionicons name="phone-portrait-outline" size={18} color={Colors.white} />
-        <Text style={styles.elTerminaliText}>El Terminali</Text>
-      </TouchableOpacity>
-
+    <View style={styles.ekran} onTouchStart={Keyboard.dismiss}>
       {/* Evrak tipi + Barkod */}
       <View style={styles.ustBar}>
         <TouchableOpacity style={styles.evrakTipiBtn} onPress={evrakTipiSec}>
@@ -644,23 +699,71 @@ export default function HizliIslemler() {
         <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
       </TouchableOpacity>
 
-      {/* Arama */}
+      {/* Arama satırı — tip seçici + input + ara butonu */}
       <View style={styles.aramaRow}>
-        <Ionicons name="search-outline" size={18} color={Colors.gray} style={styles.aramaIcon} />
+        <TouchableOpacity
+          style={styles.aramaTipiBtn}
+          onPress={() => setAramaTipiAcik(!aramaTipiAcik)}
+        >
+          <Text style={styles.aramaTipiBtnText}>{aramaTipiLabel}</Text>
+          <Ionicons name="chevron-down" size={14} color={Colors.primary} />
+        </TouchableOpacity>
         <TextInput
+          ref={aramaInputRef}
           style={styles.aramaInput}
-          placeholder="Stok kodu, ürün adı veya barkod ara..."
+          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı ara...'}
           placeholderTextColor={Colors.gray}
           value={aramaMetni}
           onChangeText={setAramaMetni}
           returnKeyType="search"
+          onSubmitEditing={() => aramaTipi === 4 ? barkodAramaYap() : undefined}
         />
         {aramaMetni.length > 0 && (
-          <TouchableOpacity onPress={() => setAramaMetni('')}>
+          <TouchableOpacity onPress={() => { setAramaMetni(''); setFiltreli(stokListesi); }}>
             <Ionicons name="close-circle" size={18} color={Colors.gray} />
           </TouchableOpacity>
         )}
+        {aramaTipi === 4 && (
+          <TouchableOpacity
+            style={styles.araBtn}
+            onPress={() => barkodAramaYap()}
+          >
+            <Ionicons name="search" size={20} color={Colors.white} />
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Arama tipi dropdown */}
+      {aramaTipiAcik && (
+        <View style={styles.aramaTipiDropdown}>
+          {ARAMA_TIPLERI.map((tip) => (
+            <TouchableOpacity
+              key={tip.value}
+              style={[
+                styles.aramaTipiItem,
+                tip.value === aramaTipi && styles.aramaTipiItemActive,
+              ]}
+              onPress={() => {
+                setAramaTipi(tip.value);
+                setAramaTipiAcik(false);
+                if (tip.value !== 4) setFiltreli(stokListesi);
+              }}
+            >
+              <Text
+                style={[
+                  styles.aramaTipiItemText,
+                  tip.value === aramaTipi && styles.aramaTipiItemTextActive,
+                ]}
+              >
+                {tip.label}
+              </Text>
+              {tip.value === aramaTipi && (
+                <Ionicons name="checkmark" size={16} color={Colors.primary} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Stok listesi başlık */}
       <View style={styles.listeBaslik}>
@@ -675,6 +778,7 @@ export default function HizliIslemler() {
         keyExtractor={(item, idx) => item.stokKodu || String(idx)}
         renderItem={renderStokSatiri}
         style={styles.liste}
+        keyboardShouldPersistTaps="handled"
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         refreshControl={
           <RefreshControl refreshing={yukleniyor} onRefresh={stokListesiniYukle} colors={[Colors.primary]} />
@@ -741,10 +845,10 @@ export default function HizliIslemler() {
           hafifTitresim();
           const bulunan = stokListesi.find((s) => s.barkod === barkod);
           if (bulunan) {
-            if (!secilenCari) {
-              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
-            } else if (miktarliGiris) {
+            if (miktarliGiris) {
               setModalUrunu(bulunan);
+            } else if (!secilenCari) {
+              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
             } else {
               hizliEkle(bulunan);
             }
@@ -753,10 +857,10 @@ export default function HizliIslemler() {
             barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
               if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
                 const stok = sonuc.data[0];
-                if (!secilenCari) {
-                  toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
-                } else if (miktarliGiris) {
+                if (miktarliGiris) {
                   setModalUrunu(stok);
+                } else if (!secilenCari) {
+                  toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
                 } else {
                   hizliEkle(stok);
                 }
@@ -770,48 +874,6 @@ export default function HizliIslemler() {
         }}
       />
 
-      {/* El terminali modal */}
-      <ElTerminaliModal
-        visible={elTerminaliAcik}
-        onClose={() => { setElTerminaliAcik(false); setEtSonEklenen(null); }}
-        sonEklenen={etSonEklenen}
-        miktarliGiris={miktarliGiris}
-        onMiktarliGirisDegistir={setMiktarliGiris}
-        onBarkodOkut={(barkod) => {
-          hafifTitresim();
-          const ekle = (stok: StokListesiBilgileri) => {
-            if (!secilenCari) {
-              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
-            } else if (miktarliGiris) {
-              setElTerminaliAcik(false);
-              setModalUrunu(stok);
-            } else {
-              hizliEkle(stok);
-              setEtSonEklenen({
-                stokKodu: stok.stokKodu,
-                stokCinsi: stok.stokCinsi,
-                miktar: 1,
-                birim: stok.birim,
-                tutar: stok.fiyat,
-              });
-            }
-          };
-          const bulunan = stokListesi.find((s) => s.barkod === barkod);
-          if (bulunan) {
-            ekle(bulunan);
-          } else {
-            barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
-              if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
-                ekle(sonuc.data[0]);
-              } else {
-                toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
-              }
-            }).catch(() => {
-              toast.error('Barkod araması sırasında bir hata oluştu.');
-            });
-          }
-        }}
-      />
 
       {/* Stok info modal */}
       <StokInfoModal
@@ -834,7 +896,7 @@ export default function HizliIslemler() {
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
         onConfirm={kalemEkle}
-        onClose={() => setModalUrunu(null)}
+        onClose={() => { setModalUrunu(null); setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
     </View>
   );
@@ -842,20 +904,6 @@ export default function HizliIslemler() {
 
 const styles = StyleSheet.create({
   ekran: { flex: 1, backgroundColor: Colors.lightGray ?? '#f5f5f5' },
-  elTerminaliBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingTop: 6,
-    gap: 6,
-  },
-  elTerminaliText: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '600',
-  },
   ustBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -940,12 +988,65 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     gap: 6,
   },
-  aramaIcon: { marginRight: 2 },
+  aramaTipiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${Colors.primary}15`,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  aramaTipiBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
   aramaInput: {
     flex: 1,
     fontSize: 14,
     color: Colors.black,
     paddingVertical: 2,
+  },
+  araBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 6,
+    padding: 8,
+  },
+  aramaTipiDropdown: {
+    marginHorizontal: 10,
+    marginTop: -6,
+    marginBottom: 6,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  aramaTipiItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  aramaTipiItemActive: {
+    backgroundColor: `${Colors.primary}10`,
+  },
+  aramaTipiItemText: {
+    fontSize: 14,
+    color: Colors.darkGray,
+  },
+  aramaTipiItemTextActive: {
+    fontWeight: '700',
+    color: Colors.primary,
   },
   listeBaslik: {
     flexDirection: 'row',

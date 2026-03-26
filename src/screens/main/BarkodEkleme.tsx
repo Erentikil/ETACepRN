@@ -30,9 +30,9 @@ import { hafifTitresim } from '../../utils/haptics';
 import { toast } from '../../components/Toast';
 
 const ARAMA_TIPLERI = [
-  { label: 'Baslayan', value: 1 },
+  { label: 'Başlayan', value: 1 },
   { label: 'Biten', value: 2 },
-  { label: 'Iceren', value: 3 },
+  { label: 'İçeren', value: 3 },
 ];
 
 export default function BarkodEkleme() {
@@ -104,11 +104,11 @@ export default function BarkodEkleme() {
       if (sonuc.sonuc) {
         setStokListesi(sonuc.data);
       } else {
-        toast.error(sonuc.mesaj || 'Stok aramasi basarisiz.');
+        toast.error(sonuc.mesaj || 'Stok araması başarısız.');
         setStokListesi([]);
       }
     } catch (e: any) {
-      toast.error(`Stok aramasi sirasinda bir hata olustu.\n${e?.message ?? e}`);
+      toast.error(`Stok araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
       setStokListesi([]);
     } finally {
       setYukleniyor(false);
@@ -124,7 +124,7 @@ export default function BarkodEkleme() {
     if (!secilenStok) return;
     const barkod = barkodDeger.trim();
     if (!barkod) {
-      toast.warning('Lutfen bir barkod giriniz.');
+      toast.warning('Lütfen bir barkod giriniz.');
       return;
     }
     setKaydediliyor(true);
@@ -143,19 +143,19 @@ export default function BarkodEkleme() {
         calisilanSirket
       );
       if (sonuc.sonuc) {
-        toast.success('Barkod basariyla kaydedildi.');
+        toast.success('Barkod başarıyla kaydedildi.');
         setBarkodDeger('');
       } else {
         toast.error(sonuc.mesaj || 'Barkod kaydedilemedi.');
       }
     } catch (e: any) {
-      toast.error(`Barkod kaydedilirken bir hata olustu.\n${e?.message ?? e}`);
+      toast.error(`Barkod kaydedilirken bir hata oluştu.\n${e?.message ?? e}`);
     } finally {
       setKaydediliyor(false);
     }
   };
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'Iceren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -203,7 +203,7 @@ export default function BarkodEkleme() {
         </TouchableOpacity>
         <TextInput
           style={styles.aramaInput}
-          placeholder="Stok kodu veya urun adi..."
+          placeholder="Stok kodu veya ürün adı..."
           placeholderTextColor={Colors.gray}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -281,8 +281,8 @@ export default function BarkodEkleme() {
           ) : (
             <EmptyState
               icon="search-outline"
-              baslik={aramaMetni.trim() ? 'Sonuc bulunamadi' : 'Urun arayin'}
-              aciklama={aramaMetni.trim() ? 'Farkli bir arama kriteri deneyiniz' : 'Aramak icin yukaridaki arama cubugunu kullanin'}
+              baslik={aramaMetni.trim() ? 'Sonuç bulunamadı' : 'Ürün arayın'}
+              aciklama={aramaMetni.trim() ? 'Farklı bir arama kriteri deneyiniz' : 'Aramak için yukarıdaki arama çubuğunu kullanın'}
             />
           )
         }

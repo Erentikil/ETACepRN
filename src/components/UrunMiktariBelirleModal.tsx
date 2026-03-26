@@ -32,6 +32,7 @@ interface Props {
   onClose: () => void;
   mode?: 'ekle' | 'duzenle';
   initialMiktar?: number;
+  initialAciklama?: string;
 }
 
 interface BirimSecenek {
@@ -53,6 +54,7 @@ export default function UrunMiktariBelirleModal({
   onClose,
   mode = 'ekle',
   initialMiktar,
+  initialAciklama,
 }: Props) {
   const [miktar, setMiktar] = useState('1');
   const [fiyat, setFiyat] = useState('0');
@@ -110,7 +112,7 @@ export default function UrunMiktariBelirleModal({
     setInd2(String(urun.kalemIndirim2));
     setInd3(String(urun.kalemIndirim3));
 
-    setAciklama('');
+    setAciklama(initialAciklama ?? '');
     setStokFiyatlari([]);
     setKurListesi([]);
     setSecilenDovizKuru(0);

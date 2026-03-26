@@ -2,15 +2,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '../constants/Config';
 import type { SepetBaslik } from '../models';
 
-const KEY = Config.STORAGE_KEYS.AKTIF_SEPET;
+const BASE_KEY = Config.STORAGE_KEYS.AKTIF_SEPET;
 
-export async function aktifSepetKaydet(sepet: SepetBaslik): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify(sepet));
+function sepetKey(sirketAdi: string | undefined): string {
+  return sirketAdi ? `${BASE_KEY}_${sirketAdi}` : BASE_KEY;
 }
 
-export async function aktifSepetAl(): Promise<SepetBaslik | null> {
+export async function aktifSepetKaydet(sepet: SepetBaslik, sirketAdi?: string): Promise<void> {
+  await AsyncStorage.setItem(sepetKey(sirketAdi), JSON.stringify(sepet));
+}
+
+export async function aktifSepetAl(sirketAdi?: string): Promise<SepetBaslik | null> {
   try {
-    const json = await AsyncStorage.getItem(KEY);
+    const json = await AsyncStorage.getItem(sepetKey(sirketAdi));
     if (!json) return null;
     return JSON.parse(json) as SepetBaslik;
   } catch {
@@ -18,6 +22,6 @@ export async function aktifSepetAl(): Promise<SepetBaslik | null> {
   }
 }
 
-export async function aktifSepetTemizle(): Promise<void> {
-  await AsyncStorage.removeItem(KEY);
+export async function aktifSepetTemizle(sirketAdi?: string): Promise<void> {
+  await AsyncStorage.removeItem(sepetKey(sirketAdi));
 }
