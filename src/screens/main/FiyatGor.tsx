@@ -115,9 +115,11 @@ export default function FiyatGor() {
           toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
           setStokListesi([]);
         }
-        // Barkod arama sonrası inputu temizle ve focusla
+        // Barkod arama sonrası inputu temizle, modal açılmayacaksa focusla
         setAramaMetni('');
-        setTimeout(() => aramaInputRef.current?.focus(), 100);
+        if (!sonuc.data || sonuc.data.length !== 1) {
+          setTimeout(() => aramaInputRef.current?.focus(), 100);
+        }
       } else {
         const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
         if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
@@ -310,7 +312,7 @@ export default function FiyatGor() {
         visible={!!secilenStok}
         animationType="slide"
         transparent
-        onRequestClose={() => setSecilenStok(null)}
+        onRequestClose={() => { setSecilenStok(null); setTimeout(() => aramaInputRef.current?.focus(), 350); }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -320,7 +322,7 @@ export default function FiyatGor() {
                 <Text style={styles.modalStokKodu}>{secilenStok?.stokKodu}</Text>
                 <Text style={styles.modalStokCinsi} numberOfLines={2}>{secilenStok?.stokCinsi}</Text>
               </View>
-              <TouchableOpacity onPress={() => setSecilenStok(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { setSecilenStok(null); setTimeout(() => aramaInputRef.current?.focus(), 350); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close-circle" size={28} color={Colors.gray} />
               </TouchableOpacity>
             </View>
@@ -441,7 +443,7 @@ export default function FiyatGor() {
       {/* Barkod scanner */}
       <BarcodeScannerModal
         visible={scannerAcik}
-        onClose={() => setScannerAcik(false)}
+        onClose={() => { setScannerAcik(false); setTimeout(() => aramaInputRef.current?.focus(), 100); }}
         manuelOkuma={manuelOkuma}
         baslangicZoom={baslangicZoom}
         onDetected={(barkod) => {
@@ -468,7 +470,7 @@ export default function FiyatGor() {
         stokKodu={infoStoku?.stokKodu ?? null}
         stokCinsi={infoStoku?.stokCinsi ?? ''}
         veriTabaniAdi={calisilanSirket}
-        onClose={() => setInfoStoku(null)}
+        onClose={() => { setInfoStoku(null); setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
     </View>
   );

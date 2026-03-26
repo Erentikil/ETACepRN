@@ -12,6 +12,7 @@ import { Colors } from '../constants/Colors';
 // Placeholder ekran
 import PlaceholderEkrani from '../screens/main/PlaceholderEkrani';
 import HizliIslemler from '../screens/main/HizliIslemler';
+import HizliIslemlerV2 from '../screens/main/HizliIslemlerV2';
 import SiparisKapama from '../screens/main/SiparisKapama';
 import KurBilgileri from '../screens/main/KurBilgileri';
 import BekleyenSiparisler from '../screens/main/BekleyenSiparisler';
@@ -82,6 +83,11 @@ export default function DrawerNavigator() {
         name="HizliIslemler"
         component={HizliIslemler}
         options={{ title: 'Alış/Satış' }}
+      />
+      <Drawer.Screen
+        name="HizliIslemlerV2"
+        component={HizliIslemlerV2}
+        options={{ title: 'Alış/Satış V2' }}
       />
       <Drawer.Screen
         name="AlisSatisIslemleri"

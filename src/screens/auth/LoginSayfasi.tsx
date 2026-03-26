@@ -131,7 +131,7 @@ export default function LoginSayfasi({ navigation }: Props) {
       const sirketSonuc = await sirketBilgileriniAl(dbAdi);
       if (sirketSonuc.sonuc) {
         setSirketBilgileri(sirketSonuc.data);
-        const sirket = veriTabaniAdi || sirketSonuc.data.varsayilanSirket || dbAdi;
+        const sirket = dbAdi || sirketSonuc.data.varsayilanSirket;
         setCalisilanSirket(sirket);
         await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, sirket);
       }

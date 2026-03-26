@@ -14,8 +14,8 @@ import { Colors } from '../../constants/Colors';
 import type { DrawerParamList } from '../../navigation/types';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 
-// Uygulama oturumu başına bir kez göster
-let yarımKalmisKontrolEdildi = false;
+// Her şirket için bir kez göster
+let sonKontrolEdilenSirket = '';
 
 type Props = {
   navigation: DrawerNavigationProp<DrawerParamList, 'AnaSayfa'>;
@@ -35,8 +35,8 @@ export default function AnaSayfa({ navigation }: Props) {
     useAppStore();
 
   useEffect(() => {
-    if (yarımKalmisKontrolEdildi) return;
-    yarımKalmisKontrolEdildi = true;
+    if (!calisilanSirket || sonKontrolEdilenSirket === calisilanSirket) return;
+    sonKontrolEdilenSirket = calisilanSirket;
 
     aktifSepetAl(calisilanSirket).then((sepet) => {
       if (!sepet || sepet.kalemler.length === 0) return;
@@ -46,7 +46,7 @@ export default function AnaSayfa({ navigation }: Props) {
         [{ text: 'Tamam' }]
       );
     });
-  }, []);
+  }, [calisilanSirket]);
 
   const tumHizliErisimler: HizliErisimKarti[] = [
     {

@@ -20,6 +20,7 @@ export type RootStackParamList = {
 export type DrawerParamList = {
   AnaSayfa: undefined;
   HizliIslemler: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
+  HizliIslemlerV2: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
   AlisSatisIslemleri: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
   RenkBedenIslemleri: { secilenCari?: CariKartBilgileri } | undefined;
   SiparisKapama: { secilenCari?: CariKartBilgileri } | undefined;

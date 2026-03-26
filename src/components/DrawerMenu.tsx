@@ -44,6 +44,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
     },
     {
+      id: 'hizliV2',
+      baslik: 'Alış/Satış V2',
+      icon: 'flash-outline',
+      ekran: 'HizliIslemlerV2',
+      yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
+    },
+    {
       id: 'alimSatim',
       baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',

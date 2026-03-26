@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
-import { stokListesiniAl, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
+import { stokListesiniAl, tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
 import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -86,10 +86,6 @@ const ARAMA_TIPLERI = [
   { label: 'Barkod', value: 4 },
 ];
 
-let _savedEvrak: EvrakSecenegi | null = null;
-let _savedFisTipi: FisTipiBaslik | null = null;
-let _savedAnaDepo: string | null = null;
-let _savedKarsiDepo: string | null = null;
 
 function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndirimYuzde = 0): number {
   const kalemToplam = kalemler.reduce((toplam, k) => {
@@ -105,17 +101,23 @@ function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndir
   return genelIndirimYuzde > 0 ? kalemToplam * (1 - genelIndirimYuzde / 100) : kalemToplam;
 }
 
+const ListeAyiraci = () => <View style={{ height: 4 }} />;
+
 export default function HizliIslemler() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
 
-  const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket } = useAppStore();
+  const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
 
   const taslakFisTipiYuklendi = useRef(false);
   const fisTipiManuelSecildi = useRef(false);
 
-  const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
-  const [filtreli, setFiltreli] = useState<StokListesiBilgileri[]>([]);
+  const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>(
+    stokListesiCacheSirket === calisilanSirket ? stokListesiCache : []
+  );
+  const [filtreli, setFiltreli] = useState<StokListesiBilgileri[]>(
+    stokListesiCacheSirket === calisilanSirket ? stokListesiCache : []
+  );
   const [aramaMetni, setAramaMetni] = useState('');
   const [aramaTipi, setAramaTipi] = useState(3); // varsayılan: içeren
   const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
@@ -161,6 +163,7 @@ export default function HizliIslemler() {
 
   // Uygulama yeniden açıldığında AsyncStorage'daki aktif sepeti geri yükle
   const sepetYuklendi = useRef(false);
+  const pendingCariUsed = useRef(false);
   useEffect(() => {
     if (route.params?.taslakEvrak) {
       sepetYuklendi.current = true;
@@ -173,9 +176,11 @@ export default function HizliIslemler() {
 
       if (!sepet || sepet.kalemler.length === 0) return;
 
-      if (sepet.cariKodu) {
+      // pendingCari zaten useFocusEffect'te uygulandıysa, eski cari'yi ezme
+      if (sepet.cariKodu && !pendingCariUsed.current) {
         setSecilenCari({ cariKodu: sepet.cariKodu, cariUnvan: sepet.cariUnvan });
       }
+      pendingCariUsed.current = false;
       const evrakSecenek =
         TUM_SECENEKLER.find(
           (s) => s.evrakTipi === sepet.evrakTipi && s.alimSatim === sepet.alimSatim
@@ -224,13 +229,18 @@ export default function HizliIslemler() {
     setSecilenAnaDepo(taslak.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
     setSecilenKarsiDepo(taslak.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
     aktifSepetTemizle(calisilanSirket);
-    evrakiSil(taslak.id);
+    evrakiSil(taslak.id, calisilanSirket);
   }, [route.params?.taslakEvrak]);
 
-  // Sepet değiştikçe AsyncStorage'a kaydet
+  // Sepet değiştikçe AsyncStorage'a kaydet (calisilanSirket dep'te yok — şirket
+  // değişimi sırasında eski verinin yeni key'e yazılmasını engeller)
+  const sirketRef = useRef(calisilanSirket);
+  useEffect(() => { sirketRef.current = calisilanSirket; }, [calisilanSirket]);
   useEffect(() => {
+    const sirket = sirketRef.current;
+    if (!sirket) return;
     if (sepetKalemleri.length === 0) {
-      aktifSepetTemizle(calisilanSirket);
+      aktifSepetTemizle(sirket);
       return;
     }
     aktifSepetKaydet({
@@ -243,8 +253,8 @@ export default function HizliIslemler() {
       anaDepo: secilenAnaDepo,
       karsiDepo: secilenKarsiDepo,
       kalemler: sepetKalemleri,
-    }, calisilanSirket);
-  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo, calisilanSirket]);
+    }, sirket);
+  }, [sepetKalemleri, secilenCari, seciliFisTipi, secilenEvrak, secilenAnaDepo, secilenKarsiDepo]);
 
   // Sepet kalemlerinin güncel değerine focus effect içinden ref ile eriş
   const sepetKalemlerRef = useRef(sepetKalemleri);
@@ -252,12 +262,20 @@ export default function HizliIslemler() {
   const evrakTipiKoru = useRef(false);
   const { manuelOkuma, baslangicZoom } = useTarayiciAyarlari();
 
-  // Taslak olmadan ve sepet boşken sayfaya girilince sıfırla
+  // Sayfaya focus olunca: pending cari varsa uygula, yoksa sıfırla
   useFocusEffect(
     useCallback(() => {
+      const pending = useAppStore.getState().pendingCari;
+      if (pending && pending.target === 'HizliIslemler') {
+        pendingCariUsed.current = true;
+        setSecilenCari(pending.cari);
+        useAppStore.getState().clearPendingCari();
+        return;
+      }
+      // Normal sıfırlama mantığı
       if (route.params?.taslakEvrak) return;
-      if (!sepetYuklendi.current) return; // henüz AsyncStorage restore bitmemiş, sıfırlama
-      if (sepetKalemlerRef.current.length > 0) return; // sepette ürün varsa sıfırlama
+      if (!sepetYuklendi.current) return;
+      if (sepetKalemlerRef.current.length > 0) return;
       if (evrakTipiKoru.current) {
         evrakTipiKoru.current = false;
         setSecilenCari(null);
@@ -270,7 +288,6 @@ export default function HizliIslemler() {
       setSecilenCari(null);
       const varsayilanEvrak = defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
       setSecilenEvrak(varsayilanEvrak);
-      // Fiş tipini doğrudan yeniden hesapla — secilenEvrak aynı kalırsa useEffect tetiklenmez
       const eslesen = ftBaslikListesi.find(
         (f) => f.evrakTipi === varsayilanEvrak.evrakTipiAdi && f.alimSatim.trim() === varsayilanEvrak.alimSatimAdi
       );
@@ -282,58 +299,22 @@ export default function HizliIslemler() {
     }, [route.params?.taslakEvrak, yetkiBilgileri])
   );
 
-  // CariSecim'den geri dönünce seçilen cariyi al ve kaydedilmiş evrak/fiş tipini geri yükle
+  // Cari seçildiğinde cariFiyatListesi'ni sıfırla (API çağrısı yapılmaz)
   useEffect(() => {
-    if (route.params?.secilenCari) {
-      setSecilenCari(route.params.secilenCari);
-      if (_savedEvrak) {
-        taslakFisTipiYuklendi.current = true;
-        setSecilenEvrak(_savedEvrak);
-        setSeciliFisTipi(_savedFisTipi);
-        setSecilenAnaDepo(_savedAnaDepo ?? yetkiBilgileri?.anaDepo ?? '');
-        setSecilenKarsiDepo(_savedKarsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
-        _savedEvrak = null;
-        _savedFisTipi = null;
-        _savedAnaDepo = null;
-        _savedKarsiDepo = null;
-      }
-    }
-  }, [route.params?.secilenCari]);
+    setCariFiyatListesi([]);
+  }, [secilenCari]);
 
-  // Cari seçildiğinde cariFiyatListesi'ni çek (yetkiBilgileri.cariFiyatListesi true ve cari.listeFiyatNo dolu ise)
-  useEffect(() => {
-    if (
-      yetkiBilgileri?.cariFiyatListesi &&
-      secilenCari?.listeFiyatNo &&
-      secilenCari.listeFiyatNo.trim() !== ''
-    ) {
-      cariFiyatBilgileriniAl(
-        yetkiBilgileri.kullaniciKodu,
-        calisilanSirket,
-        secilenCari.listeFiyatNo.trim()
-      )
-        .then((sonuc) => {
-          if (sonuc.sonuc && sonuc.data) {
-            setCariFiyatListesi(sonuc.data);
-          } else {
-            setCariFiyatListesi([]);
-          }
-        })
-        .catch(() => setCariFiyatListesi([]));
-    } else {
-      setCariFiyatListesi([]);
-    }
-  }, [secilenCari, yetkiBilgileri?.cariFiyatListesi]);
-
-  // İlk yüklemede ve evrak tipi değişince stok listesini çek
+  // Stok listesini çek
   const stokListesiniYukle = useCallback(async () => {
     if (!calisilanSirket) return;
     setYukleniyor(true);
     try {
       const sonuc = await stokListesiniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket);
       if (sonuc.sonuc) {
-        setStokListesi(sonuc.data);
-        setFiltreli(sonuc.data);
+        const sirali = [...(sonuc.data ?? [])].sort((a, b) => a.stokKodu.localeCompare(b.stokKodu));
+        setStokListesiCache(sirali, calisilanSirket);
+        setStokListesi(sirali);
+        setFiltreli(sirali);
       } else {
         toast.error(sonuc.mesaj || 'Stok listesi alınamadı.');
       }
@@ -344,16 +325,20 @@ export default function HizliIslemler() {
     }
   }, [calisilanSirket, yetkiBilgileri?.kullaniciKodu]);
 
+  // İlk açılışta stok listesini çek — cache varsa (cari seçiminden dönüş) atla
   useEffect(() => {
-    // Taslaktan veya modaldan gelen fiş tipini ezme
+    if (stokListesiCacheSirket === calisilanSirket && stokListesiCache.length > 0) return;
+    stokListesiniYukle();
+  }, [calisilanSirket]);
+
+  // Evrak/fiş tipi değişince sadece fiş tipini güncelle (stok listesine dokunma)
+  useEffect(() => {
     if (taslakFisTipiYuklendi.current) {
       taslakFisTipiYuklendi.current = false;
-      stokListesiniYukle();
       return;
     }
     if (fisTipiManuelSecildi.current) {
       fisTipiManuelSecildi.current = false;
-      stokListesiniYukle();
       return;
     }
     const eslesen = ftBaslikListesi.find(
@@ -362,7 +347,6 @@ export default function HizliIslemler() {
         f.alimSatim.trim() === secilenEvrak.alimSatimAdi
     );
     setSeciliFisTipi(eslesen ?? null);
-    stokListesiniYukle();
   }, [secilenEvrak, ftBaslikListesi]);
 
   // Arama filtresi (lokal) — Barkod hariç
@@ -616,8 +600,8 @@ export default function HizliIslemler() {
     });
   };
 
-  const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
-    <AnimatedListItem index={index}>
+  const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => {
+    const icerik = (
       <ReanimatedSwipeable
         renderRightActions={() => (
           <TouchableOpacity
@@ -643,8 +627,13 @@ export default function HizliIslemler() {
           </View>
         </TouchableOpacity>
       </ReanimatedSwipeable>
-    </AnimatedListItem>
-  );
+    );
+
+    if (index < 20) {
+      return <AnimatedListItem index={index}>{icerik}</AnimatedListItem>;
+    }
+    return icerik;
+  };
 
   return (
     <View style={styles.ekran} onTouchStart={Keyboard.dismiss}>
@@ -680,12 +669,8 @@ export default function HizliIslemler() {
       {/* Cari seçim */}
       <TouchableOpacity
         style={styles.cariBtn}
-        onPress={() => {
-          _savedEvrak = secilenEvrak;
-          _savedFisTipi = seciliFisTipi;
-          _savedAnaDepo = secilenAnaDepo;
-          _savedKarsiDepo = secilenKarsiDepo;
-          navigation.navigate('CariSecim', { sepetDolu: sepetKalemleri.length > 0 });
+       onPress={() => {
+          navigation.navigate('CariSecim', { returnScreen: 'HizliIslemler', sepetDolu: sepetKalemlerRef.current.length > 0 });
         }}
       >
         <Ionicons
@@ -779,7 +764,11 @@ export default function HizliIslemler() {
         renderItem={renderStokSatiri}
         style={styles.liste}
         keyboardShouldPersistTaps="handled"
-        ItemSeparatorComponent={() => <View style={styles.ayirac} />}
+        ItemSeparatorComponent={ListeAyiraci}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         refreshControl={
           <RefreshControl refreshing={yukleniyor} onRefresh={stokListesiniYukle} colors={[Colors.primary]} />
         }
@@ -791,6 +780,10 @@ export default function HizliIslemler() {
           )
         }
       />
+
+      {filtreli.length > 0 && (
+        <Text style={styles.toplamStokText}>Toplam: {filtreli.length} stok</Text>
+      )}
 
       {/* Sepet + Barkod alt bar */}
       <View style={styles.altBar}>
@@ -1135,4 +1128,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sepetBadgeText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
+  toplamStokText: { textAlign: 'center', color: Colors.gray, fontSize: 13, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Colors.border, backgroundColor: Colors.white },
 });

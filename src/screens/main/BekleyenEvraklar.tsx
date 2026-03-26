@@ -77,7 +77,7 @@ export default function BekleyenEvraklar() {
   const yukle = useCallback(async (metin?: string) => {
     setYukleniyor(true);
     try {
-      const liste = await bekleyenEvraklariAl();
+      const liste = await bekleyenEvraklariAl(calisilanSirket);
       // Yeniden eskiye sırala
       const sirali = [...liste].reverse();
       setEvraklar(sirali);
@@ -124,7 +124,7 @@ export default function BekleyenEvraklar() {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            await evrakiSil(kayit.id);
+            await evrakiSil(kayit.id, calisilanSirket);
             const guncellenmis = evraklar.filter((e) => e.id !== kayit.id);
             setEvraklar(guncellenmis);
             filtrele(guncellenmis, aramaMetni);
@@ -145,7 +145,7 @@ export default function BekleyenEvraklar() {
           text: 'Temizle',
           style: 'destructive',
           onPress: async () => {
-            await tumEvraklariSil();
+            await tumEvraklariSil(calisilanSirket);
             setEvraklar([]);
             setFiltreli([]);
           },

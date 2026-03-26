@@ -98,14 +98,27 @@ function rbSepetToplamHesapla(kalemler: SepetRBKalem[], kdvDurum: number, genelI
   return genelIndirimYuzde > 0 ? kalemToplam * (1 - genelIndirimYuzde / 100) : kalemToplam;
 }
 
+// Bileşen remount olduğunda sepeti korumak için module-level değişken
+let savedRBState: {
+  kalemler: SepetRBKalem[];
+  cari: CariKartBilgileri | null;
+  evrak: EvrakSecenegi;
+  fisTipi: FisTipiBaslik | null;
+  anaDepo: string;
+  karsiDepo: string;
+  cariFiyatListesi: CariFiyatBilgileri[];
+} | null = null;
+
 export default function RenkBedenIslemleri() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
 
-  const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket } = useAppStore();
+  const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
 
   // Stok ve barkod listeleri
-  const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
+  const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>(
+    stokListesiCacheSirket === calisilanSirket ? stokListesiCache : []
+  );
   const [barkodListesi, setBarkodListesi] = useState<BarkodBilgileri[]>([]);
   const [filtreli, setFiltreli] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
@@ -166,10 +179,39 @@ export default function RenkBedenIslemleri() {
     prevSepetLen.current = sepetKalemleri.length;
   }, [sepetKalemleri.length]);
 
-  // Sayfaya girilince sıfırla (sepet boşsa)
+  // Remount'ta savedRBState'den sepeti geri yükle
+  const pendingCariConsumed = useRef(false);
+  useEffect(() => {
+    if (savedRBState) {
+      setSepetKalemleri(savedRBState.kalemler);
+      setSecilenEvrak(savedRBState.evrak);
+      setSeciliFisTipi(savedRBState.fisTipi);
+      setSecilenAnaDepo(savedRBState.anaDepo);
+      setSecilenKarsiDepo(savedRBState.karsiDepo);
+      setCariFiyatListesi(savedRBState.cariFiyatListesi);
+      // Cari: pendingCari zaten useFocusEffect'te set edildiyse eski cari'yi yazma
+      if (!pendingCariConsumed.current) {
+        setSecilenCari(savedRBState.cari);
+      }
+      pendingCariConsumed.current = false;
+      savedRBState = null;
+    }
+  }, []);
+  // Sayfaya focus olunca: pending cari varsa uygula, yoksa sıfırla
   useFocusEffect(
     useCallback(() => {
+      const pending = useAppStore.getState().pendingCari;
+      if (pending && pending.target === 'RenkBedenIslemleri') {
+        pendingCariConsumed.current = true;
+        setSecilenCari(pending.cari);
+        useAppStore.getState().clearPendingCari();
+        return;
+      }
+      // savedRBState varsa restore useEffect'ine bırak, sıfırlama yapma
+      if (savedRBState) return;
+      // Sepet doluysa dokunma
       if (sepetKalemlerRef.current.length > 0) return;
+      // Sepet boş → sıfırla
       setSecilenCari(null);
       setSecilenEvrak(defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura'));
       setSeciliFisTipi(null);
@@ -179,13 +221,6 @@ export default function RenkBedenIslemleri() {
       setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
     }, [yetkiBilgileri])
   );
-
-  // CariSecim'den geri dönünce
-  useEffect(() => {
-    if (route.params?.secilenCari) {
-      setSecilenCari(route.params.secilenCari);
-    }
-  }, [route.params?.secilenCari]);
 
   // Cari seçildiğinde cariFiyatListesi'ni çek (yetkiBilgileri.cariFiyatListesi true ve cari.listeFiyatNo dolu ise)
   useEffect(() => {
@@ -212,21 +247,36 @@ export default function RenkBedenIslemleri() {
     }
   }, [secilenCari, yetkiBilgileri?.cariFiyatListesi]);
 
-  // Veri yükleme
-  const verileriYukle = useCallback(async () => {
+  // Veri yükleme — force: true ise (pull-to-refresh) stok listesini de API'den yeniler
+  const verileriYukle = useCallback(async (force = false) => {
     if (!calisilanSirket) return;
     setYukleniyor(true);
     try {
-      const [stokSonuc, barkodSonuc] = await Promise.all([
-        stokListesiniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket),
-        barkodBilgileriniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket),
-      ]);
+      const stokCacheMevcut = !force && stokListesiCacheSirket === calisilanSirket && stokListesiCache.length > 0;
 
-      if (stokSonuc.sonuc) {
-        setStokListesi(stokSonuc.data ?? []);
-        setFiltreli(stokSonuc.data ?? []);
+      const promises: Promise<any>[] = [
+        barkodBilgileriniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket),
+      ];
+      if (!stokCacheMevcut) {
+        promises.push(stokListesiniAl(yetkiBilgileri?.kullaniciKodu ?? '', calisilanSirket));
+      }
+
+      const sonuclar = await Promise.all(promises);
+      const barkodSonuc = sonuclar[0];
+
+      if (!stokCacheMevcut) {
+        const stokSonuc = sonuclar[1];
+        if (stokSonuc.sonuc) {
+          const sirali = [...(stokSonuc.data ?? [])].sort((a, b) => a.stokKodu.localeCompare(b.stokKodu));
+          setStokListesiCache(sirali, calisilanSirket);
+          setStokListesi(sirali);
+          setFiltreli(sirali);
+        } else {
+          toast.error(stokSonuc.mesaj || 'Stok listesi alınamadı.');
+        }
       } else {
-        toast.error(stokSonuc.mesaj || 'Stok listesi alınamadı.');
+        setStokListesi(stokListesiCache);
+        setFiltreli(stokListesiCache);
       }
 
       if (barkodSonuc.sonuc) {
@@ -239,7 +289,7 @@ export default function RenkBedenIslemleri() {
     } finally {
       setYukleniyor(false);
     }
-  }, [calisilanSirket, yetkiBilgileri?.kullaniciKodu]);
+  }, [calisilanSirket, yetkiBilgileri?.kullaniciKodu, stokListesiCache, stokListesiCacheSirket]);
 
   useEffect(() => {
     const eslesen = ftBaslikListesi.find(
@@ -626,11 +676,17 @@ export default function RenkBedenIslemleri() {
       <TouchableOpacity
         style={styles.cariBtn}
         onPress={() => {
-          if (sepetKalemleri.length > 0) {
-            toast.warning('Sepette ürün olduğu için cari değiştirilemez. Önce sepeti temizleyin.');
-            return;
-          }
-          navigation.navigate('CariSecim', { returnScreen: 'RenkBedenIslemleri' });
+          // Remount'a karşı sepeti koru
+          savedRBState = {
+            kalemler: sepetKalemlerRef.current,
+            cari: secilenCari,
+            evrak: secilenEvrak,
+            fisTipi: seciliFisTipi,
+            anaDepo: secilenAnaDepo,
+            karsiDepo: secilenKarsiDepo,
+            cariFiyatListesi,
+          };
+          navigation.navigate('CariSecim', { returnScreen: 'RenkBedenIslemleri', sepetDolu: sepetKalemlerRef.current.length > 0 });
         }}
       >
         <Ionicons
@@ -722,7 +778,7 @@ export default function RenkBedenIslemleri() {
         style={styles.liste}
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         refreshControl={
-          <RefreshControl refreshing={yukleniyor} onRefresh={verileriYukle} colors={[Colors.primary]} />
+          <RefreshControl refreshing={yukleniyor} onRefresh={() => verileriYukle(true)} colors={[Colors.primary]} />
         }
         ListEmptyComponent={
           yukleniyor ? (
@@ -732,6 +788,10 @@ export default function RenkBedenIslemleri() {
           )
         }
       />
+
+      {filtreli.length > 0 && (
+        <Text style={styles.toplamStokText}>Toplam: {filtreli.length} stok</Text>
+      )}
 
       {/* Alt bar: Sepet + Barkod */}
       <View style={styles.altBar}>
@@ -1068,4 +1128,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sepetBadgeText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
+  toplamStokText: { textAlign: 'center', color: Colors.gray, fontSize: 13, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Colors.border, backgroundColor: Colors.white },
 });

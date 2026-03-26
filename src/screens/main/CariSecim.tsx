@@ -6,13 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Modal,
   RefreshControl,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -56,7 +56,6 @@ export default function CariSecim() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
-  const sepetDolu = route.params?.sepetDolu ?? false;
 
   const [aramaMetni, setAramaMetni] = useState('');
   const [tumCariListesi, setTumCariListesi] = useState<CariKartBilgileri[]>([]);
@@ -164,27 +163,27 @@ export default function CariSecim() {
   const [islemModalCari, setIslemModalCari] = useState<CariKartBilgileri | null>(null);
 
   const cariSec = (cari: CariKartBilgileri) => {
-    const devamEt = () => {
+    const returnScreen = route.params?.returnScreen ?? 'HizliIslemler';
+    const sepetDolu = route.params?.sepetDolu ?? false;
+
+    const onayla = () => {
       hafifTitresim();
-      const returnScreen = route.params?.returnScreen ?? 'HizliIslemler';
-      (navigation as any).navigate('Drawer', {
-        screen: returnScreen,
-        params: { secilenCari: cari },
-      });
+      useAppStore.getState().setPendingCari(cari, returnScreen);
+      navigation.goBack();
     };
 
     if (sepetDolu) {
       Alert.alert(
-        'Uyarı',
-        'Sepette ürün bulunmaktadır. Cari değiştirmek istediğinize emin misiniz?',
+        'Cari Değiştir',
+        'Sepette ürünler var. Cariyi değiştirmek istediğinize emin misiniz?',
         [
           { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Değiştir', onPress: devamEt },
+          { text: 'Değiştir', style: 'destructive', onPress: onayla },
         ]
       );
-      return;
+    } else {
+      onayla();
     }
-    devamEt();
   };
 
   const cariIslemSec = (secenek: CariIslemSecenegi) => {

@@ -11,6 +11,8 @@ import type {
   TabloCekmeDurumu,
   KameraBarkodTipi,
   KameraBarkodOkuma,
+  StokListesiBilgileri,
+  CariKartBilgileri,
 } from '../models';
 import { TabloCekmeDurumu as TCD, KameraBarkodTipi as KBT, KameraBarkodOkuma as KBO } from '../models';
 
@@ -39,6 +41,13 @@ interface AppState {
   fiyatDurumu: TabloCekmeDurumu;
   barkodDurumu: TabloCekmeDurumu;
 
+  // Stok listesi cache (HizliIslemler & RenkBedenIslemleri ortak)
+  stokListesiCache: StokListesiBilgileri[];
+  stokListesiCacheSirket: string;
+
+  // Cari seçim (ekranlar arası iletişim)
+  pendingCari: { cari: CariKartBilgileri; target: string } | null;
+
   // Actions
   setOnLineCalisma: (val: boolean) => void;
   setYetkiBilgileri: (val: YetkiBilgileri) => void;
@@ -51,6 +60,9 @@ interface AppState {
   setFtBaslikListesi: (val: FisTipiBaslik[]) => void;
   setFiyatTipListesi: (val: FiyatTipiBilgileri[]) => void;
   setStokDurumu: (val: TabloCekmeDurumu) => void;
+  setStokListesiCache: (data: StokListesiBilgileri[], sirket: string) => void;
+  setPendingCari: (cari: CariKartBilgileri, target: string) => void;
+  clearPendingCari: () => void;
   cikisYap: () => void;
 }
 
@@ -73,6 +85,13 @@ export const useAppStore = create<AppState>()((set) => ({
   fiyatDurumu: TCD.Cekilmedi,
   barkodDurumu: TCD.Cekilmedi,
 
+  stokListesiCache: [],
+  stokListesiCacheSirket: '',
+
+  pendingCari: null,
+  setPendingCari: (cari, target) => set({ pendingCari: { cari, target } }),
+  clearPendingCari: () => set({ pendingCari: null }),
+
   setOnLineCalisma: (val) => set({ onLineCalisma: val }),
   setYetkiBilgileri: (val) => {
     console.log('yetkiBilgileri:', JSON.stringify(val, null, 2));
@@ -87,6 +106,7 @@ export const useAppStore = create<AppState>()((set) => ({
   setFtBaslikListesi: (val) => set({ ftBaslikListesi: val }),
   setFiyatTipListesi: (val) => set({ fiyatTipListesi: val }),
   setStokDurumu: (val) => set({ stokDurumu: val }),
+  setStokListesiCache: (data, sirket) => set({ stokListesiCache: data, stokListesiCacheSirket: sirket }),
   cikisYap: () =>
     set({
       yetkiBilgileri: null,
@@ -97,5 +117,7 @@ export const useAppStore = create<AppState>()((set) => ({
       kdvBilgileri: null,
       ftBaslikListesi: [],
       fiyatTipListesi: [],
+      stokListesiCache: [],
+      stokListesiCacheSirket: '',
     }),
 }));

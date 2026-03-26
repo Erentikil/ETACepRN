@@ -21,6 +21,20 @@ export async function stokListesiniAl(
   return res.data;
 }
 
+// ─── Stok Bilgilerini Sayfalama ile Al ────────────────────────────────────────
+// "StokBilgileriniSayfalamaileAl/{gecerliSayfa}/{sayfaUzunlugu}/{telefonCihazKodu}/{veriTabaniAdi}"
+export async function stokBilgileriniSayfalamaIleAl(
+  gecerliSayfa: number,
+  sayfaUzunlugu: number,
+  veriTabaniAdi: string
+): Promise<Sonuc<StokListesiBilgileri[]>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('StokBilgileriniSayfalamaileAl', gecerliSayfa, sayfaUzunlugu, cihazKodu, veriTabaniAdi);
+  const res = await api.get<Sonuc<StokListesiBilgileri[]>>(url);
+  return res.data;
+}
+
 // ─── Tek Stok Fiyat Bilgileri ─────────────────────────────────────────────────
 // MAUI: "TekStokFiyatBilgisiniAl/{stokKodu}/{cihazKodu}/{veriTabaniAdi}"
 export async function tekStokFiyatBilgisiniAl(

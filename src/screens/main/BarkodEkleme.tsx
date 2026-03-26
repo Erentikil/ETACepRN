@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../../store/appStore';
-import { stokKartlariniKodCinsBarkoddanBul, barkodKaydet } from '../../api/hizliIslemlerApi';
+import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, barkodKaydet } from '../../api/hizliIslemlerApi';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
@@ -33,6 +33,7 @@ const ARAMA_TIPLERI = [
   { label: 'Başlayan', value: 1 },
   { label: 'Biten', value: 2 },
   { label: 'İçeren', value: 3 },
+  { label: 'Barkod', value: 4 },
 ];
 
 export default function BarkodEkleme() {
@@ -100,12 +101,23 @@ export default function BarkodEkleme() {
     }
     setYukleniyor(true);
     try {
-      const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
-      if (sonuc.sonuc) {
-        setStokListesi(sonuc.data);
+      if (aramaTipi === 4) {
+        // Barkod araması
+        const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
+        if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+          setStokListesi(sonuc.data);
+        } else {
+          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          setStokListesi([]);
+        }
       } else {
-        toast.error(sonuc.mesaj || 'Stok araması başarısız.');
-        setStokListesi([]);
+        const sonuc = await stokKartlariniKodCinsBarkoddanBul(veri, aramaTipi, calisilanSirket);
+        if (sonuc.sonuc) {
+          setStokListesi(sonuc.data);
+        } else {
+          toast.error(sonuc.mesaj || 'Stok araması başarısız.');
+          setStokListesi([]);
+        }
       }
     } catch (e: any) {
       toast.error(`Stok araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
@@ -203,7 +215,7 @@ export default function BarkodEkleme() {
         </TouchableOpacity>
         <TextInput
           style={styles.aramaInput}
-          placeholder="Stok kodu veya ürün adı..."
+          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı...'}
           placeholderTextColor={Colors.gray}
           value={aramaMetni}
           onChangeText={setAramaMetni}

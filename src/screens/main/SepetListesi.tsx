@@ -487,7 +487,7 @@ export default function SepetListesi() {
     }
     setTaslakYukleniyor(true);
     try {
-      await taslakKaydet(sepet, t.genelToplam);
+      await taslakKaydet(sepet, t.genelToplam, calisilanSirket);
       if (isRBMode) {
         route.params.onRBKalemlerGuncellendi?.([]);
       } else {

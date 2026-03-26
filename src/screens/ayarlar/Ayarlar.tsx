@@ -29,7 +29,7 @@ type Props = {
 };
 
 export default function Ayarlar({ navigation, route }: Props) {
-  const { sirketBilgileri, setSirketBilgileri, setCalisilanSirket: storeSetCalisilanSirket, fiyatTipListesi } = useAppStore();
+  const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi } = useAppStore();
 
   const [apiUrl, setApiUrl] = useState('');
   const [apiUrl2, setApiUrl2] = useState('');
@@ -142,9 +142,6 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI, varsayilanAramaTipi.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.SEPET_SES, sepetSes.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO, varsayilanFiyatNo.toString());
-      // Store'u da güncelle ki yeniden giriş yapmaya gerek kalmasın
-      storeSetCalisilanSirket(calisilanSirket);
-
       Alert.alert('Başarılı', 'Ayarlar kaydedildi.', [
         {
           text: 'Tamam',
