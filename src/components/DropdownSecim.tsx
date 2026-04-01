@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface Secenek {
   label: string;
@@ -29,18 +29,19 @@ export default function DropdownSecim({
   onChange,
   maxListHeight = 220,
 }: Props) {
+  const Colors = useColors();
   const [acik, setAcik] = useState(false);
   const selectedLabel = options.find((o) => o.value === value)?.label;
 
   return (
     <View style={styles.kapsayici}>
       <TouchableOpacity
-        style={[styles.trigger, acik && styles.triggerAcik]}
+        style={[styles.trigger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, acik && { borderColor: Colors.primary, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
         onPress={() => setAcik((v) => !v)}
         activeOpacity={0.7}
       >
         <Text
-          style={[styles.triggerMetin, !selectedLabel && styles.placeholderMetin]}
+          style={[styles.triggerMetin, { color: Colors.black }, !selectedLabel && { color: Colors.textSecondary }]}
           numberOfLines={1}
         >
           {selectedLabel ?? placeholder}
@@ -48,12 +49,12 @@ export default function DropdownSecim({
         <Ionicons
           name={acik ? 'chevron-up' : 'chevron-down'}
           size={16}
-          color={Colors.gray}
+          color={Colors.textSecondary}
         />
       </TouchableOpacity>
 
       {acik && (
-        <View style={styles.liste}>
+        <View style={[styles.liste, { borderColor: Colors.primary, backgroundColor: Colors.card }]}>
           <ScrollView
             style={{ maxHeight: maxListHeight }}
             bounces={false}
@@ -67,7 +68,7 @@ export default function DropdownSecim({
                   key={opt.value}
                   style={[
                     styles.secenek,
-                    i < options.length - 1 && styles.secenekAyrac,
+                    i < options.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border },
                     secili && styles.secenekSecili,
                   ]}
                   onPress={() => {
@@ -77,7 +78,7 @@ export default function DropdownSecim({
                   activeOpacity={0.6}
                 >
                   <Text
-                    style={[styles.secenekMetin, secili && styles.secenekMetinSecili]}
+                    style={[styles.secenekMetin, { color: Colors.text }, secili && { color: Colors.primary, fontWeight: '600' }]}
                     numberOfLines={1}
                   >
                     {opt.label}
@@ -104,33 +105,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderRadius: 10,
-    backgroundColor: Colors.inputBackground,
     paddingHorizontal: 12,
     paddingVertical: 11,
     gap: 8,
   },
-  triggerAcik: {
-    borderColor: Colors.primary,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
   triggerMetin: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
-  },
-  placeholderMetin: {
-    color: Colors.gray,
   },
   liste: {
     borderWidth: 1.5,
     borderTopWidth: 0,
-    borderColor: Colors.primary,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    backgroundColor: Colors.white,
     overflow: 'hidden',
   },
   secenek: {
@@ -141,20 +129,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-  secenekAyrac: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
   secenekSecili: {
     backgroundColor: 'rgba(41,53,138,0.06)',
   },
   secenekMetin: {
     flex: 1,
     fontSize: 14,
-    color: Colors.darkGray,
-  },
-  secenekMetinSecili: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
 });

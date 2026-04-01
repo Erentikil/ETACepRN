@@ -12,7 +12,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../store/appStore';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 import { Config } from '../constants/Config';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -25,6 +25,7 @@ interface MenuItem {
 }
 
 export default function DrawerMenu({ navigation }: DrawerContentComponentProps) {
+  const Colors = useColors();
   const { menuYetkiBilgileri, yetkiBilgileri, calisilanSirket, cikisYap } =
     useAppStore();
 
@@ -37,39 +38,32 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       yetki: true,
     },
     {
-      id: 'hizli',
+      id: 'hizliV2',
       baslik: 'Alış/Satış',
       icon: 'flash-outline',
-      ekran: 'HizliIslemler',
-      yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
-    },
-    {
-      id: 'hizliV2',
-      baslik: 'Alış/Satış V2',
-      icon: 'flash-outline',
       ekran: 'HizliIslemlerV2',
-      yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
+      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
       id: 'alimSatim',
       baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+      yetki: menuYetkiBilgileri?.evrakDuzenle ?? false,
     },
     {
       id: 'fiyatGor',
       baslik: 'Fiyat Gor',
       icon: 'pricetag-outline',
       ekran: 'FiyatGor',
-      yetki: true,
+      yetki: menuYetkiBilgileri?.fiyatGor ?? false,
     },
     {
       id: 'barkodEkleme',
       baslik: 'Barkod Ekleme',
       icon: 'barcode-outline',
       ekran: 'BarkodEkleme',
-      yetki: true,
+      yetki: menuYetkiBilgileri?.barkodEkle ?? false,
     },
     {
       id: 'renkBeden',
@@ -108,10 +102,10 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     },
     {
       id: 'ziyaret',
-      baslik: 'Ziyaret İşlemleri',
+      baslik: 'CRM Teklif',
       icon: 'people-outline',
       ekran: 'ZiyaretIslemleri',
-      yetki: menuYetkiBilgileri?.ziyaretIslemleri ?? false,
+      yetki: menuYetkiBilgileri?.crm ?? false,
     },
     {
       id: 'onay',
@@ -119,6 +113,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       icon: 'shield-checkmark-outline',
       ekran: 'OnayIslemleri',
       yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
+    },
+    {
+      id: 'kontrolPaneli',
+      baslik: 'Kontrol Paneli',
+      icon: 'grid-outline',
+      ekran: 'Panel',
+      yetki: menuYetkiBilgileri?.kontrolPanel ?? false,
     },
     {
       id: 'kur',
@@ -157,11 +158,11 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: Colors.drawerBackground }]}>
       {/* Başlık */}
       <View style={styles.header}>
-        <Ionicons name="business-outline" size={36} color={Colors.white} />
-        <Text style={styles.sirketAdi} numberOfLines={1}>
+        <Ionicons name="business-outline" size={36} color={Colors.drawerText} />
+        <Text style={[styles.sirketAdi, { color: Colors.drawerText }]} numberOfLines={1}>
           {calisilanSirket || 'ETACep'}
         </Text>
         <Text style={styles.kullaniciAdi}>
@@ -187,16 +188,16 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name={item.icon} size={22} color={Colors.white} />
-            <Text style={styles.menuText}>{item.baslik}</Text>
+            <Ionicons name={item.icon} size={22} color={Colors.drawerText} />
+            <Text style={[styles.menuText, { color: Colors.drawerText }]}>{item.baslik}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {/* Çıkış */}
       <TouchableOpacity style={styles.cikisBtn} onPress={handleCikis}>
-        <Ionicons name="log-out-outline" size={22} color={Colors.white} />
-        <Text style={styles.menuText}>Çıkış</Text>
+        <Ionicons name="log-out-outline" size={22} color={Colors.drawerText} />
+        <Text style={[styles.menuText, { color: Colors.drawerText }]}>Çıkış</Text>
       </TouchableOpacity>
     </View>
   );
@@ -205,7 +206,6 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary,
   },
   header: {
     paddingTop: 60,
@@ -216,7 +216,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sirketAdi: {
-    color: Colors.white,
     fontSize: 18,
     fontWeight: '700',
     marginTop: 8,
@@ -237,7 +236,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   menuText: {
-    color: Colors.white,
     fontSize: 15,
     fontWeight: '500',
   },

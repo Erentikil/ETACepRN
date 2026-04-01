@@ -15,7 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
-import { Colors } from '../../constants/Colors';
+import { useColors, useTheme, type TemaSecimi } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
@@ -29,13 +29,17 @@ type Props = {
 };
 
 export default function Ayarlar({ navigation, route }: Props) {
+  const Colors = useColors();
+  const { temaSecimi, setTemaSecimi } = useTheme();
   const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi } = useAppStore();
 
   const [apiUrl, setApiUrl] = useState('');
   const [apiUrl2, setApiUrl2] = useState('');
+  const [apiUrl3, setApiUrl3] = useState('');
   const [calisilanSirket, setCalisilanSirket] = useState('');
   const [sirketListesi, setSirketListesi] = useState<string[]>([]);
   const [sirketYukleniyor, setSirketYukleniyor] = useState(false);
+  const [aktifApi, setAktifApi] = useState<'1' | '2' | '3'>('1');
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [manuelTarama, setManuelTarama] = useState(false);
   const [baslangicZoom, setBaslangicZoom] = useState(0);
@@ -49,13 +53,19 @@ export default function Ayarlar({ navigation, route }: Props) {
     (async () => {
       const u1 = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL);
       const u2 = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL2);
+      const u3 = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL3);
       const sirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
 
       const okumaModu = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_OKUMA);
       const zoomStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.KAMERA_BASLANGIC_ZOOM);
 
+      const aktifApiStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.AKTIF_API);
+      if (aktifApiStr === '2') setAktifApi('2');
+      else if (aktifApiStr === '3') setAktifApi('3');
+
       if (u1) setApiUrl(u1);
       if (u2) setApiUrl2(u2);
+      if (u3) setApiUrl3(u3);
       if (sirket) setCalisilanSirket(sirket);
       if (okumaModu === 'elle') setManuelTarama(true);
       if (zoomStr) setBaslangicZoom(parseFloat(zoomStr) || 0);
@@ -99,13 +109,17 @@ export default function Ayarlar({ navigation, route }: Props) {
   }, []);
 
   const sirketleriFetch = async () => {
-    if (!apiUrl.trim()) {
-      toast.error('Önce API URL giriniz.');
+    const aktifUrl = aktifApi === '3' ? apiUrl3 : aktifApi === '2' ? apiUrl2 : apiUrl;
+    if (!aktifUrl.trim()) {
+      toast.error('Önce aktif API URL giriniz.');
       return;
     }
     setSirketYukleniyor(true);
     try {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL, apiUrl.trim());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL2, apiUrl2.trim());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL3, apiUrl3.trim());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.AKTIF_API, aktifApi);
       const sonuc = await sirketBilgileriniAl("");
       if (sonuc.sonuc) {
         setSirketListesi(sonuc.data.sirketListesi);
@@ -127,14 +141,17 @@ export default function Ayarlar({ navigation, route }: Props) {
   };
 
   const handleKaydet = async () => {
-    if (!apiUrl.trim()) {
-      toast.error('API URL zorunludur.');
+    const aktifUrl = aktifApi === '3' ? apiUrl3 : aktifApi === '2' ? apiUrl2 : apiUrl;
+    if (!aktifUrl.trim()) {
+      toast.error('Aktif API URL zorunludur.');
       return;
     }
     setKaydediliyor(true);
     try {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL, apiUrl.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL2, apiUrl2.trim());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL3, apiUrl3.trim());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.AKTIF_API, aktifApi);
       await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, calisilanSirket);
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_OKUMA, manuelTarama ? 'elle' : 'otomatik');
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_BASLANGIC_ZOOM, baslangicZoom.toString());
@@ -160,58 +177,109 @@ export default function Ayarlar({ navigation, route }: Props) {
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={[styles.container, { backgroundColor: Colors.background }]} keyboardShouldPersistTaps="handled">
       {/* API URL Bölümü */}
-      <View style={styles.bolum}>
-        <Text style={styles.bolumBaslik}>
+      <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
+        <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
           <Ionicons name="globe-outline" size={16} /> Bağlantı Ayarları
         </Text>
 
-        <Text style={styles.label}>Harici API Adresi (WebApi1)</Text>
-        <View style={styles.urlRow}>
-          <TextInput
-            style={[styles.input, styles.flex]}
-            value={apiUrl}
-            onChangeText={setApiUrl}
-            placeholder="https://sunucu.com/webapi"
-            placeholderTextColor={Colors.gray}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
+        {/* Aktif API Seçimi */}
+        <View style={styles.apiSecimRow}>
           <TouchableOpacity
-            style={styles.testBtn}
-            onPress={sirketleriFetch}
-            disabled={sirketYukleniyor}
+            style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, aktifApi === '1' && { borderColor: Colors.primary, backgroundColor: '#eef2ff' }]}
+            onPress={() => setAktifApi('1')}
           >
             <Ionicons
-              name={sirketYukleniyor ? 'hourglass-outline' : 'sync-outline'}
-              size={20}
-              color={Colors.primary}
+              name={aktifApi === '1' ? 'radio-button-on' : 'radio-button-off'}
+              size={18}
+              color={aktifApi === '1' ? Colors.primary : Colors.textSecondary}
             />
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '1' && { color: Colors.primary }]}>Dış (WebApi1)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, aktifApi === '2' && { borderColor: Colors.primary, backgroundColor: '#eef2ff' }]}
+            onPress={() => setAktifApi('2')}
+          >
+            <Ionicons
+              name={aktifApi === '2' ? 'radio-button-on' : 'radio-button-off'}
+              size={18}
+              color={aktifApi === '2' ? Colors.primary : Colors.textSecondary}
+            />
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '2' && { color: Colors.primary }]}>Dış (WebApi2)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, aktifApi === '3' && { borderColor: Colors.primary, backgroundColor: '#eef2ff' }]}
+            onPress={() => setAktifApi('3')}
+          >
+            <Ionicons
+              name={aktifApi === '3' ? 'radio-button-on' : 'radio-button-off'}
+              size={18}
+              color={aktifApi === '3' ? Colors.primary : Colors.textSecondary}
+            />
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '3' && { color: Colors.primary }]}>İç (WebApi3)</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Dahili API Adresi (WebApi2)</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>Dış API Adresi (WebApi1)</Text>
         <TextInput
-          style={styles.input}
-          value={apiUrl2}
-          onChangeText={setApiUrl2}
-          placeholder="http://192.168.1.1/webapi"
-          placeholderTextColor={Colors.gray}
+          style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '1' && { borderColor: Colors.primary }]}
+          value={apiUrl}
+          onChangeText={setApiUrl}
+          placeholder="https://sunucu.com/webapi"
+          placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
         />
+
+        <Text style={[styles.label, { color: Colors.text }]}>Dış API Adresi (WebApi2)</Text>
+        <TextInput
+          style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '2' && { borderColor: Colors.primary }]}
+          value={apiUrl2}
+          onChangeText={setApiUrl2}
+          placeholder="http://192.168.1.1/webapi"
+          placeholderTextColor={Colors.textSecondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+
+        <Text style={[styles.label, { color: Colors.text }]}>İç API Adresi (WebApi3)</Text>
+        <TextInput
+          style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '3' && { borderColor: Colors.primary }]}
+          value={apiUrl3}
+          onChangeText={setApiUrl3}
+          placeholder="https://dis-sunucu.com/webapi"
+          placeholderTextColor={Colors.textSecondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+
+        <TouchableOpacity
+          style={[styles.senkronBtn, { backgroundColor: Colors.primary }]}
+          onPress={sirketleriFetch}
+          disabled={sirketYukleniyor}
+        >
+          <Ionicons
+            name={sirketYukleniyor ? 'hourglass-outline' : 'sync-outline'}
+            size={18}
+            color="#fff"
+          />
+          <Text style={styles.senkronBtnText}>
+            {sirketYukleniyor ? 'Bağlanıyor...' : 'Bağlantıyı Test Et'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Şirket Seçimi */}
-      <View style={styles.bolum}>
-        <Text style={styles.bolumBaslik}>
+      <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
+        <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
           <Ionicons name="business-outline" size={16} /> Şirket
         </Text>
         {sirketListesi.length === 0 ? (
-          <Text style={styles.aciklama}>
+          <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
             Şirket listesi için önce API URL girin ve senkronize edin (↻).
           </Text>
         ) : (
@@ -228,15 +296,15 @@ export default function Ayarlar({ navigation, route }: Props) {
       </View>
 
       {/* Tarayıcı Ayarları */}
-      <View style={styles.bolum}>
-        <Text style={styles.bolumBaslik}>
+      <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
+        <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
           <Ionicons name="scan-outline" size={16} /> Tarayıcı Ayarları
         </Text>
 
         <View style={styles.taramaModRow}>
           <View style={styles.taramaModBilgi}>
-            <Text style={styles.label}>Manuel Tarama</Text>
-            <Text style={styles.aciklama}>
+            <Text style={[styles.label, { color: Colors.text }]}>Manuel Tarama</Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
               {manuelTarama ? 'Barkod okunduğunda butona basarak onaylayın' : 'Barkod algılandığında otomatik okunur'}
             </Text>
           </View>
@@ -244,13 +312,13 @@ export default function Ayarlar({ navigation, route }: Props) {
             value={manuelTarama}
             onValueChange={setManuelTarama}
             trackColor={{ false: Colors.border, true: Colors.primary }}
-            thumbColor={Colors.white}
+            thumbColor="#fff"
           />
         </View>
 
-        <Text style={[styles.label, { marginTop: 16 }]}>Başlangıç Zoom</Text>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Başlangıç Zoom</Text>
         <View style={styles.zoomRow}>
-          <Text style={styles.zoomDeger}>{(1 + baslangicZoom * 9).toFixed(1)}x</Text>
+          <Text style={[styles.zoomDeger, { color: Colors.primary }]}>{(1 + baslangicZoom * 9).toFixed(1)}x</Text>
           <Slider
             style={styles.slider}
             minimumValue={0}
@@ -263,21 +331,39 @@ export default function Ayarlar({ navigation, route }: Props) {
             thumbTintColor={Colors.primary}
           />
         </View>
-        <Text style={styles.aciklama}>
+        <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
           Kamera açıldığında bu zoom seviyesinden başlar. Kullanıcı isterse değiştirebilir.
         </Text>
       </View>
 
       {/* Genel Ayarlar */}
-      <View style={styles.bolum}>
-        <Text style={styles.bolumBaslik}>
+      <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
+        <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
           <Ionicons name="settings-outline" size={16} /> Genel Ayarlar
         </Text>
 
+        <Text style={[styles.label, { color: Colors.text }]}>Tema</Text>
+        <View style={styles.apiSecimGrup}>
+          {([['sistem', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu']] as [TemaSecimi, string][]).map(([val, baslik]) => (
+            <TouchableOpacity
+              key={val}
+              style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, temaSecimi === val && { borderColor: Colors.primary, backgroundColor: Colors.primary + '15' }]}
+              onPress={() => setTemaSecimi(val)}
+            >
+              <Ionicons
+                name={temaSecimi === val ? 'radio-button-on' : 'radio-button-off'}
+                size={18}
+                color={temaSecimi === val ? Colors.primary : Colors.textSecondary}
+              />
+              <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, temaSecimi === val && { color: Colors.primary }]}>{baslik}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <View style={styles.taramaModRow}>
           <View style={styles.taramaModBilgi}>
-            <Text style={styles.label}>Miktarlı Giriş Varsayılan</Text>
-            <Text style={styles.aciklama}>
+            <Text style={[styles.label, { color: Colors.text }]}>Miktarlı Giriş Varsayılan</Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
               {miktarliGirisVarsayilan
                 ? 'Ekranlar açıldığında miktarlı giriş seçili gelir'
                 : 'Ekranlar açıldığında miktarlı giriş kapalı gelir'}
@@ -287,14 +373,14 @@ export default function Ayarlar({ navigation, route }: Props) {
             value={miktarliGirisVarsayilan}
             onValueChange={setMiktarliGirisVarsayilan}
             trackColor={{ false: Colors.border, true: Colors.primary }}
-            thumbColor={Colors.white}
+            thumbColor="#fff"
           />
         </View>
 
         <View style={[styles.taramaModRow, { marginTop: 16 }]}>
           <View style={styles.taramaModBilgi}>
-            <Text style={styles.label}>Sepet Sesi</Text>
-            <Text style={styles.aciklama}>
+            <Text style={[styles.label, { color: Colors.text }]}>Sepet Sesi</Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
               {sepetSes
                 ? 'Sepete ürün eklendiğinde ses çalar'
                 : 'Sepete ürün eklendiğinde ses çalmaz'}
@@ -304,12 +390,12 @@ export default function Ayarlar({ navigation, route }: Props) {
             value={sepetSes}
             onValueChange={setSepetSes}
             trackColor={{ false: Colors.border, true: Colors.primary }}
-            thumbColor={Colors.white}
+            thumbColor="#fff"
           />
         </View>
 
-        <Text style={[styles.label, { marginTop: 16 }]}>Fiyat Gör - Varsayılan Fiyat No</Text>
-        <Text style={styles.aciklama}>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Fiyat Gör - Varsayılan Fiyat No</Text>
+        <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
           Fiyat Gör sayfasında stoklara girildiğinde öncelikli gösterilecek fiyat tipi
         </Text>
         {fiyatTipListesi.length > 0 ? (
@@ -320,13 +406,13 @@ export default function Ayarlar({ navigation, route }: Props) {
             onChange={(v) => setVarsayilanFiyatNo(parseInt(v, 10))}
           />
         ) : (
-          <Text style={styles.aciklama}>
+          <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
             Fiyat tipleri giriş yapıldıktan sonra yüklenir.
           </Text>
         )}
 
-        <Text style={[styles.label, { marginTop: 16 }]}>Varsayılan Arama Tipi</Text>
-        <Text style={styles.aciklama}>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Varsayılan Arama Tipi</Text>
+        <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
           Alış/Satış işlemlerinde stok ararken varsayılan arama kriteri
         </Text>
         <DropdownSecim
@@ -358,10 +444,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   bolum: {
-    backgroundColor: Colors.white,
     margin: 12,
     marginBottom: 0,
     borderRadius: 12,
@@ -375,44 +459,57 @@ const styles = StyleSheet.create({
   bolumBaslik: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
     marginBottom: 14,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.darkGray,
     marginBottom: 6,
     marginTop: 10,
   },
   aciklama: {
     fontSize: 12,
-    color: Colors.gray,
     marginTop: 4,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderRadius: 10,
-    backgroundColor: Colors.inputBackground,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    color: Colors.black,
   },
-  urlRow: {
+  apiSecimRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 6,
+  },
+  apiSecimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  testBtn: {
-    width: 44,
-    height: 44,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
-    justifyContent: 'center',
+  },
+  apiSecimText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  senkronBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  senkronBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   taramaModRow: {
     flexDirection: 'row',
@@ -433,7 +530,6 @@ const styles = StyleSheet.create({
   zoomDeger: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
     width: 44,
   },
   slider: {

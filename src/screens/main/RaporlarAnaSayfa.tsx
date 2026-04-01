@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import type { DrawerParamList } from '../../navigation/types';
 
@@ -45,6 +45,7 @@ const RAPORLAR: RaporKarti[] = [
 ];
 
 export default function RaporlarAnaSayfa({ navigation }: Props) {
+  const Colors = useColors();
   const [arama, setArama] = useState('');
 
   const filtrelenmis = arama.trim()
@@ -142,34 +143,34 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
 
   const renderKart = ({ item }: { item: RaporKarti }) => (
     <TouchableOpacity
-      style={styles.kart}
+      style={[styles.kart, { backgroundColor: Colors.card }]}
       onPress={() => raporSec(item)}
       activeOpacity={0.75}
     >
-      <View style={styles.kartIkon}>
+      <View style={[styles.kartIkon, { backgroundColor: `${Colors.primary}14` }]}>
         <Ionicons name={item.icon} size={26} color={Colors.primary} />
       </View>
-      <Text style={styles.kartBaslik} numberOfLines={2}>
+      <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
         {item.baslik}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.aramaRow}>
-        <Ionicons name="search-outline" size={16} color={Colors.gray} />
+    <View style={[styles.container, { backgroundColor: Colors.background }]}>
+      <View style={[styles.aramaRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
+        <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
-          style={styles.aramaInput}
+          style={[styles.aramaInput, { color: Colors.text }]}
           placeholder="Rapor ara..."
-          placeholderTextColor={Colors.gray}
+          placeholderTextColor={Colors.textSecondary}
           value={arama}
           onChangeText={setArama}
           returnKeyType="search"
         />
         {arama.length > 0 && (
           <TouchableOpacity onPress={() => setArama('')}>
-            <Ionicons name="close-circle" size={16} color={Colors.gray} />
+            <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -190,32 +191,27 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
     paddingHorizontal: 12,
     paddingTop: 12,
   },
   aramaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
     gap: 6,
   },
   aramaInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
     paddingVertical: 0,
   },
   bolumBaslik: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.darkGray,
     marginBottom: 12,
     marginLeft: 4,
   },
@@ -228,7 +224,6 @@ const styles = StyleSheet.create({
   },
   kart: {
     flex: 1,
-    backgroundColor: Colors.white,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 8,
@@ -246,12 +241,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(41, 53, 138, 0.08)',
   },
   kartBaslik: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.darkGray,
     textAlign: 'center',
     lineHeight: 16,
   },

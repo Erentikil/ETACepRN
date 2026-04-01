@@ -25,7 +25,7 @@ import {
   siparisKapamaKaydet,
 } from '../../api/siparisKapamaApi';
 import { fisTipleriniAl, generateGuid } from '../../api/hizliIslemlerApi';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type {
   AcmaSiparisFisBilgileri,
@@ -74,14 +74,11 @@ let _savedGrup: FisTipiGrup | null = null;
 let _savedFisTipi: FisTipiItem | null = null;
 
 export default function SiparisKapama() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { yetkiBilgileri, calisilanSirket } = useAppStore();
 
-  // Yetki bilgilerini logla
-  useEffect(() => {
-    console.log('[SiparisKapama] yetkiBilgileri:', JSON.stringify(yetkiBilgileri, null, 2));
-  }, [yetkiBilgileri]);
 
   // ── Genel State ─────────────────────────────────────────────────────────────
   const [adim, setAdim] = useState<Adim>('fisListesi');
@@ -294,10 +291,10 @@ export default function SiparisKapama() {
     ashb.tesMiktar + ashb.sepetMiktar;
 
   // ── Açma listesinde satır rengi ────────────────────────────────────────────
-  const satirRengi = (ashb: AcmaSiparisHareketBilgileri): string => {
+  const satirRengi = (ashb: AcmaSiparisHareketBilgileri): string | undefined => {
     if (kalanMiktar(ashb) <= 0) return '#d5ffea';
     if (ashb.sepetMiktar > 0) return '#faf3cf';
-    return '#ffffff';
+    return undefined;
   };
 
   // ── Sipariş Ekle (açma → kapama) ──────────────────────────────────────────
@@ -542,23 +539,23 @@ export default function SiparisKapama() {
   const renderFisListesi = () => (
     <View style={{ flex: 1 }}>
       {/* Fiş Tipi Seçimi */}
-      <TouchableOpacity style={styles.secimBtn} onPress={() => setFisTipiModalGorunur(true)}>
-        <Ionicons name="document-text-outline" size={18} color={secilenFisTipi ? Colors.primary : Colors.gray} />
-        <Text style={[styles.secimBtnText, secilenFisTipi && styles.secimBtnTextSecili]}>
+      <TouchableOpacity style={[styles.secimBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]} onPress={() => setFisTipiModalGorunur(true)}>
+        <Ionicons name="document-text-outline" size={18} color={secilenFisTipi ? Colors.primary : Colors.textSecondary} />
+        <Text style={[styles.secimBtnText, { color: Colors.textSecondary }, secilenFisTipi && { color: Colors.text, fontWeight: '600' as const }]}>
           {secilenFisTipi
             ? `${secilenGrup?.alimSatim ?? ''} - ${secilenFisTipi.fisTipiAdi}`
             : 'Fiş tipi seçiniz...'}
         </Text>
-        <Ionicons name="chevron-down" size={16} color={Colors.gray} />
+        <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
 
       {/* Evrak No */}
-      <View style={styles.evrakNoRow}>
-        <Ionicons name="document-outline" size={18} color={Colors.gray} />
+      <View style={[styles.evrakNoRow, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+        <Ionicons name="document-outline" size={18} color={Colors.textSecondary} />
         <TextInput
-          style={styles.evrakNoInput}
+          style={[styles.evrakNoInput, { color: Colors.text }]}
           placeholder="Evrak numarası giriniz..."
-          placeholderTextColor={Colors.gray}
+          placeholderTextColor={Colors.textSecondary}
           value={evrakNo}
           onChangeText={(text) => {
             setEvrakNo(text);
@@ -569,7 +566,7 @@ export default function SiparisKapama() {
         />
         {evrakNo.length > 0 && (
           <TouchableOpacity onPress={() => setEvrakNo('')}>
-            <Ionicons name="close-circle" size={16} color={Colors.gray} />
+            <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.barkodBtn} onPress={() => setBarkodModalGorunur(true)}>
@@ -579,7 +576,7 @@ export default function SiparisKapama() {
 
       {/* Cari Seçim */}
       <TouchableOpacity
-        style={styles.secimBtn}
+        style={[styles.secimBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
         onPress={() => {
           setEvrakNo('');
           cariSec();
@@ -588,25 +585,25 @@ export default function SiparisKapama() {
         <Ionicons
           name="person-outline"
           size={18}
-          color={secilenCari ? Colors.primary : Colors.gray}
+          color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
-        <Text style={[styles.secimBtnText, secilenCari && styles.secimBtnTextSecili]}>
+        <Text style={[styles.secimBtnText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' as const }]}>
           {secilenCari ? secilenCari.cariUnvan : 'Cari ünvanı seçiniz...'}
         </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
+        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
 
       {/* Ara butonu */}
       <TouchableOpacity
-        style={[styles.araBtn, fisYukleniyor && { opacity: 0.6 }]}
+        style={[styles.araBtn, { backgroundColor: Colors.primary }, fisYukleniyor && { opacity: 0.6 }]}
         onPress={fisleriniAra}
         disabled={fisYukleniyor}
       >
         {fisYukleniyor ? (
-          <ActivityIndicator size="small" color={Colors.white} />
+          <ActivityIndicator size="small" color={'#fff'} />
         ) : (
           <>
-            <Ionicons name="search-outline" size={18} color={Colors.white} />
+            <Ionicons name="search-outline" size={18} color={'#fff'} />
             <Text style={styles.araBtnText}>Ara</Text>
           </>
         )}
@@ -634,23 +631,23 @@ export default function SiparisKapama() {
 
       {/* Hepsi Butonu + Barkod */}
       {fisListesi.length > 0 && (
-        <View style={styles.hepsiBarContainer}>
+        <View style={[styles.hepsiBarContainer, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
           <TouchableOpacity
-            style={[styles.hepsiBtn, (hareketYukleniyor) && { opacity: 0.6 }]}
+            style={[styles.hepsiBtn, { backgroundColor: Colors.primary }, (hareketYukleniyor) && { opacity: 0.6 }]}
             onPress={() => hareketleriYukle(fisListesi, true)}
             disabled={hareketYukleniyor}
           >
             {hareketYukleniyor ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={'#fff'} />
             ) : (
               <>
-                <Ionicons name="layers-outline" size={18} color={Colors.white} />
+                <Ionicons name="layers-outline" size={18} color={'#fff'} />
                 <Text style={styles.hepsiBtnText}>Hepsi ({fisListesi.length} fiş)</Text>
               </>
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.hepsiBarkodBtn}
+            style={[styles.hepsiBarkodBtn, { borderColor: Colors.primary }]}
             onPress={() => setBarkodModalGorunur(true)}
           >
             <Ionicons name="barcode-outline" size={24} color={Colors.primary} />
@@ -663,26 +660,26 @@ export default function SiparisKapama() {
   // ── Render: Fiş Satırı ─────────────────────────────────────────────────────
   const renderFisSatir = ({ item }: { item: AcmaSiparisFisBilgileri }) => (
     <TouchableOpacity
-      style={styles.kart}
+      style={[styles.kart, { backgroundColor: Colors.card }]}
       activeOpacity={0.7}
       onPress={() => hareketleriYukle([item])}
     >
       <View style={styles.fisUstSatir}>
-        <Text style={styles.etiketDeger}>
-          <Text style={styles.etiket}>Tarih </Text>
+        <Text style={[styles.etiketDeger, { color: Colors.text }]}>
+          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Tarih </Text>
           {formatTarih(item.tarih)}
         </Text>
-        <Text style={styles.etiketDeger}>
-          <Text style={styles.etiket}>Evrak No </Text>
+        <Text style={[styles.etiketDeger, { color: Colors.text }]}>
+          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Evrak No </Text>
           {item.evrakNo}
         </Text>
       </View>
       <View style={styles.fisAltSatir}>
-        <Text style={styles.fisBilgi}>
-          <Text style={styles.etiket}>Cari: </Text>
+        <Text style={[styles.fisBilgi, { color: Colors.textSecondary }]}>
+          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Cari: </Text>
           {item.cariKodu}
         </Text>
-        <Text style={styles.fisTutar}>
+        <Text style={[styles.fisTutar, { color: Colors.primary }]}>
           {paraTL(item.genelToplam)}
         </Text>
       </View>
@@ -695,11 +692,11 @@ export default function SiparisKapama() {
   const renderHareketler = () => (
     <View style={{ flex: 1 }}>
       {/* Geri butonu + başlık */}
-      <View style={styles.hareketBaslik}>
+      <View style={[styles.hareketBaslik, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <TouchableOpacity style={styles.geriBtn} onPress={geriDon}>
           <Ionicons name="arrow-back" size={20} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.hareketBaslikText} numberOfLines={1}>
+        <Text style={[styles.hareketBaslikText, { color: Colors.text }]} numberOfLines={1}>
           {secilenFisler.length === 1
             ? `Evrak: ${secilenFisler[0].evrakNo}`
             : `${secilenFisler.length} fiş seçili`}
@@ -707,20 +704,20 @@ export default function SiparisKapama() {
       </View>
 
       {/* Tab seçici */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <TouchableOpacity
-          style={[styles.tabBtn, aktifTab === 'acma' && styles.tabBtnAktif]}
+          style={[styles.tabBtn, aktifTab === 'acma' && { borderBottomColor: Colors.primary }]}
           onPress={() => setAktifTab('acma')}
         >
-          <Text style={[styles.tabText, aktifTab === 'acma' && styles.tabTextAktif]}>
+          <Text style={[styles.tabText, { color: Colors.textSecondary }, aktifTab === 'acma' && { color: Colors.primary, fontWeight: '700' as const }]}>
             Açma ({acmaListesi.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabBtn, aktifTab === 'kapama' && styles.tabBtnAktif]}
+          style={[styles.tabBtn, aktifTab === 'kapama' && { borderBottomColor: Colors.primary }]}
           onPress={() => setAktifTab('kapama')}
         >
-          <Text style={[styles.tabText, aktifTab === 'kapama' && styles.tabTextAktif]}>
+          <Text style={[styles.tabText, { color: Colors.textSecondary }, aktifTab === 'kapama' && { color: Colors.primary, fontWeight: '700' as const }]}>
             Kapama ({kapamaSepeti.length})
           </Text>
         </TouchableOpacity>
@@ -730,19 +727,19 @@ export default function SiparisKapama() {
       {aktifTab === 'acma' ? (
         <View style={{ flex: 1 }}>
           {/* Arama */}
-          <View style={styles.aramaRow}>
-            <Ionicons name="search-outline" size={16} color={Colors.gray} />
+          <View style={[styles.aramaRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
+            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
             <TextInput
-              style={styles.aramaInput}
+              style={[styles.aramaInput, { color: Colors.text }]}
               placeholder="Stok kodu, cinsi veya takip no ara..."
-              placeholderTextColor={Colors.gray}
+              placeholderTextColor={Colors.textSecondary}
               value={aramaMetni}
               onChangeText={setAramaMetni}
               returnKeyType="search"
             />
             {aramaMetni.length > 0 && (
               <TouchableOpacity onPress={() => setAramaMetni('')}>
-                <Ionicons name="close-circle" size={16} color={Colors.gray} />
+                <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -777,10 +774,10 @@ export default function SiparisKapama() {
 
       {/* Alt bar */}
       {kapamaSepeti.length > 0 && (
-        <View style={styles.altBar}>
+        <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
           <View style={styles.altBarBilgi}>
-            <Text style={styles.altBarKalem}>{kapamaSepeti.length} kalem</Text>
-            <Text style={styles.altBarToplam}>
+            <Text style={[styles.altBarKalem, { color: Colors.textSecondary }]}>{kapamaSepeti.length} kalem</Text>
+            <Text style={[styles.altBarToplam, { color: Colors.text }]}>
               {paraTL(kapamaSepeti.reduce((t, k) => t + k.fiyat * k.miktar, 0))}
             </Text>
           </View>
@@ -788,15 +785,15 @@ export default function SiparisKapama() {
             <Ionicons name="trash-outline" size={18} color="#e53935" />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.kaydetBtn, kaydediliyor && { opacity: 0.6 }]}
+            style={[styles.kaydetBtn, { backgroundColor: Colors.primary }, kaydediliyor && { opacity: 0.6 }]}
             onPress={evrakKaydet}
             disabled={kaydediliyor}
           >
             {kaydediliyor ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={'#fff'} />
             ) : (
               <>
-                <Ionicons name="save-outline" size={18} color={Colors.white} />
+                <Ionicons name="save-outline" size={18} color={'#fff'} />
                 <Text style={styles.kaydetBtnText}>Kaydet</Text>
               </>
             )}
@@ -812,7 +809,7 @@ export default function SiparisKapama() {
     const teslim = teslimEdilenMiktar(item);
     return (
       <TouchableOpacity
-        style={[styles.kart, { backgroundColor: satirRengi(item) }]}
+        style={[styles.kart, { backgroundColor: satirRengi(item) ?? Colors.card }]}
         activeOpacity={0.7}
         onPress={() => {
           if (kalan <= 0) {
@@ -828,17 +825,17 @@ export default function SiparisKapama() {
         delayLongPress={400}
       >
         <View style={styles.acmaUstSatir}>
-          <Text style={styles.etiketDeger}>
-            <Text style={styles.etiket}>Tarih </Text>
+          <Text style={[styles.etiketDeger, { color: Colors.text }]}>
+            <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Tarih </Text>
             {formatTarih(item.tarih)}
           </Text>
-          <Text style={styles.etiketDeger}>
-            <Text style={styles.etiket}>Takip No </Text>
+          <Text style={[styles.etiketDeger, { color: Colors.text }]}>
+            <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Takip No </Text>
             {item.takipNo}
           </Text>
         </View>
-        <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-        <Text style={styles.stokCinsi} numberOfLines={2}>{item.stokCinsi}</Text>
+        <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+        <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={2}>{item.stokCinsi}</Text>
         <View style={styles.miktarSatirlar}>
           <MiktarKutu etiket="Miktar" deger={miktarFormat(item.miktar)} />
           <MiktarKutu etiket="Teslim" deger={miktarFormat(teslim)} renk="#43a047" />
@@ -856,11 +853,11 @@ export default function SiparisKapama() {
 
   // ── Render: Kapama satırı ──────────────────────────────────────────────────
   const renderKapamaSatir = ({ item }: { item: KapamaSepetKalem }) => (
-    <View style={styles.kart}>
+    <View style={[styles.kart, { backgroundColor: Colors.card }]}>
       <View style={styles.kapamaUstSatir}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-          <Text style={styles.stokCinsi} numberOfLines={2}>{item.stokCinsi}</Text>
+          <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+          <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={2}>{item.stokCinsi}</Text>
         </View>
         <TouchableOpacity
           style={styles.silBtn}
@@ -875,17 +872,17 @@ export default function SiparisKapama() {
         </TouchableOpacity>
       </View>
       <View style={styles.kapamaAltSatir}>
-        <Text style={styles.fiyatText}>Fiyat: {paraTL(item.fiyat)}</Text>
+        <Text style={[styles.fiyatText, { color: Colors.textSecondary }]}>Fiyat: {paraTL(item.fiyat)}</Text>
         <TouchableOpacity
           style={styles.miktarDuzenleBtn}
           onPress={() => miktarModalAc({ tip: 'kapama', kalem: item })}
         >
-          <Text style={styles.miktarDuzenleBtnText}>
+          <Text style={[styles.miktarDuzenleBtnText, { color: Colors.primary }]}>
             Miktar: {miktarFormat(item.miktar)}
           </Text>
           <Ionicons name="create-outline" size={14} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.tutarText}>Tutar: {paraTL(item.fiyat * item.miktar)}</Text>
+        <Text style={[styles.tutarText, { color: Colors.primary }]}>Tutar: {paraTL(item.fiyat * item.miktar)}</Text>
       </View>
     </View>
   );
@@ -894,7 +891,7 @@ export default function SiparisKapama() {
   // ── ANA RENDER ─────────────────────────────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {adim === 'fisListesi' ? renderFisListesi() : renderHareketler()}
 
       {/* Miktar Modal */}
@@ -903,8 +900,8 @@ export default function SiparisKapama() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalKutu}>
-            <Text style={styles.modalBaslik}>
+          <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
+            <Text style={[styles.modalBaslik, { color: Colors.text }]}>
               {modalHedef?.tip === 'acma'
                 ? modalHedef.ashb.stokCinsi
                 : modalHedef?.tip === 'kapama'
@@ -912,12 +909,12 @@ export default function SiparisKapama() {
                 : ''}
             </Text>
             {modalHedef?.tip === 'acma' && (
-              <Text style={styles.modalAltBilgi}>
+              <Text style={[styles.modalAltBilgi, { color: Colors.textSecondary }]}>
                 Kalan: {miktarFormat(kalanMiktar(modalHedef.ashb))}
               </Text>
             )}
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border }]}
               keyboardType="decimal-pad"
               value={modalMiktar}
               onChangeText={setModalMiktar}
@@ -929,10 +926,10 @@ export default function SiparisKapama() {
                 style={[styles.modalBtn, styles.modalIptal]}
                 onPress={() => setMiktarModalGorunur(false)}
               >
-                <Text style={styles.modalIptalText}>İptal</Text>
+                <Text style={[styles.modalIptalText, { color: Colors.textSecondary }]}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalOnayla]}
+                style={[styles.modalBtn, styles.modalOnayla, { backgroundColor: Colors.primary }]}
                 onPress={miktarModalOnayla}
               >
                 <Text style={styles.modalOnaylaText}>
@@ -947,11 +944,11 @@ export default function SiparisKapama() {
       {/* Fiş Tipi Seçim Modal */}
       <Modal visible={fisTipiModalGorunur} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.fisTipiModalKutu}>
-            <View style={styles.fisTipiModalBaslik}>
-              <Text style={styles.fisTipiModalBaslikText}>Fiş Tipi Seçiniz</Text>
+          <View style={[styles.fisTipiModalKutu, { backgroundColor: Colors.card }]}>
+            <View style={[styles.fisTipiModalBaslik, { borderBottomColor: Colors.border }]}>
+              <Text style={[styles.fisTipiModalBaslikText, { color: Colors.text }]}>Fiş Tipi Seçiniz</Text>
               <TouchableOpacity onPress={() => setFisTipiModalGorunur(false)}>
-                <Ionicons name="close" size={24} color={Colors.darkGray} />
+                <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -959,7 +956,7 @@ export default function SiparisKapama() {
               keyExtractor={(g, i) => `${g.evrakTipi}-${i}`}
               renderItem={({ item: grup }) => (
                 <View>
-                  <Text style={styles.fisTipiGrupBaslik}>{grup.alimSatim} - {grup.evrakTipi}</Text>
+                  <Text style={[styles.fisTipiGrupBaslik, { color: Colors.textSecondary, backgroundColor: Colors.background }]}>{grup.alimSatim} - {grup.evrakTipi}</Text>
                   {grup.ftListe?.map((ft, idx) => (
                     <TouchableOpacity
                       key={`${ft.fisTipiKodu}-${idx}`}
@@ -972,15 +969,15 @@ export default function SiparisKapama() {
                       <Ionicons
                         name={secilenFisTipi?.fisTipiKodu === ft.fisTipiKodu ? 'radio-button-on' : 'radio-button-off'}
                         size={20}
-                        color={secilenFisTipi?.fisTipiKodu === ft.fisTipiKodu ? Colors.primary : Colors.gray}
+                        color={secilenFisTipi?.fisTipiKodu === ft.fisTipiKodu ? Colors.primary : Colors.textSecondary}
                       />
-                      <Text style={styles.fisTipiSatirText}>{ft.fisTipiAdi}</Text>
+                      <Text style={[styles.fisTipiSatirText, { color: Colors.text }]}>{ft.fisTipiAdi}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
               ListEmptyComponent={
-                <Text style={styles.bosMetin}>Kapama fiş tipi bulunamadı</Text>
+                <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>Kapama fiş tipi bulunamadı</Text>
               }
             />
           </View>
@@ -1020,47 +1017,42 @@ function MiktarKutu({
   deger: string;
   renk?: string;
 }) {
+  const Colors = useColors();
   return (
-    <View style={styles.miktarKutu}>
-      <Text style={styles.miktarEtiket}>{etiket}</Text>
-      <Text style={[styles.miktarDeger, renk ? { color: renk } : undefined]}>{deger}</Text>
+    <View style={[styles.miktarKutu, { backgroundColor: Colors.background }]}>
+      <Text style={[styles.miktarEtiket, { color: Colors.textSecondary }]}>{etiket}</Text>
+      <Text style={[styles.miktarDeger, { color: renk ?? Colors.text }]}>{deger}</Text>
     </View>
   );
 }
 
 // ─── Stiller ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: '#f5f5f5' },
+  ekran: { flex: 1 },
 
   // Seçim butonları (Fiş tipi, Cari)
   secimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  secimBtnText: { flex: 1, fontSize: 14, color: Colors.gray },
-  secimBtnTextSecili: { color: Colors.darkGray, fontWeight: '600' },
+  secimBtnText: { flex: 1, fontSize: 14 },
 
   // Evrak No
   evrakNoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   evrakNoInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
     paddingVertical: 4,
   },
 
@@ -1074,14 +1066,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
     marginHorizontal: 14,
     marginVertical: 10,
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6,
   },
-  araBtnText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
+  araBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Fiş satır
   fisUstSatir: {
@@ -1094,17 +1085,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  fisBilgi: { fontSize: 12, color: Colors.gray },
-  fisTutar: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  fisBilgi: { fontSize: 12 },
+  fisTutar: { fontSize: 14, fontWeight: '700' },
   // Hepsi butonu
   hepsiBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
     gap: 10,
   },
   hepsiBtn: {
@@ -1112,18 +1101,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     gap: 8,
   },
-  hepsiBtnText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
+  hepsiBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   hepsiBarkodBtn: {
     width: 48,
     height: 48,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1132,12 +1119,10 @@ const styles = StyleSheet.create({
   hareketBaslik: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 10,
     paddingVertical: 10,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   geriBtn: {
     padding: 4,
@@ -1146,15 +1131,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
 
   // Tab bar
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   tabBtn: {
     flex: 1,
@@ -1163,30 +1145,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabBtnAktif: {
-    borderBottomColor: Colors.primary,
-  },
-  tabText: { fontSize: 14, fontWeight: '500', color: Colors.gray },
-  tabTextAktif: { color: Colors.primary, fontWeight: '700' },
+  tabText: { fontSize: 14, fontWeight: '500' },
 
   // Arama
   aramaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     margin: 10,
     marginBottom: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
     gap: 6,
   },
   aramaInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
     paddingVertical: 0,
   },
 
@@ -1196,7 +1171,6 @@ const styles = StyleSheet.create({
 
   // Kart
   kart: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 12,
     shadowColor: '#000',
@@ -1212,10 +1186,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  etiket: { fontSize: 11, color: Colors.gray, fontWeight: '600' },
-  etiketDeger: { fontSize: 11, color: Colors.darkGray, fontWeight: '600' },
-  stokKodu: { fontSize: 11, color: Colors.gray, fontWeight: '600', letterSpacing: 0.5 },
-  stokCinsi: { fontSize: 14, fontWeight: '700', color: Colors.darkGray, marginTop: 2, marginBottom: 8 },
+  etiket: { fontSize: 11, fontWeight: '600' },
+  etiketDeger: { fontSize: 11, fontWeight: '600' },
+  stokKodu: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+  stokCinsi: { fontSize: 14, fontWeight: '700', marginTop: 2, marginBottom: 8 },
 
   miktarSatirlar: {
     flexDirection: 'row',
@@ -1224,14 +1198,13 @@ const styles = StyleSheet.create({
   },
   miktarKutu: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 8,
     alignItems: 'center',
   },
-  miktarEtiket: { fontSize: 10, color: Colors.gray, marginBottom: 2 },
-  miktarDeger: { fontSize: 13, fontWeight: '700', color: Colors.darkGray },
+  miktarEtiket: { fontSize: 10, marginBottom: 2 },
+  miktarDeger: { fontSize: 13, fontWeight: '700' },
 
   // Kapama satır
   kapamaUstSatir: {
@@ -1247,7 +1220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 6,
   },
-  fiyatText: { fontSize: 12, color: Colors.gray },
+  fiyatText: { fontSize: 12 },
   miktarDuzenleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1257,23 +1230,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-  miktarDuzenleBtnText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  tutarText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  miktarDuzenleBtnText: { fontSize: 13, fontWeight: '700' },
+  tutarText: { fontSize: 13, fontWeight: '700' },
 
   // Alt bar
   altBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
     gap: 10,
   },
   altBarBilgi: { flex: 1 },
-  altBarKalem: { fontSize: 12, color: Colors.gray },
-  altBarToplam: { fontSize: 16, fontWeight: '700', color: Colors.darkGray },
+  altBarKalem: { fontSize: 12 },
+  altBarToplam: { fontSize: 16, fontWeight: '700' },
   temizleBtn: {
     padding: 10,
     borderRadius: 10,
@@ -1282,18 +1253,16 @@ const styles = StyleSheet.create({
   kaydetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6,
   },
-  kaydetBtnText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
+  kaydetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Boş ekran
   bosMetin: {
     fontSize: 14,
-    color: Colors.gray,
     textAlign: 'center',
     lineHeight: 22,
     padding: 20,
@@ -1307,7 +1276,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 20,
     width: '80%',
@@ -1316,25 +1284,21 @@ const styles = StyleSheet.create({
   modalBaslik: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.darkGray,
     textAlign: 'center',
   },
   modalAltBilgi: {
     fontSize: 12,
-    color: Colors.gray,
     textAlign: 'center',
     marginTop: -8,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
-    color: Colors.darkGray,
   },
   modalBtnRow: {
     flexDirection: 'row',
@@ -1349,15 +1313,13 @@ const styles = StyleSheet.create({
   modalIptal: {
     backgroundColor: '#f5f5f5',
   },
-  modalIptalText: { color: Colors.gray, fontWeight: '600' },
+  modalIptalText: { fontWeight: '600' },
   modalOnayla: {
-    backgroundColor: Colors.primary,
   },
-  modalOnaylaText: { color: Colors.white, fontWeight: '700' },
+  modalOnaylaText: { color: '#fff', fontWeight: '700' },
 
   // Fiş Tipi Modal
   fisTipiModalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 16,
     width: '85%',
     maxHeight: '70%',
@@ -1369,18 +1331,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   fisTipiModalBaslikText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.darkGray,
   },
   fisTipiGrupBaslik: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.gray,
-    backgroundColor: '#f5f5f5',
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
@@ -1398,7 +1356,6 @@ const styles = StyleSheet.create({
   },
   fisTipiSatirText: {
     fontSize: 14,
-    color: Colors.darkGray,
     fontWeight: '500',
   },
 

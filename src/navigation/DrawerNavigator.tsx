@@ -7,11 +7,9 @@ import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import type { DrawerParamList } from './types';
 import DrawerMenu from '../components/DrawerMenu';
 import AnaSayfa from '../screens/main/AnaSayfa';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
-// Placeholder ekran
-import PlaceholderEkrani from '../screens/main/PlaceholderEkrani';
-import HizliIslemler from '../screens/main/HizliIslemler';
+import KontrolPaneli from '../screens/main/KontrolPaneli';
 import HizliIslemlerV2 from '../screens/main/HizliIslemlerV2';
 import SiparisKapama from '../screens/main/SiparisKapama';
 import KurBilgileri from '../screens/main/KurBilgileri';
@@ -33,14 +31,18 @@ import StokRapor from '../screens/main/StokRapor';
 import CariSecimliRapor from '../screens/main/CariSecimliRapor';
 import FiyatGor from '../screens/main/FiyatGor';
 import BarkodEkleme from '../screens/main/BarkodEkleme';
+import CRMTeklif from '../screens/main/CRMTeklif/CRMTeklif';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
 function RaporGeriButonu({ navigation, kaynakEkran }: { navigation: DrawerNavigationProp<DrawerParamList>; kaynakEkran?: string }) {
+  const colors = useColors();
   return (
     <TouchableOpacity
       onPress={() => {
-        if (kaynakEkran) {
+        if (kaynakEkran === 'Tahsilatlar') {
+          navigation.navigate('Tahsilatlar');
+        } else if (kaynakEkran) {
           navigation.getParent()?.goBack();
         } else {
           navigation.navigate('Raporlar');
@@ -49,30 +51,42 @@ function RaporGeriButonu({ navigation, kaynakEkran }: { navigation: DrawerNaviga
       style={{ paddingHorizontal: 12 }}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons name="arrow-back" size={24} color={Colors.white} />
+      <Ionicons name="arrow-back" size={24} color={colors.headerText} />
     </TouchableOpacity>
   );
 }
 
 export default function DrawerNavigator() {
+  const colors = useColors();
+  const gradientEnd = colors.headerBackground === '#1a1a2e' ? '#0d0d1a' : '#1a1f5e';
+
   return (
     <Drawer.Navigator
       initialRouteName="AnaSayfa"
       drawerContent={(props) => <DrawerMenu {...props} />}
-      screenOptions={{
-        headerTintColor: Colors.white,
+      screenOptions={({ navigation, route }) => ({
+        headerTintColor: colors.headerText,
         headerTitleStyle: { fontWeight: 'bold' },
         headerBackground: () => (
           <LinearGradient
-            colors={[Colors.primary, '#1a1f5e']}
+            colors={[colors.headerBackground, gradientEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ flex: 1 }}
           />
         ),
+        headerRight: route.name === 'AnaSayfa' ? undefined : () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AnaSayfa')}
+            style={{ paddingHorizontal: 12 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="home-outline" size={22} color={colors.headerText} />
+          </TouchableOpacity>
+        ),
         drawerStyle: { width: 280 },
         swipeEnabled: true,
-      }}
+      })}
     >
       <Drawer.Screen
         name="AnaSayfa"
@@ -80,14 +94,9 @@ export default function DrawerNavigator() {
         options={{ title: 'Ana Sayfa' }}
       />
       <Drawer.Screen
-        name="HizliIslemler"
-        component={HizliIslemler}
-        options={{ title: 'Alış/Satış' }}
-      />
-      <Drawer.Screen
         name="HizliIslemlerV2"
         component={HizliIslemlerV2}
-        options={{ title: 'Alış/Satış V2' }}
+        options={{ title: 'Alış/Satış' }}
       />
       <Drawer.Screen
         name="AlisSatisIslemleri"
@@ -153,8 +162,8 @@ export default function DrawerNavigator() {
       />
       <Drawer.Screen
         name="ZiyaretIslemleri"
-        component={PlaceholderEkrani}
-        options={{ title: 'Ziyaret İşlemleri' }}
+        component={CRMTeklif}
+        options={{ title: 'CRM Teklif' }}
       />
       <Drawer.Screen
         name="OnayIslemleri"
@@ -168,7 +177,7 @@ export default function DrawerNavigator() {
       />
       <Drawer.Screen
         name="Panel"
-        component={PlaceholderEkrani}
+        component={KontrolPaneli}
         options={{ title: 'Kontrol Panel' }}
       />
       <Drawer.Screen

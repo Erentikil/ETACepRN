@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface Props {
   baslik: string;
@@ -25,6 +25,7 @@ export default function ThemedButton({
   variant = 'primary',
   style,
 }: Props) {
+  const Colors = useColors();
   const isPrimary = variant === 'primary';
   const isAccent = variant === 'accent';
 
@@ -32,9 +33,9 @@ export default function ThemedButton({
     <TouchableOpacity
       style={[
         styles.btn,
-        isPrimary && styles.primary,
-        isAccent && styles.accent,
-        !isPrimary && !isAccent && styles.outlined,
+        isPrimary && { backgroundColor: Colors.primary },
+        isAccent && { backgroundColor: Colors.accent },
+        !isPrimary && !isAccent && { backgroundColor: 'transparent', borderWidth: 2, borderColor: Colors.primary },
         (disabled || yukleniyor) && styles.disabled,
         style,
       ]}
@@ -43,12 +44,12 @@ export default function ThemedButton({
       activeOpacity={0.8}
     >
       {yukleniyor ? (
-        <ActivityIndicator color={isPrimary || isAccent ? Colors.white : Colors.primary} />
+        <ActivityIndicator color={isPrimary || isAccent ? '#fff' : Colors.primary} />
       ) : (
         <Text
           style={[
             styles.text,
-            !isPrimary && !isAccent && styles.outlinedText,
+            !isPrimary && !isAccent && { color: Colors.primary },
           ]}
         >
           {baslik}
@@ -67,26 +68,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 50,
   },
-  primary: {
-    backgroundColor: Colors.primary,
-  },
-  accent: {
-    backgroundColor: Colors.accent,
-  },
-  outlined: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
   disabled: {
     opacity: 0.5,
   },
   text: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  outlinedText: {
-    color: Colors.primary,
   },
 });

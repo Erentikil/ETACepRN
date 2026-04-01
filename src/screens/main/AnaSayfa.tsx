@@ -10,7 +10,7 @@ import {
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import type { DrawerParamList } from '../../navigation/types';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 
@@ -31,6 +31,7 @@ interface HizliErisimKarti {
 }
 
 export default function AnaSayfa({ navigation }: Props) {
+  const Colors = useColors();
   const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, versiyon, onLineCalisma } =
     useAppStore();
 
@@ -53,9 +54,9 @@ export default function AnaSayfa({ navigation }: Props) {
       id: 'hizli',
       baslik: 'Alış/Satış',
       icon: 'flash-outline',
-      ekran: 'HizliIslemler',
+      ekran: 'HizliIslemlerV2',
       renk: '#4caf50',
-      yetki: menuYetkiBilgileri?.hizliIslemler ?? false,
+      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
       id: 'alimSatim',
@@ -63,7 +64,7 @@ export default function AnaSayfa({ navigation }: Props) {
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
       renk: '#2196f3',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+      yetki: menuYetkiBilgileri?.evrakDuzenle ?? false,
     },
     {
       id: 'tahsilat',
@@ -91,11 +92,11 @@ export default function AnaSayfa({ navigation }: Props) {
     },
     {
       id: 'ziyaret',
-      baslik: 'Ziyaret',
+      baslik: 'CRM Teklif',
       icon: 'people-outline',
       ekran: 'ZiyaretIslemleri',
       renk: '#009688',
-      yetki: menuYetkiBilgileri?.ziyaretIslemleri ?? false,
+      yetki: menuYetkiBilgileri?.crm ?? false,
     },
     {
       id: 'onay',
@@ -105,7 +106,7 @@ export default function AnaSayfa({ navigation }: Props) {
       renk: '#795548',
       yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
     },
-    {
+{
       id: 'bekleyenEvrak',
       baslik: 'Bekleyen Evraklar',
       icon: 'document-text-outline',
@@ -135,7 +136,7 @@ export default function AnaSayfa({ navigation }: Props) {
       icon: 'pricetag-outline',
       ekran: 'FiyatGor',
       renk: '#3f51b5',
-      yetki: true,
+      yetki: menuYetkiBilgileri?.fiyatGor ?? false,
     },
     {
       id: 'barkodEkleme',
@@ -143,23 +144,23 @@ export default function AnaSayfa({ navigation }: Props) {
       icon: 'barcode-outline',
       ekran: 'BarkodEkleme',
       renk: '#ff5722',
-      yetki: true,
+      yetki: menuYetkiBilgileri?.barkodEkle ?? false,
     },
   ];
   const hizliErisimler = tumHizliErisimler.filter((k) => k.yetki);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: Colors.background }]}>
       {/* Üst Durum Çubuğu */}
-      <View style={styles.durumCubugu}>
+      <View style={[styles.durumCubugu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <View style={styles.durumSol}>
           <View style={[styles.durumNokta, { backgroundColor: onLineCalisma ? '#4caf50' : Colors.accent }]} />
-          <Text style={styles.durumText}>
+          <Text style={[styles.durumText, { color: Colors.text }]}>
             {onLineCalisma ? 'Online' : 'Hibrit'}
           </Text>
         </View>
         {versiyon && (
-          <Text style={styles.durumVersiyon}>
+          <Text style={[styles.durumVersiyon, { color: Colors.textSecondary }]}>
             Kalan: {versiyon.kalanGunSayisi} gün
           </Text>
         )}
@@ -167,17 +168,17 @@ export default function AnaSayfa({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Karşılama */}
-        <View style={styles.karsilamaKarti}>
+        <View style={[styles.karsilamaKarti, { backgroundColor: Colors.card }]}>
           <View style={styles.karsilamaIkon}>
             <Ionicons name="person-circle-outline" size={48} color={Colors.primary} />
           </View>
           <View style={styles.karsilamaMetin}>
-            <Text style={styles.hosgeldin}>Hoş geldiniz</Text>
-            <Text style={styles.kullaniciAdi}>
+            <Text style={[styles.hosgeldin, { color: Colors.textSecondary }]}>Hoş geldiniz</Text>
+            <Text style={[styles.kullaniciAdi, { color: Colors.primary }]}>
               {yetkiBilgileri?.kullaniciKodu ?? 'Kullanıcı'}
             </Text>
             {calisilanSirket ? (
-              <Text style={styles.sirketAdi} numberOfLines={1}>
+              <Text style={[styles.sirketAdi, { color: Colors.text }]} numberOfLines={1}>
                 {calisilanSirket}
               </Text>
             ) : null}
@@ -193,19 +194,19 @@ export default function AnaSayfa({ navigation }: Props) {
         {/* Hızlı Erişim Kartları */}
         {hizliErisimler.length > 0 ? (
           <>
-            <Text style={styles.bolumBaslik}>Hızlı Erişim</Text>
+            <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Hızlı Erişim</Text>
             <View style={styles.kartGrid}>
               {hizliErisimler.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.kart}
+                  style={[styles.kart, { backgroundColor: Colors.card }]}
                   onPress={() => navigation.navigate(item.ekran)}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.kartIkon, { backgroundColor: item.renk }]}>
-                    <Ionicons name={item.icon} size={26} color={Colors.white} />
+                    <Ionicons name={item.icon} size={26} color="#fff" />
                   </View>
-                  <Text style={styles.kartBaslik} numberOfLines={2}>
+                  <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
                     {item.baslik}
                   </Text>
                 </TouchableOpacity>
@@ -215,7 +216,7 @@ export default function AnaSayfa({ navigation }: Props) {
         ) : (
           <View style={styles.bosMesaj}>
             <Ionicons name="information-circle-outline" size={48} color={Colors.gray} />
-            <Text style={styles.bosMesajText}>
+            <Text style={[styles.bosMesajText, { color: Colors.textSecondary }]}>
               Erişim izniniz olan modül bulunmuyor.{'\n'}Yöneticinizle iletişime geçin.
             </Text>
           </View>
@@ -233,17 +234,14 @@ export default function AnaSayfa({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   durumCubugu: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   durumSol: {
     flexDirection: 'row',
@@ -258,11 +256,9 @@ const styles = StyleSheet.create({
   durumText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   durumVersiyon: {
     fontSize: 11,
-    color: Colors.gray,
   },
   scroll: {
     padding: 16,
@@ -271,7 +267,6 @@ const styles = StyleSheet.create({
   karsilamaKarti: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
@@ -289,16 +284,13 @@ const styles = StyleSheet.create({
   },
   hosgeldin: {
     fontSize: 12,
-    color: Colors.gray,
   },
   kullaniciAdi: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
   },
   sirketAdi: {
     fontSize: 12,
-    color: Colors.darkGray,
     marginTop: 2,
   },
   menuBtn: {
@@ -307,7 +299,6 @@ const styles = StyleSheet.create({
   bolumBaslik: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.darkGray,
     marginBottom: 12,
   },
   kartGrid: {
@@ -318,7 +309,6 @@ const styles = StyleSheet.create({
   },
   kart: {
     width: '47%',
-    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',
@@ -339,7 +329,6 @@ const styles = StyleSheet.create({
   kartBaslik: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.darkGray,
     textAlign: 'center',
   },
   bosMesaj: {
@@ -349,7 +338,6 @@ const styles = StyleSheet.create({
   },
   bosMesajText: {
     textAlign: 'center',
-    color: Colors.gray,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -358,13 +346,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.darkGray,
+    backgroundColor: '#424242',
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
   },
   adminBtnText: {
-    color: Colors.white,
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
   },

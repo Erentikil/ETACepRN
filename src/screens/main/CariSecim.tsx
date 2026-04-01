@@ -17,11 +17,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
+import type { RootStackParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { cariListesiniAl, cariKartKaydet } from '../../api/hizliIslemlerApi';
 import type { CariEvrak } from '../../models';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import type { CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import { toast } from '../../components/Toast';
@@ -31,10 +31,12 @@ import AnimatedListItem from '../../components/AnimatedListItem';
 import { paraTL } from '../../utils/format';
 
 type CariIslemSecenegi = {
-  key: keyof DrawerParamList | string;
+  key: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   aktif: boolean;
+  tahsilatTipi?: 'cari' | 'kasa' | 'cek' | 'senet';
+  yetkiKey?: 'cariTahsilatYetkisi' | 'kasaTahsilatYetkisi' | 'cekTahsilatYetkisi' | 'senetTahsilatYetkisi';
 };
 
 const CARI_ISLEM_SECENEKLERI: CariIslemSecenegi[] = [
@@ -43,16 +45,17 @@ const CARI_ISLEM_SECENEKLERI: CariIslemSecenegi[] = [
   { key: 'BekleyenSiparisler', label: 'Bekleyen Siparişler', icon: 'time-outline', aktif: true },
   { key: 'TahsilatListesi', label: 'Tahsilat Listesi', icon: 'receipt-outline', aktif: true },
   { key: 'Adresler', label: 'Adresler', icon: 'location-outline', aktif: true },
-  { key: 'CariTahsilat', label: 'Cari Tahsilat', icon: 'cash-outline', aktif: false },
-  { key: 'KasaTahsilati', label: 'Kasa Tahsilatı', icon: 'wallet-outline', aktif: false },
-  { key: 'CekTahsilati', label: 'Çek Tahsilatı', icon: 'card-outline', aktif: false },
-  { key: 'SenetTahsilati', label: 'Senet Tahsilatı', icon: 'document-outline', aktif: false },
+  { key: 'Tahsilatlar', label: 'Cari Tahsilat', icon: 'cash-outline', aktif: true, tahsilatTipi: 'cari', yetkiKey: 'cariTahsilatYetkisi' },
+  { key: 'Tahsilatlar', label: 'Kasa Tahsilatı', icon: 'wallet-outline', aktif: true, tahsilatTipi: 'kasa', yetkiKey: 'kasaTahsilatYetkisi' },
+  { key: 'Tahsilatlar', label: 'Çek Tahsilatı', icon: 'card-outline', aktif: true, tahsilatTipi: 'cek', yetkiKey: 'cekTahsilatYetkisi' },
+  { key: 'Tahsilatlar', label: 'Senet Tahsilatı', icon: 'document-outline', aktif: true, tahsilatTipi: 'senet', yetkiKey: 'senetTahsilatYetkisi' },
 ];
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<RootStackParamList, 'CariSecim'>;
 
 export default function CariSecim() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
@@ -115,7 +118,7 @@ export default function CariSecim() {
             setYeniCariModalGoster(true);
           }}
         >
-          <Ionicons name="add" size={20} color={Colors.white} />
+          <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.headerYeniText}>Yeni</Text>
         </TouchableOpacity>
       ),
@@ -163,7 +166,7 @@ export default function CariSecim() {
   const [islemModalCari, setIslemModalCari] = useState<CariKartBilgileri | null>(null);
 
   const cariSec = (cari: CariKartBilgileri) => {
-    const returnScreen = route.params?.returnScreen ?? 'HizliIslemler';
+    const returnScreen = route.params?.returnScreen ?? 'HizliIslemlerV2';
     const sepetDolu = route.params?.sepetDolu ?? false;
 
     const onayla = () => {
@@ -228,22 +231,26 @@ export default function CariSecim() {
 
     (navigation as any).navigate('Drawer', {
       screen: secenek.key,
-      params: { secilenCari: cari, kaynakEkran: 'CariSecim' },
+      params: {
+        secilenCari: cari,
+        kaynakEkran: 'CariSecim',
+        ...(secenek.tahsilatTipi ? { tahsilatTipi: secenek.tahsilatTipi } : {}),
+      },
     });
   };
 
   const renderCariSatiri = ({ item, index }: { item: CariKartBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
-      <TouchableOpacity style={styles.cariSatiri} onPress={() => cariSec(item)}>
-        <View style={styles.cariIkon}>
+      <TouchableOpacity style={[styles.cariSatiri, { backgroundColor: Colors.card }]} onPress={() => cariSec(item)}>
+        <View style={[styles.cariIkon, { backgroundColor: Colors.inputBackground }]}>
           <Ionicons name="person-outline" size={20} color={Colors.primary} />
         </View>
         <View style={styles.cariBilgi}>
-          <Text style={styles.cariUnvan}>{item.cariUnvan}</Text>
-          <Text style={styles.cariKodu}>{item.cariKodu}</Text>
-          {item.telefon ? <Text style={styles.cariTelefon}>{item.telefon}</Text> : null}
+          <Text style={[styles.cariUnvan, { color: Colors.text }]}>{item.cariUnvan}</Text>
+          <Text style={[styles.cariKodu, { color: Colors.textSecondary }]}>{item.cariKodu}</Text>
+          {item.telefon ? <Text style={[styles.cariTelefon, { color: Colors.textSecondary }]}>{item.telefon}</Text> : null}
           {item.bakiye != null && (
-            <Text style={[styles.cariBakiye, item.bakiye >= 0 ? styles.bakiyeArti : styles.bakiyeEksi]}>
+            <Text style={[styles.cariBakiye, { color: item.bakiye >= 0 ? Colors.success : Colors.error }]}>
               {paraTL(item.bakiye)}
             </Text>
           )}
@@ -260,21 +267,21 @@ export default function CariSecim() {
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* Filtre kutusu */}
-      <View style={styles.aramaKutusu}>
-        <Ionicons name="search-outline" size={18} color={Colors.gray} />
+      <View style={[styles.aramaKutusu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
-          style={styles.aramaInput}
+          style={[styles.aramaInput, { color: Colors.text }]}
           placeholder="Cari kodu veya unvan filtrele..."
-          placeholderTextColor={Colors.gray}
+          placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
           autoFocus
         />
         {aramaMetni.length > 0 && (
           <TouchableOpacity onPress={() => setAramaMetni('')}>
-            <Ionicons name="close-circle" size={18} color={Colors.gray} />
+            <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -287,6 +294,7 @@ export default function CariSecim() {
           data={filtreli}
           keyExtractor={(item) => item.cariKodu}
           renderItem={renderCariSatiri}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={yukleniyor}
@@ -294,7 +302,7 @@ export default function CariSecim() {
               colors={[Colors.primary]}
             />
           }
-          ItemSeparatorComponent={() => <View style={styles.ayirac} />}
+          ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
           ListEmptyComponent={
             <EmptyState
               icon="people-outline"
@@ -316,11 +324,11 @@ export default function CariSecim() {
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={styles.yeniCariModalKutu}>
-            <View style={styles.yeniCariBaslik}>
-              <Text style={styles.yeniCariBaslikText}>Yeni Cari Kart</Text>
+          <View style={[styles.yeniCariModalKutu, { backgroundColor: Colors.card }]}>
+            <View style={[styles.yeniCariBaslik, { borderBottomColor: Colors.border }]}>
+              <Text style={[styles.yeniCariBaslikText, { color: Colors.text }]}>Yeni Cari Kart</Text>
               <TouchableOpacity onPress={() => setYeniCariModalGoster(false)}>
-                <Ionicons name="close" size={24} color={Colors.darkGray} />
+                <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.yeniCariForm} showsVerticalScrollIndicator={false}>
@@ -342,11 +350,11 @@ export default function CariSecim() {
               ]).map((f) => (
                 <View key={f.alan} style={styles.formSatir}>
                   <View style={styles.formLabelRow}>
-                    <Ionicons name={f.icon} size={16} color={Colors.gray} />
-                    <Text style={styles.formLabel}>{f.label}</Text>
+                    <Ionicons name={f.icon} size={16} color={Colors.textSecondary} />
+                    <Text style={[styles.formLabel, { color: Colors.textSecondary }]}>{f.label}</Text>
                   </View>
                   <TextInput
-                    style={styles.formInput}
+                    style={[styles.formInput, { backgroundColor: Colors.inputBackground, color: Colors.text, borderColor: Colors.border }]}
                     value={yeniCari[f.alan]}
                     onChangeText={(v) => cariAlanGuncelle(f.alan, v)}
 keyboardType={f.keyboard ?? 'default'}
@@ -355,23 +363,23 @@ keyboardType={f.keyboard ?? 'default'}
               ))}
               <View style={{ height: 20 }} />
             </ScrollView>
-            <View style={styles.yeniCariAltButonlar}>
+            <View style={[styles.yeniCariAltButonlar, { borderTopColor: Colors.border }]}>
               <TouchableOpacity
-                style={styles.yeniCariIptalButon}
+                style={[styles.yeniCariIptalButon, { borderColor: Colors.border }]}
                 onPress={() => setYeniCariModalGoster(false)}
               >
-                <Text style={styles.yeniCariIptalText}>İptal</Text>
+                <Text style={[styles.yeniCariIptalText, { color: Colors.text }]}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.yeniCariKaydetButon, kayitYapiliyor && { opacity: 0.6 }]}
+                style={[styles.yeniCariKaydetButon, { backgroundColor: Colors.primary }, kayitYapiliyor && { opacity: 0.6 }]}
                 onPress={yeniCariKaydet}
                 disabled={kayitYapiliyor}
               >
                 {kayitYapiliyor ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={20} color={Colors.white} />
+                    <Ionicons name="checkmark" size={20} color="#fff" />
                     <Text style={styles.yeniCariKaydetText}>Kaydet</Text>
                   </>
                 )}
@@ -393,25 +401,27 @@ keyboardType={f.keyboard ?? 'default'}
           activeOpacity={1}
           onPress={() => setIslemModalCari(null)}
         >
-          <View style={styles.modalKutu}>
-            {CARI_ISLEM_SECENEKLERI.map((secenek) => (
+          <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
+            {CARI_ISLEM_SECENEKLERI
+              .filter((s) => !s.yetkiKey || yetkiBilgileri?.[s.yetkiKey] !== false)
+              .map((secenek, i) => (
               <TouchableOpacity
-                key={secenek.key}
+                key={`${secenek.key}-${secenek.tahsilatTipi ?? i}`}
                 style={[styles.islemSatir, !secenek.aktif && styles.islemSatirPasif]}
                 onPress={() => cariIslemSec(secenek)}
               >
                 <Ionicons
                   name={secenek.icon}
                   size={22}
-                  color={secenek.aktif ? Colors.darkGray : Colors.gray}
+                  color={secenek.aktif ? Colors.text : Colors.textSecondary}
                 />
-                <Text style={[styles.islemLabel, !secenek.aktif && styles.islemLabelPasif]}>
+                <Text style={[styles.islemLabel, { color: Colors.text }, !secenek.aktif && { color: Colors.textSecondary }]}>
                   {secenek.label}
                 </Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
-              style={styles.vazgecButon}
+              style={[styles.vazgecButon, { backgroundColor: Colors.accent }]}
               onPress={() => setIslemModalCari(null)}
             >
               <Text style={styles.vazgecText}>Vazgeç</Text>
@@ -424,21 +434,18 @@ keyboardType={f.keyboard ?? 'default'}
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: Colors.lightGray },
+  ekran: { flex: 1 },
   aramaKutusu: {
-    backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   aramaInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
     paddingVertical: 4,
   },
   yukleniyorRow: {
@@ -447,11 +454,9 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 20,
   },
-  yukleniyorText: { color: Colors.gray, fontSize: 14 },
   cariSatiri: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
@@ -465,23 +470,19 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: Colors.inputBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cariBilgi: { flex: 1 },
-  cariUnvan: { fontSize: 15, fontWeight: '600', color: Colors.darkGray },
-  cariKodu: { fontSize: 12, color: Colors.gray, marginTop: 2 },
-  cariTelefon: { fontSize: 12, color: Colors.gray },
+  cariUnvan: { fontSize: 15, fontWeight: '600' },
+  cariKodu: { fontSize: 12, marginTop: 2 },
+  cariTelefon: { fontSize: 12 },
   cariBakiye: { fontSize: 12, fontWeight: '600', marginTop: 2 },
-  bakiyeArti: { color: Colors.success },
-  bakiyeEksi: { color: Colors.error },
   islemButon: {
     padding: 4,
   },
-  ayirac: { height: 1, backgroundColor: Colors.border, marginHorizontal: 14 },
+  ayirac: { height: 1, marginHorizontal: 14 },
   bosEkran: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  bosMetin: { fontSize: 14, color: Colors.gray, textAlign: 'center' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -489,7 +490,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 14,
     width: '82%',
     paddingVertical: 10,
@@ -507,13 +507,8 @@ const styles = StyleSheet.create({
   },
   islemLabel: {
     fontSize: 16,
-    color: Colors.darkGray,
-  },
-  islemLabelPasif: {
-    color: Colors.gray,
   },
   vazgecButon: {
-    backgroundColor: Colors.accent,
     borderRadius: 8,
     marginHorizontal: 16,
     marginTop: 8,
@@ -524,13 +519,12 @@ const styles = StyleSheet.create({
   vazgecText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.white,
+    color: '#fff',
   },
   // Header Yeni butonu
   headerYeniButon: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -538,13 +532,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerYeniText: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
   // Yeni Cari Modal
   yeniCariModalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 16,
     width: '92%',
     maxHeight: '85%',
@@ -557,12 +550,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   yeniCariBaslikText: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.darkGray,
   },
   yeniCariForm: {
     paddingHorizontal: 18,
@@ -579,18 +570,14 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 13,
-    color: Colors.gray,
     fontWeight: '500',
   },
   formInput: {
-    backgroundColor: Colors.inputBackground,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: Colors.black,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   yeniCariAltButonlar: {
     flexDirection: 'row',
@@ -598,27 +585,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
   yeniCariIptalButon: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
     alignItems: 'center',
   },
   yeniCariIptalText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   yeniCariKaydetButon: {
     flex: 1,
     flexDirection: 'row',
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -626,6 +609,6 @@ const styles = StyleSheet.create({
   yeniCariKaydetText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.white,
+    color: '#fff',
   },
 });

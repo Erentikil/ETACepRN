@@ -4,7 +4,7 @@
     "slug": "etacep",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
@@ -24,17 +24,22 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-1024.png",
         "backgroundColor": "#29358a"
       },
       "package": "com.companyname.etacep",
       "usesCleartextTraffic": true,
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "extra": {
       "eas": {
         "projectId": "a790f117-51a9-45d4-b79c-0eb98a5bb4ac"
       }
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

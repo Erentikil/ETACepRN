@@ -10,7 +10,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface Props {
   visible: boolean;
@@ -21,6 +21,7 @@ interface Props {
 }
 
 export default function BarcodeScannerModal({ visible, onDetected, onClose, manuelOkuma = false, baslangicZoom = 0 }: Props) {
+  const Colors = useColors();
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const initialZoom = Math.min(Math.max(baslangicZoom, 0), 1);
@@ -91,37 +92,37 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
       <View style={styles.ekran}>
         {!permission ? (
           <View style={styles.merkezle}>
-            <Text style={styles.mesaj}>Kamera izni kontrol ediliyor...</Text>
+            <Text style={[styles.mesaj, { color: Colors.text }]}>Kamera izni kontrol ediliyor...</Text>
           </View>
         ) : !permission.granted ? (
-          <View style={styles.merkezle}>
-            <Ionicons name="camera-outline" size={64} color={Colors.gray} />
-            <Text style={styles.mesaj}>Barkod okumak için kamera iznine ihtiyaç var.</Text>
-            <TouchableOpacity style={styles.izinBtn} onPress={requestPermission}>
-              <Text style={styles.izinBtnText}>İzin Ver</Text>
+          <View style={[styles.merkezle, { backgroundColor: Colors.card }]}>
+            <Ionicons name="camera-outline" size={64} color={Colors.textSecondary} />
+            <Text style={[styles.mesaj, { color: Colors.text }]}>Barkod okumak icin kamera iznine ihtiyac var.</Text>
+            <TouchableOpacity style={[styles.izinBtn, { backgroundColor: Colors.primary }]} onPress={requestPermission}>
+              <Text style={styles.izinBtnText}>Izin Ver</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.kapat} onPress={onClose}>
-              <Text style={styles.kapatText}>Vazgeç</Text>
+              <Text style={[styles.kapatText, { color: Colors.textSecondary }]}>Vazgec</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            {/* Üst bar */}
+            {/* Ust bar */}
             <View style={styles.ustBar}>
               <TouchableOpacity onPress={onClose} style={styles.geriBtn}>
-                <Ionicons name="arrow-back" size={24} color={Colors.white} />
+                <Ionicons name="arrow-back" size={24} color="#fff" />
               </TouchableOpacity>
               <Text style={styles.baslik}>Barkod Tara</Text>
               <TouchableOpacity onPress={() => setTorchOn((t) => !t)} style={styles.fenBtn}>
                 <Ionicons
                   name={torchOn ? 'flashlight' : 'flashlight-outline'}
                   size={24}
-                  color={torchOn ? '#ffa500' : Colors.white}
+                  color={torchOn ? '#ffa500' : '#fff'}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Kamera — sadece modal açıkken ve taranmamışsa aktif */}
+            {/* Kamera -- sadece modal acikken ve taranmamissa aktif */}
             {visible && (
               <GestureDetector gesture={pinchGesture}>
                 <View style={styles.kamera}>
@@ -138,11 +139,11 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
                     }}
                     onBarcodeScanned={handleBarkod}
                   />
-                  {/* Zoom göstergesi */}
+                  {/* Zoom gostergesi */}
                   {zoomGoster && (
                     <View style={styles.zoomGosterge}>
                       <Text style={styles.zoomText}>
-                        {(1 + zoom * 9).toFixed(1)}×
+                        {(1 + zoom * 9).toFixed(1)}x
                       </Text>
                     </View>
                   )}
@@ -150,21 +151,21 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
               </GestureDetector>
             )}
 
-            {/* Tarama çerçevesi */}
+            {/* Tarama cercevesi */}
             <View style={styles.cerceve} pointerEvents="none">
               <View style={styles.cerceveKose} />
               <View style={[styles.cerceveKose, styles.sagUst]} />
               <View style={[styles.cerceveKose, styles.solAlt]} />
               <View style={[styles.cerceveKose, styles.sagAlt]} />
-              <View style={styles.taramaСizgisi} />
+              <View style={styles.taramaCizgisi} />
             </View>
 
             {/* Alt mesaj */}
             <View style={styles.altBar}>
-              <Text style={styles.altMesaj}>Barkodu çerçeve içine hizalayın</Text>
+              <Text style={styles.altMesaj}>Barkodu cerceve icine hizalayin</Text>
               {manuelOkuma && (
                 <TouchableOpacity style={styles.manuelBtn} onPress={handleManuelOku}>
-                  <Ionicons name="scan-outline" size={22} color={Colors.white} />
+                  <Ionicons name="scan-outline" size={22} color="#fff" />
                   <Text style={styles.manuelBtnText}>Oku</Text>
                 </TouchableOpacity>
               )}
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
   geriBtn: { padding: 4 },
   baslik: {
     flex: 1,
-    color: Colors.white,
+    color: '#fff',
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   zoomText: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     width: KOSE_UZUNLUK,
     height: KOSE_UZUNLUK,
     borderColor: '#ffa500',
-    // sol üst
+    // sol ust
     top: '50%',
     left: '50%',
     marginTop: -CERCEVE_BOYUT / 2,
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: KOSE_KALINLIK,
     borderRightWidth: KOSE_KALINLIK,
   },
-  taramaСizgisi: {
+  taramaCizgisi: {
     width: CERCEVE_BOYUT - 8,
     height: 2,
     backgroundColor: '#ffa500',
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   altMesaj: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 14,
     opacity: 0.8,
   },
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   manuelBtnText: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -311,22 +312,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
     gap: 16,
-    backgroundColor: Colors.white,
   },
   mesaj: {
     fontSize: 16,
-    color: Colors.darkGray,
     textAlign: 'center',
     lineHeight: 24,
   },
   izinBtn: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 10,
     marginTop: 8,
   },
-  izinBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+  izinBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   kapat: { marginTop: 8, padding: 8 },
-  kapatText: { color: Colors.gray, fontSize: 14 },
+  kapatText: { fontSize: 14 },
 });

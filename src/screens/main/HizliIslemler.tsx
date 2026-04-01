@@ -27,7 +27,7 @@ import StokInfoModal from '../../components/StokInfoModal';
 import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
 import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { Config } from '../../constants/Config';
 import { paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim, type StokFiyatBilgileri, type CariFiyatBilgileri } from '../../models';
@@ -95,7 +95,7 @@ function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndir
       (1 - k.kalemIndirim1 / 100) *
       (1 - k.kalemIndirim2 / 100) *
       (1 - k.kalemIndirim3 / 100);
-    const kdv = kdvHaric * (k.kdvOrani / 100);
+    const kdv = kdvHaric * (Math.max(0, k.kdvOrani) / 100);
     return toplam + (kdvDurum === 1 ? kdvHaric : kdvHaric + kdv);
   }, 0);
   return genelIndirimYuzde > 0 ? kalemToplam * (1 - genelIndirimYuzde / 100) : kalemToplam;
@@ -104,6 +104,7 @@ function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndir
 const ListeAyiraci = () => <View style={{ height: 4 }} />;
 
 export default function HizliIslemler() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
 
@@ -239,7 +240,8 @@ export default function HizliIslemler() {
   useEffect(() => {
     const sirket = sirketRef.current;
     if (!sirket) return;
-    if (sepetKalemleri.length === 0) {
+    // Sepet boş VE cari seçilmemişse temizle, aksi halde kaydet
+    if (sepetKalemleri.length === 0 && !secilenCari) {
       aktifSepetTemizle(sirket);
       return;
     }
@@ -262,7 +264,7 @@ export default function HizliIslemler() {
   const evrakTipiKoru = useRef(false);
   const { manuelOkuma, baslangicZoom } = useTarayiciAyarlari();
 
-  // Sayfaya focus olunca: pending cari varsa uygula, yoksa sıfırla
+  // Sayfaya focus olunca: pending cari varsa uygula, yoksa AsyncStorage'dan sepeti yükle
   useFocusEffect(
     useCallback(() => {
       const pending = useAppStore.getState().pendingCari;
@@ -272,31 +274,60 @@ export default function HizliIslemler() {
         useAppStore.getState().clearPendingCari();
         return;
       }
-      // Normal sıfırlama mantığı
       if (route.params?.taslakEvrak) return;
       if (!sepetYuklendi.current) return;
-      if (sepetKalemlerRef.current.length > 0) return;
-      if (evrakTipiKoru.current) {
-        evrakTipiKoru.current = false;
-        setSecilenCari(null);
-        setSepetKalemleri([]);
-        setAramaMetni('');
-        setSecilenAnaDepo(yetkiBilgileri?.anaDepo ?? '');
-        setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
-        return;
-      }
-      setSecilenCari(null);
-      const varsayilanEvrak = defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
-      setSecilenEvrak(varsayilanEvrak);
-      const eslesen = ftBaslikListesi.find(
-        (f) => f.evrakTipi === varsayilanEvrak.evrakTipiAdi && f.alimSatim.trim() === varsayilanEvrak.alimSatimAdi
-      );
-      setSeciliFisTipi(eslesen ?? null);
-      setSepetKalemleri([]);
-      setAramaMetni('');
-      setSecilenAnaDepo(yetkiBilgileri?.anaDepo ?? '');
-      setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
-    }, [route.params?.taslakEvrak, yetkiBilgileri])
+
+      // Diğer ekrandan güncellenen sepeti her focus'ta AsyncStorage'dan yeniden yükle
+      aktifSepetAl(calisilanSirket).then((sepet) => {
+        if (!sepet || (sepet.kalemler.length === 0 && !sepet.cariKodu)) {
+          // Storage boşsa local'i de sıfırla
+          if (sepetKalemlerRef.current.length === 0 && !evrakTipiKoru.current) {
+            setSecilenCari(null);
+            const varsayilanEvrak = defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
+            setSecilenEvrak(varsayilanEvrak);
+            const eslesen = ftBaslikListesi.find(
+              (f) => f.evrakTipi === varsayilanEvrak.evrakTipiAdi && f.alimSatim.trim() === varsayilanEvrak.alimSatimAdi
+            );
+            setSeciliFisTipi(eslesen ?? null);
+            setSepetKalemleri([]);
+            setAramaMetni('');
+            setSecilenAnaDepo(yetkiBilgileri?.anaDepo ?? '');
+            setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
+          } else if (evrakTipiKoru.current) {
+            evrakTipiKoru.current = false;
+            setSecilenCari(null);
+            setSepetKalemleri([]);
+            setAramaMetni('');
+            setSecilenAnaDepo(yetkiBilgileri?.anaDepo ?? '');
+            setSecilenKarsiDepo(yetkiBilgileri?.karsiDepo ?? '');
+          }
+          return;
+        }
+        // Storage'daki sepeti local state'e uygula
+        if (sepet.cariKodu) {
+          setSecilenCari({ cariKodu: sepet.cariKodu, cariUnvan: sepet.cariUnvan });
+        } else {
+          setSecilenCari(null);
+        }
+        const evrakSecenek =
+          TUM_SECENEKLER.find(
+            (s) => s.evrakTipi === sepet.evrakTipi && s.alimSatim === sepet.alimSatim
+          ) ?? defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
+        setSecilenEvrak(evrakSecenek);
+        if (sepet.fisTipiBaslikNo) {
+          const eslesen = ftBaslikListesi.find(
+            (f) => f.evrakTipi === evrakSecenek.evrakTipiAdi && f.alimSatim.trim() === evrakSecenek.alimSatimAdi
+          );
+          setSeciliFisTipi(eslesen ? {
+            ...eslesen,
+            ft: eslesen.ftListe.find((ft) => ft.fisTipiKodu === sepet.fisTipiBaslikNo) ?? eslesen.ft,
+          } : null);
+        }
+        setSepetKalemleri(sepet.kalemler);
+        setSecilenAnaDepo(sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '');
+        setSecilenKarsiDepo(sepet.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '');
+      });
+    }, [route.params?.taslakEvrak, yetkiBilgileri, calisilanSirket])
   );
 
   // Cari seçildiğinde cariFiyatListesi'ni sıfırla (API çağrısı yapılmaz)
@@ -605,25 +636,25 @@ export default function HizliIslemler() {
       <ReanimatedSwipeable
         renderRightActions={() => (
           <TouchableOpacity
-            style={styles.infoBtn}
+            style={[styles.infoBtn, { backgroundColor: Colors.primary }]}
             onPress={() => setInfoStoku(item)}
           >
-            <Ionicons name="information-circle-outline" size={24} color={Colors.white} />
+            <Ionicons name="information-circle-outline" size={24} color="#fff" />
             <Text style={styles.infoBtnText}>Bilgi</Text>
           </TouchableOpacity>
         )}
       >
-        <TouchableOpacity style={styles.stokSatiri} onPress={() => hizliEkle(item)} onLongPress={() => setModalUrunu(item)} delayLongPress={400}>
+        <TouchableOpacity style={[styles.stokSatiri, { backgroundColor: Colors.card }]} onPress={() => hizliEkle(item)} onLongPress={() => setModalUrunu(item)} delayLongPress={400}>
           <View style={styles.stokBilgi}>
-            <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-            <Text style={styles.stokCinsi} numberOfLines={1}>{item.stokCinsi}</Text>
+            <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+            <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
             {item.barkod ? (
-              <Text style={styles.stokBarkod}>{item.barkod}</Text>
+              <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text>
             ) : null}
           </View>
           <View style={styles.stokSag}>
-            <Text style={styles.stokFiyat}>{paraTL(item.fiyat)}</Text>
-            <Text style={styles.stokBakiye}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+            <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
           </View>
         </TouchableOpacity>
       </ReanimatedSwipeable>
@@ -636,11 +667,11 @@ export default function HizliIslemler() {
   };
 
   return (
-    <View style={styles.ekran} onTouchStart={Keyboard.dismiss}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
       {/* Evrak tipi + Barkod */}
-      <View style={styles.ustBar}>
+      <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <TouchableOpacity style={styles.evrakTipiBtn} onPress={evrakTipiSec}>
-          <Ionicons name="document-text-outline" size={18} color={Colors.white} />
+          <Ionicons name="document-text-outline" size={18} color="#fff" />
           <View style={styles.evrakTipiIcerik}>
             <Text style={styles.evrakTipiText}>{secilenEvrak.label}</Text>
             {seciliFisTipi && (
@@ -649,26 +680,26 @@ export default function HizliIslemler() {
               </Text>
             )}
           </View>
-          <Ionicons name="chevron-down" size={16} color={Colors.white} />
+          <Ionicons name="chevron-down" size={16} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.miktarBtn, miktarliGiris && styles.miktarBtnAktif]}
+          style={[styles.miktarBtn, miktarliGiris && { backgroundColor: Colors.accent }]}
           onPress={() => setMiktarliGiris(!miktarliGiris)}
         >
-          <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color={Colors.white} />
+          <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color="#fff" />
           <Text style={styles.miktarBtnText}>Miktarlı</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.barkodBtn}
           onPress={() => setScannerAcik(true)}
         >
-          <Ionicons name="barcode-outline" size={24} color={Colors.white} />
+          <Ionicons name="barcode-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {/* Cari seçim */}
       <TouchableOpacity
-        style={styles.cariBtn}
+        style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
        onPress={() => {
           navigation.navigate('CariSecim', { returnScreen: 'HizliIslemler', sepetDolu: sepetKalemlerRef.current.length > 0 });
         }}
@@ -678,26 +709,26 @@ export default function HizliIslemler() {
           size={18}
           color={secilenCari ? Colors.primary : Colors.gray}
         />
-        <Text style={[styles.cariText, secilenCari && styles.cariTextSecili]}>
+        <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
           {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
       </TouchableOpacity>
 
       {/* Arama satırı — tip seçici + input + ara butonu */}
-      <View style={styles.aramaRow}>
+      <View style={[styles.aramaRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
         <TouchableOpacity
-          style={styles.aramaTipiBtn}
+          style={[styles.aramaTipiBtn, { backgroundColor: `${Colors.primary}15` }]}
           onPress={() => setAramaTipiAcik(!aramaTipiAcik)}
         >
-          <Text style={styles.aramaTipiBtnText}>{aramaTipiLabel}</Text>
+          <Text style={[styles.aramaTipiBtnText, { color: Colors.primary }]}>{aramaTipiLabel}</Text>
           <Ionicons name="chevron-down" size={14} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
           ref={aramaInputRef}
-          style={styles.aramaInput}
+          style={[styles.aramaInput, { color: Colors.text }]}
           placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı ara...'}
-          placeholderTextColor={Colors.gray}
+          placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
           returnKeyType="search"
@@ -710,23 +741,24 @@ export default function HizliIslemler() {
         )}
         {aramaTipi === 4 && (
           <TouchableOpacity
-            style={styles.araBtn}
+            style={[styles.araBtn, { backgroundColor: Colors.primary }]}
             onPress={() => barkodAramaYap()}
           >
-            <Ionicons name="search" size={20} color={Colors.white} />
+            <Ionicons name="search" size={20} color="#fff" />
           </TouchableOpacity>
         )}
       </View>
 
       {/* Arama tipi dropdown */}
       {aramaTipiAcik && (
-        <View style={styles.aramaTipiDropdown}>
+        <View style={[styles.aramaTipiDropdown, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
           {ARAMA_TIPLERI.map((tip) => (
             <TouchableOpacity
               key={tip.value}
               style={[
                 styles.aramaTipiItem,
-                tip.value === aramaTipi && styles.aramaTipiItemActive,
+                { borderBottomColor: Colors.border },
+                tip.value === aramaTipi && { backgroundColor: `${Colors.primary}10` },
               ]}
               onPress={() => {
                 setAramaTipi(tip.value);
@@ -737,7 +769,8 @@ export default function HizliIslemler() {
               <Text
                 style={[
                   styles.aramaTipiItemText,
-                  tip.value === aramaTipi && styles.aramaTipiItemTextActive,
+                  { color: Colors.text },
+                  tip.value === aramaTipi && { fontWeight: '700', color: Colors.primary },
                 ]}
               >
                 {tip.label}
@@ -751,7 +784,7 @@ export default function HizliIslemler() {
       )}
 
       {/* Stok listesi başlık */}
-      <View style={styles.listeBaslik}>
+      <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
         <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
         <Text style={[styles.listeBaslikText, { flex: 2 }]}>CİNS</Text>
         <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FİYAT</Text>
@@ -782,31 +815,31 @@ export default function HizliIslemler() {
       />
 
       {filtreli.length > 0 && (
-        <Text style={styles.toplamStokText}>Toplam: {filtreli.length} stok</Text>
+        <Text style={[styles.toplamStokText, { color: Colors.textSecondary, borderTopColor: Colors.border, backgroundColor: Colors.card }]}>Toplam: {filtreli.length} stok</Text>
       )}
 
       {/* Sepet + Barkod alt bar */}
       <View style={styles.altBar}>
         <TouchableOpacity
-          style={[styles.sepetBtn, sepetKalemleri.length === 0 && styles.sepetBtnPasif]}
+          style={[styles.sepetBtn, { backgroundColor: Colors.primary }, sepetKalemleri.length === 0 && styles.sepetBtnPasif]}
           onPress={sepeteGit}
           disabled={sepetKalemleri.length === 0}
         >
-          <Ionicons name="cart-outline" size={22} color={Colors.white} />
+          <Ionicons name="cart-outline" size={22} color="#fff" />
           <Text style={styles.sepetBtnText}>
             SEPET ({paraTL(sepetToplam)})
           </Text>
           {sepetKalemleri.length > 0 && (
-            <Animated.View style={[styles.sepetBadge, badgeAnimStyle]}>
+            <Animated.View style={[styles.sepetBadge, { backgroundColor: Colors.accent }, badgeAnimStyle]}>
               <Text style={styles.sepetBadgeText}>{sepetKalemleri.length}</Text>
             </Animated.View>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.altBarkodBtn}
+          style={[styles.altBarkodBtn, { backgroundColor: Colors.primary }]}
           onPress={() => setScannerAcik(true)}
         >
-          <Ionicons name="barcode-outline" size={24} color={Colors.white} />
+          <Ionicons name="barcode-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -896,11 +929,10 @@ export default function HizliIslemler() {
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: Colors.lightGray ?? '#f5f5f5' },
+  ekran: { flex: 1 },
   ustBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
@@ -915,19 +947,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  evrakTipiIcerik: {
-    flex: 1,
-  },
-  evrakTipiText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  fisTipiText: {
-    color: '#FFD54F',
-    fontSize: 11,
-    marginTop: 1,
-  },
+  evrakTipiIcerik: { flex: 1 },
+  evrakTipiText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  fisTipiText: { color: '#FFD54F', fontSize: 11, marginTop: 1 },
   miktarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -937,14 +959,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 8,
   },
-  miktarBtnAktif: {
-    backgroundColor: Colors.accent,
-  },
-  miktarBtnText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: '600',
-  },
+  miktarBtnAktif: {},
+  miktarBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   barkodBtn: {
     padding: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -953,67 +969,39 @@ const styles = StyleSheet.create({
   cariBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  cariText: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.gray,
-  },
-  cariTextSecili: {
-    color: Colors.darkGray,
-    fontWeight: '600',
-  },
+  cariText: { flex: 1, fontSize: 14 },
   aramaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     margin: 10,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
     gap: 6,
   },
   aramaTipiBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${Colors.primary}15`,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
     gap: 4,
   },
-  aramaTipiBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  aramaInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.black,
-    paddingVertical: 2,
-  },
-  araBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 6,
-    padding: 8,
-  },
+  aramaTipiBtnText: { fontSize: 12, fontWeight: '600' },
+  aramaInput: { flex: 1, fontSize: 14, paddingVertical: 2 },
+  araBtn: { borderRadius: 6, padding: 8 },
   aramaTipiDropdown: {
     marginHorizontal: 10,
     marginTop: -6,
     marginBottom: 6,
-    backgroundColor: Colors.white,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
@@ -1028,24 +1016,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  aramaTipiItemActive: {
-    backgroundColor: `${Colors.primary}10`,
-  },
-  aramaTipiItemText: {
-    fontSize: 14,
-    color: Colors.darkGray,
-  },
-  aramaTipiItemTextActive: {
-    fontWeight: '700',
-    color: Colors.primary,
-  },
+  aramaTipiItemActive: {},
+  aramaTipiItemText: { fontSize: 14 },
+  aramaTipiItemTextActive: { fontWeight: '700' },
   listeBaslik: {
     flexDirection: 'row',
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: Colors.primary,
     marginHorizontal: 10,
     borderRadius: 8,
     marginBottom: 4,
@@ -1059,7 +1037,6 @@ const styles = StyleSheet.create({
   liste: { flex: 1, paddingHorizontal: 10 },
   stokSatiri: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1070,23 +1047,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   stokBilgi: { flex: 3.2 },
-  stokKodu: { fontSize: 11, color: Colors.gray, fontWeight: '600' },
-  stokCinsi: { fontSize: 14, color: Colors.darkGray, fontWeight: '500', marginTop: 2 },
-  stokBarkod: { fontSize: 11, color: Colors.gray, marginTop: 1 },
+  stokKodu: { fontSize: 11, fontWeight: '600' },
+  stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
+  stokBarkod: { fontSize: 11, marginTop: 1 },
   stokSag: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
-  stokFiyat: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  stokBakiye: { fontSize: 11, color: Colors.gray, marginTop: 2 },
+  stokFiyat: { fontSize: 14, fontWeight: '700' },
+  stokBakiye: { fontSize: 11, marginTop: 2 },
   ayirac: { height: 4 },
   infoBtn: {
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     width: 70,
     gap: 2,
   },
-  infoBtnText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
+  infoBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   bosEkran: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  bosMetin: { fontSize: 14, color: Colors.gray },
+  bosMetin: { fontSize: 14 },
   altBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1095,7 +1071,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   altBarkodBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 14,
@@ -1107,26 +1082,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     gap: 8,
   },
   sepetBtnPasif: { opacity: 0.5 },
-  sepetBtnText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+  sepetBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
   sepetBadge: {
-    backgroundColor: Colors.accent ?? '#ffa500',
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,
     minWidth: 22,
     alignItems: 'center',
   },
-  sepetBadgeText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
-  toplamStokText: { textAlign: 'center', color: Colors.gray, fontSize: 13, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Colors.border, backgroundColor: Colors.white },
+  sepetBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  toplamStokText: { textAlign: 'center', fontSize: 13, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
 });

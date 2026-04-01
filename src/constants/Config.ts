@@ -8,6 +8,7 @@ export const Config = {
   STORAGE_KEYS: {
     API_URL: 'apiUrl',
     API_URL2: 'apiUrl2',
+    API_URL3: 'apiUrl3',
     CALISMA_MODU: 'Çalışma',
     CALISILANL_SIRKET: 'CalisilanSirket',
     KULLANICI_KODU: 'KullanıcıKodu',
@@ -23,10 +24,13 @@ export const Config = {
     SEPET_SES: 'sepetSes',
     SON_ARAMALAR: 'sonAramalar',
     VARSAYILAN_FIYAT_NO: 'varsayilanFiyatNo',
+    AKTIF_API: 'aktifApi',
+    TEMA_SECIMI: 'temaSecimi',
   },
 
   DEFAULT_API_URL: 'http://212.252.132.158/webapi',
   DEFAULT_API_URL2: 'http://192.168.1.1/webapi',
+  DEFAULT_API_URL3: 'http://192.168.1.1/webapi',
 };
 
 export default Config;

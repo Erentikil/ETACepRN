@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 import type { BarkodBilgileri, StokListesiBilgileri } from '../models';
 
 interface Props {
@@ -31,6 +31,7 @@ export default function RenkBedenSecimModal({
   onSelect,
   onClose,
 }: Props) {
+  const Colors = useColors();
   const [arama, setArama] = useState('');
 
   const filtrelenmis = useMemo(() => {
@@ -41,12 +42,12 @@ export default function RenkBedenSecimModal({
       (b) => b.stokKodu === stok.stokKodu
     );
 
-    // Stok listesindeki aynı stokKodu'na sahip kayıtlar (farklı barkod = farklı varyant)
+    // Stok listesindeki ayni stokKodu'na sahip kayitlar (farkli barkod = farkli varyant)
     const stokVariantlari = stokListesi.filter(
       (s) => s.stokKodu === stok.stokKodu
     );
 
-    // Barkod bazlı dedup — barkodListesi'nde zaten olan barkodları ekleme
+    // Barkod bazli dedup -- barkodListesi'nde zaten olan barkodlari ekleme
     const mevcutBarkodlar = new Set(
       barkodVariantlari.map((b) => b.barkod)
     );
@@ -91,42 +92,42 @@ export default function RenkBedenSecimModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: Colors.card }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: Colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.baslik}>Renk-Beden Seçimi</Text>
+              <Text style={[styles.baslik, { color: Colors.primary }]}>Renk-Beden Secimi</Text>
               {stok && (
-                <Text style={styles.stokBilgi} numberOfLines={1}>
+                <Text style={[styles.stokBilgi, { color: Colors.textSecondary }]} numberOfLines={1}>
                   {stok.stokKodu} - {stok.stokCinsi}
                 </Text>
               )}
             </View>
             <TouchableOpacity onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close" size={24} color={Colors.darkGray} />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
           {/* Arama */}
-          <View style={styles.aramaRow}>
-            <Ionicons name="search-outline" size={16} color={Colors.gray} />
+          <View style={[styles.aramaRow, { backgroundColor: Colors.inputBackground }]}>
+            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
             <TextInput
-              style={styles.aramaInput}
+              style={[styles.aramaInput, { color: Colors.black }]}
               placeholder="Renk, beden veya barkod ara..."
-              placeholderTextColor={Colors.gray}
+              placeholderTextColor={Colors.textSecondary}
               value={arama}
               onChangeText={setArama}
               returnKeyType="search"
             />
             {arama.length > 0 && (
               <TouchableOpacity onPress={() => setArama('')}>
-                <Ionicons name="close-circle" size={16} color={Colors.gray} />
+                <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Başlık satırı */}
-          <View style={styles.listeBaslik}>
+          {/* Baslik satiri */}
+          <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
             <Text style={[styles.baslikText, { flex: 1.5 }]}>Renk</Text>
             <Text style={[styles.baslikText, { flex: 1 }]}>Beden</Text>
             <Text style={[styles.baslikText, { flex: 2, textAlign: 'right' }]}>Barkod</Text>
@@ -139,33 +140,33 @@ export default function RenkBedenSecimModal({
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.satir} onPress={() => handleSelect(item)}>
                 <View style={{ flex: 1.5 }}>
-                  <Text style={styles.renkKodu}>
+                  <Text style={[styles.renkKodu, { color: Colors.primary }]}>
                     {item.renkKodu > 0 ? `${item.renkKodu}-${item.renk}` : '-'}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.bedenKodu}>
+                  <Text style={[styles.bedenKodu, { color: Colors.text }]}>
                     {item.bedenKodu > 0 ? `${item.bedenKodu}-${item.beden}` : '-'}
                   </Text>
                 </View>
-                <Text style={[styles.barkodText, { flex: 2, textAlign: 'right' }]} numberOfLines={1}>
+                <Text style={[styles.barkodText, { flex: 2, textAlign: 'right', color: Colors.textSecondary }]} numberOfLines={1}>
                   {item.barkod}
                 </Text>
               </TouchableOpacity>
             )}
-            ItemSeparatorComponent={() => <View style={styles.ayirac} />}
+            ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
             style={styles.liste}
             ListEmptyComponent={
               <View style={styles.bosListe}>
                 <Ionicons name="color-palette-outline" size={40} color={Colors.border} />
-                <Text style={styles.bosMetin}>Bu stok için renk-beden kaydı bulunamadı</Text>
+                <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>Bu stok icin renk-beden kaydi bulunamadi</Text>
               </View>
             }
           />
 
           {/* Alt bilgi */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: Colors.textSecondary }]}>
               {filtrelenmis.length} varyant
             </Text>
           </View>
@@ -182,7 +183,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: Colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -195,22 +195,18 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   baslik: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.primary,
   },
   stokBilgi: {
     fontSize: 12,
-    color: Colors.gray,
     marginTop: 2,
   },
   aramaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     margin: 12,
     borderRadius: 10,
     paddingHorizontal: 10,
@@ -220,14 +216,12 @@ const styles = StyleSheet.create({
   aramaInput: {
     flex: 1,
     fontSize: 13,
-    color: Colors.black,
     paddingVertical: 2,
   },
   listeBaslik: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 6,
-    backgroundColor: Colors.primary,
     marginHorizontal: 12,
     borderRadius: 6,
   },
@@ -249,30 +243,16 @@ const styles = StyleSheet.create({
   renkKodu: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary,
-  },
-  renkAdi: {
-    fontSize: 11,
-    color: Colors.gray,
-    marginTop: 1,
   },
   bedenKodu: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
-  },
-  bedenAdi: {
-    fontSize: 11,
-    color: Colors.gray,
-    marginTop: 1,
   },
   barkodText: {
     fontSize: 12,
-    color: Colors.gray,
   },
   ayirac: {
     height: 1,
-    backgroundColor: Colors.border,
   },
   bosListe: {
     alignItems: 'center',
@@ -281,7 +261,6 @@ const styles = StyleSheet.create({
   },
   bosMetin: {
     fontSize: 13,
-    color: Colors.gray,
   },
   footer: {
     paddingHorizontal: 16,
@@ -290,6 +269,5 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: Colors.gray,
   },
 });

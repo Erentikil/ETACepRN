@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -11,13 +11,6 @@ interface ToastConfig {
   color: string;
   icon: keyof typeof Ionicons.glyphMap;
 }
-
-const CONFIG: Record<ToastType, ToastConfig> = {
-  success: { color: Colors.success, icon: 'checkmark-circle' },
-  error:   { color: Colors.error,   icon: 'close-circle' },
-  warning: { color: Colors.accent,  icon: 'warning' },
-  info:    { color: Colors.primary, icon: 'information-circle' },
-};
 
 interface ToastHandle {
   show: (type: ToastType, message: string, duration?: number) => void;
@@ -27,12 +20,20 @@ interface ToastHandle {
 let globalRef: ToastHandle | null = null;
 
 const ToastInner = forwardRef<ToastHandle>((_, ref) => {
+  const Colors = useColors();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-150);
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState<ToastType>('info');
   const [message, setMessage] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const CONFIG: Record<ToastType, ToastConfig> = {
+    success: { color: Colors.success, icon: 'checkmark-circle' },
+    error:   { color: Colors.error,   icon: 'close-circle' },
+    warning: { color: Colors.accent,  icon: 'warning' },
+    info:    { color: Colors.primary, icon: 'information-circle' },
+  };
 
   const hide = useCallback(() => {
     translateY.value = withTiming(-150, { duration: 250 }, () => {

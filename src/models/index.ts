@@ -108,6 +108,11 @@ export interface MenuYetkiBilgileri {
   dosyaIslemleri: boolean;
   dizayn: boolean;
   ayarlar: boolean;
+  fiyatGor: boolean;
+  crm: boolean;
+  evrakDuzenle: boolean;
+  barkodEkle: boolean;
+  kontrolPanel: boolean;
 }
 
 export interface KameraYetkiBilgileri {
@@ -320,6 +325,59 @@ export interface TahsilatEvrak {
   telefonCihazKodu?: string;
 }
 
+// ─── Kasa Tahsilat ───────────────────────────────────────────────────────────
+export interface KasaTahsilatBilgileri {
+  kasaKodu: string;
+  kasaAdi: string;
+  vadeTarih: string;
+  cariKodu: string;
+  cariUnvan: string;
+  evrakNo: string;
+  aciklama: string;
+  islemTipi: number;
+  tutar: number;
+}
+
+export interface KasaTahsilatEvrak {
+  guid: string;
+  ktb: KasaTahsilatBilgileri;
+  veriTabaniAdi?: string;
+  telefonCihazKodu?: string;
+  kullaniciKodu: string;
+}
+
+// ─── Çek / Senet Tahsilat ────────────────────────────────────────────────────
+export interface CekSenetTahsilatBilgileri {
+  cariKodu: string;
+  cariUnvani: string;
+  vadeTarihi: string;
+  aciklama: string;
+  aciklama1: string;
+  aciklama2: string;
+  evrakNo: string;
+  tutar: number;
+  asilBorclu: string;
+  kendiCeki: boolean;
+  banka: string;
+  sube: string;
+  cekNo: string;
+  hesapNo: string;
+  kesideYeri: string;
+  tarih: string;
+  duzenlemeAdresi: string;
+  duzenlemeIl: string;
+  duzenlemeIlce: string;
+}
+
+export interface CekSenetEvrak {
+  guid: string;
+  ctb: CekSenetTahsilatBilgileri;
+  veriTabaniAdi?: string;
+  telefonCihazKodu?: string;
+  kullaniciKodu: string;
+  evrakTipi: string;
+}
+
 export interface SepetKalem {
   stokKodu: string;
   stokCinsi: string;
@@ -337,6 +395,7 @@ export interface SepetKalem {
   carpan?: number;
   carpan2?: string;
   seciliFiyatNo?: number;
+  crmKalemId?: number;
 }
 
 // ─── Stok Ek Bilgileri ────────────────────────────────────────────────────────
@@ -388,7 +447,8 @@ export interface OnayListesiBilgileri {
   not: string;
   onaylayan: string;
   durum: string;
-  onayDurumu: number;
+  onayDurumu?: number;
+  onaylamaDurumu?: number;
   genelToplam: number;
   tarih: string;
   kullaniciKodu: string;
@@ -509,6 +569,96 @@ export interface BekleyenEvrakKaydi extends SepetBaslik {
   id: string;
   tarih: string; // ISO date string
   genelToplam: number;
+  onayGuidId?: string; // Onaydan sepete dönüşümde eski guidId
+  onayDurumu?: number; // Onay durumu (1=Onaylandı, 3=Güncelle, 4=İptal)
+  genelIndirimYuzde?: number;
+  genelIndirimTutar?: number;
+  aciklama1?: string;
+  aciklama2?: string;
+}
+
+// ─── Sunucu Sepet Modelleri (C# alan adlarıyla birebir) ──────────────────────
+export interface SepetBaslikBilgileri {
+  sbbID?: number;
+  tarih: string;
+  referansNo: number;
+  belgeTipiIndex: number;
+  evrakTipi: number;
+  alimSatim: number;
+  alimSatimDurumu: string;
+  evrakEkrani: string;
+  cariKodu: string;
+  cariUnvan: string;
+  anaDepoKodu: string;
+  karsiDepoKodu: string;
+  guidID: string;
+  indirimOran: number;
+  indirimTutar: number;
+  fisTipi: number;
+  fisTipAciklama: string;
+  saticiKodu: string;
+  genelKDVNo: number;
+  genelKDV: number;
+  eevrak: string;
+  dovizKodu: string;
+  dovizTuru: string;
+  dovizKuru: number;
+  aciklama1: string;
+  aciklama2: string;
+  genelToplam: number;
+  evrakKayitNedeni: string;
+  kullaniciKodu: string;
+  adresNo: number;
+  kdvDahilFlag: number;
+}
+
+export interface SepetNormalBilgileri {
+  sepetID?: number;
+  guidID: string;
+  stokKodu: string;
+  barkod: string;
+  stokCinsi: string;
+  birim: string;
+  fiyatNo: number;
+  fiyat: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  dovizKuru: number;
+  miktar: number;
+  bakiye: number;
+  kalemIndirim1: number;
+  kalemIndirim2: number;
+  kalemIndirim3: number;
+  kdvOrani: number;
+  aciklama?: string;
+  digerBirimler?: string[];
+  digerCarpanlar?: number[];
+  digerMiktarlar?: number[];
+}
+
+export interface SepetRBBilgileri {
+  sepetID?: number;
+  guidID: string;
+  stokKodu: string;
+  barkod: string;
+  stokCinsi: string;
+  birim: string;
+  fiyatNo: number;
+  fiyat: number;
+  dovizKodu: string;
+  dovizTuru: string;
+  dovizKuru: number;
+  miktar: number;
+  bakiye: number;
+  kalemIndirim1: number;
+  kalemIndirim2: number;
+  kalemIndirim3: number;
+  kdvOrani: number;
+  renkKodu: number;
+  bedenKodu: number;
+  digerBirimler?: string[];
+  digerCarpanlar?: number[];
+  digerMiktarlar?: number[];
 }
 
 // ─── Onay Düzenleme (Evrak Detayı) ───────────────────────────────────────────
@@ -530,13 +680,7 @@ export interface OnayAdresBilgileri {
 }
 
 export interface OnayEvrakDetay {
-  sbb: {
-    guidID: string;
-    cariKodu: string;
-    cariUnvan: string;
-    kdvDahilFlag: number; // 0=Hariç, 1=Dahil
-    evrakEkrani: string;  // 'HIZLI' | 'ALSAT'
-  };
+  sbb: SepetBaslikBilgileri;
   onaylamaDurumu: number;
   onaylayan: string;
   onaylamaNotu: string;
@@ -552,6 +696,8 @@ export interface OnayEvrakDetay {
   aciklama2: string;
   kdvListesi: string;
   abListe: OnayAdresBilgileri[];
+  snbListe?: SepetNormalBilgileri[];
+  sRBbListe?: SepetRBBilgileri[];
 }
 
 // ─── Renk-Beden İşlemleri ────────────────────────────────────────────────────
@@ -657,4 +803,140 @@ export interface KapamaEvrak {
   fisTipi: number;
   veriTabaniAdi?: string;
   telefonCihazKodu?: string;
+}
+
+// ─── CRM Müşteri & Teklif ──────────────────────────────────────────────────
+export interface CRMMusteriBilgileri {
+  id: number;
+  durum: number;
+  musterikodu: string;
+  musteriunvani: string;
+  yetkili1: string;
+  yetkili2: string;
+  adres1: string;
+  adres2: string;
+  notlar: string;
+  tipi: string;
+  email1: string;
+  email2: string;
+  vergidairesi: string;
+  vergino: string;
+  tckimlikno: string;
+  aciklama1: string;
+  aciklama2: string;
+  aciklama3: string;
+  aciklama4: string;
+  aciklama5: string;
+  adres3: string;
+  ilce: string;
+  il: string;
+  ulke: string;
+  telefon: string;
+  mobiltelefon: string;
+  fax: string;
+  ozelkod1: string;
+  ozelkod2: string;
+  ozelkod3: string;
+  ozelkod4: string;
+  ozelkod5: string;
+}
+
+export interface CRMMusteriEvrak {
+  telefonCihazKodu: string;
+  veriTabaniAdi: string;
+  CRM_mb: CRMMusteriBilgileri;
+}
+
+export interface CRMTeklifFisBilgileri {
+  id: number;
+  musteriid: number;
+  kdvdahilflag: number;
+  etadurum: number;
+  etaislflag: number;
+  tarih?: string;
+  gecerliliktarihi?: string;
+  etatarih?: string;
+  kdvyuzde: number;
+  dovizkuru: number;
+  maltoplam: number;
+  kalemindirimtoplam: number;
+  indirimyuzde1: number;
+  indirimtutar1: number;
+  indirimyuzde2: number;
+  indirimtutar2: number;
+  matrah: number;
+  kdvtutar: number;
+  geneltoplam: number;
+  musterikodu: string;
+  musteriadi: string;
+  yetkili: string;
+  teklifno?: string;
+  teklifdurumu?: string;
+  aciklama1: string;
+  dovizturu: string;
+  hazirlayan: string;
+  etasirketadi: string;
+  ilce: string;
+  ulke: string;
+  mail: string;
+  telefon: string;
+  notlar: string;
+  not1: string;
+  not2: string;
+  not3: string;
+  not4: string;
+  not5: string;
+  not6: string;
+  dovizkodu: string;
+  aciklama2: string;
+  aciklama3: string;
+  adres1: string;
+  adres2: string;
+  adres3: string;
+  il: string;
+  vergidairesi: string;
+  vergino: string;
+  tckimlikno: string;
+  evrakDosyaYolu: string;
+  teklifRevizyonNo: string;
+  teklifSonRevizyonu: number;
+  olusturmazamani?: string;
+  guncellemezamani?: string;
+  silmezamani?: string;
+  odemesekli: string;
+}
+
+export interface CRMTeklifHareketBilgileri {
+  id: number;
+  tekliffisid: number;
+  musteriid: number;
+  kodtipi: number;
+  tarih?: string;
+  dovizkuru: number;
+  fiyat: number;
+  miktar: number;
+  kdvyuzde: number;
+  kalemindirimyuzde1: number;
+  kalemindirimtutar1: number;
+  kalemindirimyuzde2: number;
+  kalemindirimtutar2: number;
+  barkod: string;
+  stokkodu: string;
+  stokcinsi: string;
+  birim: string;
+  depo: string;
+  aciklama1: string;
+  aciklama2: string;
+  aciklama3: string;
+  dovizkodu: string;
+  dovizturu: string;
+  miktar2: number;
+  birim2: string;
+}
+
+export interface CRMTeklifEvrak {
+  telefonCihazKodu: string;
+  veriTabaniAdi: string;
+  CRM_tfb: CRMTeklifFisBilgileri;
+  CRM_thbListe: CRMTeklifHareketBilgileri[];
 }

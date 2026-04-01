@@ -6,7 +6,7 @@ import {
   Modal,
   Text,
 } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface Props {
   visible: boolean;
@@ -14,14 +14,15 @@ interface Props {
 }
 
 export default function LoadingIndicator({ visible, mesaj }: Props) {
+  const Colors = useColors();
   if (!visible) return null;
 
   return (
     <Modal transparent animationType="fade" visible={visible}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: Colors.card }]}>
           <ActivityIndicator size="large" color={Colors.accent} />
-          {mesaj ? <Text style={styles.mesaj}>{mesaj}</Text> : null}
+          {mesaj ? <Text style={[styles.mesaj, { color: Colors.text }]}>{mesaj}</Text> : null}
         </View>
       </View>
     </Modal>
@@ -36,7 +37,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 28,
     alignItems: 'center',
@@ -44,7 +44,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   mesaj: {
-    color: Colors.darkGray,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,

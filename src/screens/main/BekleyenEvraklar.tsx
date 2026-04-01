@@ -22,7 +22,7 @@ import {
 } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { paraTL } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type { BekleyenEvrakKaydi } from '../../models';
@@ -67,6 +67,7 @@ function tarihFormat(iso: string): string {
 }
 
 export default function BekleyenEvraklar() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const { calisilanSirket } = useAppStore();
   const [evraklar, setEvraklar] = useState<BekleyenEvrakKaydi[]>([]);
@@ -164,7 +165,7 @@ export default function BekleyenEvraklar() {
         'Bu evrak sepete aktarılacak ve taslaktan silinecektir. Devam etmek istiyor musunuz?',
         [
           { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Devam', onPress: () => navigation.navigate('HizliIslemler', { taslakEvrak: kayit }) },
+          { text: 'Devam', onPress: () => navigation.navigate('HizliIslemlerV2', { taslakEvrak: kayit }) },
         ]
       );
     };
@@ -186,47 +187,47 @@ export default function BekleyenEvraklar() {
   const renderEvrak = ({ item }: { item: BekleyenEvrakKaydi }) => (
     <ReanimatedSwipeable
       renderRightActions={() => (
-        <TouchableOpacity style={styles.silBtn} onPress={() => handleSil(item)}>
-          <Ionicons name="trash-outline" size={22} color={Colors.white} />
+        <TouchableOpacity style={[styles.silBtn, { backgroundColor: Colors.error }]} onPress={() => handleSil(item)}>
+          <Ionicons name="trash-outline" size={22} color="#fff" />
           <Text style={styles.silBtnText}>Sil</Text>
         </TouchableOpacity>
       )}
     >
-      <TouchableOpacity style={styles.kart} onPress={() => handleEvrakAc(item)} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.kart, { backgroundColor: Colors.card }]} onPress={() => handleEvrakAc(item)} activeOpacity={0.8}>
         <View style={styles.kartUst}>
-          <View style={styles.evrakTipiBadge}>
-            <Text style={styles.evrakTipiText}>{evrakTipiAdi(item.evrakTipi, item.alimSatim)}</Text>
+          <View style={[styles.evrakTipiBadge, { backgroundColor: Colors.primary + '15' }]}>
+            <Text style={[styles.evrakTipiText, { color: Colors.primary }]}>{evrakTipiAdi(item.evrakTipi, item.alimSatim)}</Text>
           </View>
-          <Text style={styles.tarih}>{tarihFormat(item.tarih)}</Text>
+          <Text style={[styles.tarih, { color: Colors.textSecondary }]}>{tarihFormat(item.tarih)}</Text>
         </View>
-        <Text style={styles.cariUnvan} numberOfLines={1}>
-          {item.cariUnvan || <Text style={{ color: Colors.gray }}>Cari seçilmedi</Text>}
+        <Text style={[styles.cariUnvan, { color: Colors.text }]} numberOfLines={1}>
+          {item.cariUnvan || <Text style={{ color: Colors.textSecondary }}>Cari seçilmedi</Text>}
         </Text>
         <View style={styles.kartAlt}>
-          <Text style={styles.fisTipi}>{item.fisTipiAdi}</Text>
-          <Text style={styles.toplam}>{paraTL(item.genelToplam)}</Text>
+          <Text style={[styles.fisTipi, { color: Colors.textSecondary }]}>{item.fisTipiAdi}</Text>
+          <Text style={[styles.toplam, { color: Colors.primary }]}>{paraTL(item.genelToplam)}</Text>
         </View>
-        <Text style={styles.kalemSayisi}>{item.kalemler.length} kalem</Text>
+        <Text style={[styles.kalemSayisi, { color: Colors.textSecondary }]}>{item.kalemler.length} kalem</Text>
       </TouchableOpacity>
     </ReanimatedSwipeable>
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* Arama + Temizle */}
-      <View style={styles.ustBar}>
-        <View style={styles.aramaRow}>
-          <Ionicons name="search-outline" size={18} color={Colors.gray} />
+      <View style={[styles.ustBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+        <View style={[styles.aramaRow, { backgroundColor: Colors.inputBackground }]}>
+          <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
           <TextInput
-            style={styles.aramaInput}
+            style={[styles.aramaInput, { color: Colors.text }]}
             placeholder="Cari kodu, unvan veya evrak tipi ara..."
-            placeholderTextColor={Colors.gray}
+            placeholderTextColor={Colors.textSecondary}
             value={aramaMetni}
             onChangeText={handleArama}
           />
           {aramaMetni.length > 0 && (
             <TouchableOpacity onPress={() => handleArama('')}>
-              <Ionicons name="close-circle" size={18} color={Colors.gray} />
+              <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -257,31 +258,27 @@ export default function BekleyenEvraklar() {
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: '#f5f5f5' },
+  ekran: { flex: 1 },
   ustBar: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     gap: 8,
-    backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   aramaRow: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 6,
   },
-  aramaInput: { flex: 1, fontSize: 14, color: Colors.black, paddingVertical: 0 },
+  aramaInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
   temizleBtn: { padding: 6 },
   listePadding: { padding: 10, paddingBottom: 20 },
   kart: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 14,
     shadowColor: '#000',
@@ -292,20 +289,18 @@ const styles = StyleSheet.create({
   },
   kartUst: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   evrakTipiBadge: {
-    backgroundColor: Colors.primary + '15',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  evrakTipiText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
-  tarih: { fontSize: 11, color: Colors.gray },
-  cariUnvan: { fontSize: 15, fontWeight: '600', color: Colors.darkGray, marginBottom: 8 },
+  evrakTipiText: { fontSize: 12, fontWeight: '700' },
+  tarih: { fontSize: 11 },
+  cariUnvan: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
   kartAlt: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fisTipi: { fontSize: 12, color: Colors.gray },
-  toplam: { fontSize: 16, fontWeight: '700', color: Colors.primary },
-  kalemSayisi: { fontSize: 11, color: Colors.gray, marginTop: 4 },
+  fisTipi: { fontSize: 12 },
+  toplam: { fontSize: 16, fontWeight: '700' },
+  kalemSayisi: { fontSize: 11, marginTop: 4 },
   silBtn: {
-    backgroundColor: Colors.error,
     justifyContent: 'center',
     alignItems: 'center',
     width: 70,
@@ -313,7 +308,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     gap: 4,
   },
-  silBtnText: { color: Colors.white, fontSize: 12, fontWeight: '600' },
+  silBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   bosEkran: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  bosMetin: { fontSize: 14, color: Colors.gray },
+  bosMetin: { fontSize: 14 },
 });

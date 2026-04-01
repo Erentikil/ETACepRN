@@ -12,7 +12,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -21,7 +21,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { useAppStore } from '../../store/appStore';
 import { stokluCariEkstreBilgileriAl } from '../../api/stokluCariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import type { StokluCariEkstreBilgileri, CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -65,9 +65,10 @@ function miktarFormatla(n: number): string {
 }
 
 export default function StokluCariEkstreListesi() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
-  const { calisilanSirket } = useAppStore();
+  const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
 
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
   const [secilenAy, setSecilenAy] = useState(new Date());
@@ -78,11 +79,22 @@ export default function StokluCariEkstreListesi() {
   const [pdfYukleniyor, setPdfYukleniyor] = useState(false);
   const [pdfUri, setPdfUri] = useState<string | null>(null);
 
+  // CariSecim'den geri dönünce (route params — "+" butonu akışı)
   useEffect(() => {
     if (route.params?.secilenCari) {
       setSecilenCari(route.params.secilenCari);
     }
   }, [route.params?.secilenCari]);
+
+  // CariSecim'den geri dönünce (pendingCari — normal seçim akışı)
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingCari?.target === 'StokluCariEkstreListesi') {
+        setSecilenCari(pendingCari.cari);
+        clearPendingCari();
+      }
+    }, [pendingCari])
+  );
 
   useEffect(() => {
     if (!aramaMetni) {
@@ -172,39 +184,39 @@ export default function StokluCariEkstreListesi() {
   };
 
   const renderKalem = ({ item }: { item: StokluCariEkstreBilgileri }) => (
-    <View style={styles.kart}>
+    <View style={[styles.kart, { backgroundColor: Colors.card }]}>
       {/* Satır 1: tarih | tipKodu | aciklama */}
       <View style={styles.ustSatir}>
-        <Text style={styles.tarih}>{tarihGoster(item.tarih)}</Text>
-        <Text style={styles.tip}>{item.tipKodu}</Text>
-        <Text style={styles.aciklama} numberOfLines={1}>{item.aciklama}</Text>
+        <Text style={[styles.tarih, { color: Colors.textSecondary }]}>{tarihGoster(item.tarih)}</Text>
+        <Text style={[styles.tip, { color: Colors.primary }]}>{item.tipKodu}</Text>
+        <Text style={[styles.aciklama, { color: Colors.text }]} numberOfLines={1}>{item.aciklama}</Text>
       </View>
 
       {/* Stok bilgisi */}
       <View style={styles.baslikSatir}>
-        <Text style={[styles.baslik, { flex: 4, textAlign: 'left' }]}>Stok Cinsi</Text>
-        <Text style={[styles.baslik, styles.sag]}>Miktar</Text>
-        <Text style={[styles.baslik, styles.sag]}>Net Fiyat</Text>
+        <Text style={[styles.baslik, { flex: 4, textAlign: 'left', color: Colors.textSecondary }]}>Stok Cinsi</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Miktar</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Net Fiyat</Text>
       </View>
       <View style={styles.degerSatir}>
-        <Text style={[styles.deger, { flex: 4, textAlign: 'left' }]} numberOfLines={1}>
+        <Text style={[styles.deger, { flex: 4, textAlign: 'left', color: Colors.text }]} numberOfLines={1}>
           {item.stokCinsi}
         </Text>
-        <Text style={[styles.deger, styles.sag]}>{miktarFormatla(item.miktar)}</Text>
-        <Text style={[styles.deger, styles.sag]}>{sayiFormatla(item.netFiyat)}</Text>
+        <Text style={[styles.deger, styles.sag, { color: Colors.text }]}>{miktarFormatla(item.miktar)}</Text>
+        <Text style={[styles.deger, styles.sag, { color: Colors.text }]}>{sayiFormatla(item.netFiyat)}</Text>
       </View>
 
       {/* Finans bilgisi */}
       <View style={styles.baslikSatir}>
-        <Text style={[styles.baslik, styles.sag]}>Borç</Text>
-        <Text style={[styles.baslik, styles.sag]}>Alacak</Text>
-        <Text style={[styles.baslik, styles.sag]}>Bakiye</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Borc</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Alacak</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Bakiye</Text>
       </View>
       <View style={styles.degerSatir}>
-        <Text style={[styles.deger, styles.sag]}>
+        <Text style={[styles.deger, styles.sag, { color: Colors.text }]}>
           {item.borc > 0 ? sayiFormatla(item.borc) : '-'}
         </Text>
-        <Text style={[styles.deger, styles.sag]}>
+        <Text style={[styles.deger, styles.sag, { color: Colors.text }]}>
           {item.alacak > 0 ? sayiFormatla(item.alacak) : '-'}
         </Text>
         <Text style={[styles.deger, styles.sag, { color: item.bakiye >= 0 ? Colors.error : Colors.success }]}>
@@ -215,19 +227,19 @@ export default function StokluCariEkstreListesi() {
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* PDF Modal */}
       <Modal visible={!!pdfUri} animationType="slide" onRequestClose={() => setPdfUri(null)}>
-        <SafeAreaView style={styles.pdfModal}>
-          <View style={styles.pdfBaslik}>
-            <Text style={styles.pdfBaslikMetin} numberOfLines={1}>
+        <SafeAreaView style={[styles.pdfModal, { backgroundColor: Colors.card }]}>
+          <View style={[styles.pdfBaslik, { borderBottomColor: Colors.border }]}>
+            <Text style={[styles.pdfBaslikMetin, { color: Colors.text }]} numberOfLines={1}>
               {secilenCari?.cariUnvan} — {ayBasligiFormatla(secilenAy)}
             </Text>
             <TouchableOpacity onPress={pdfPaylas} style={styles.pdfBtn}>
               <Ionicons name="share-outline" size={22} color={Colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setPdfUri(null)} style={styles.pdfBtn}>
-              <Ionicons name="close" size={24} color={Colors.darkGray} />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
           {pdfUri && (
@@ -237,36 +249,36 @@ export default function StokluCariEkstreListesi() {
       </Modal>
 
       {/* Cari seçim butonu */}
-      <TouchableOpacity
-        style={styles.cariBtn}
+      {route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' && <TouchableOpacity
+        style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
         onPress={() => navigation.navigate('CariSecim', { returnScreen: 'StokluCariEkstreListesi' })}
       >
-        <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.gray} />
-        <Text style={[styles.cariText, secilenCari && styles.cariTextSecili]} numberOfLines={1}>
+        <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.textSecondary} />
+        <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]} numberOfLines={1}>
           {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
         </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
-      </TouchableOpacity>
+        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+      </TouchableOpacity>}
 
       {/* Ay seçici + PDF */}
-      <View style={styles.aramaBar}>
+      <View style={[styles.aramaBar, { backgroundColor: Colors.primary }]}>
         <TouchableOpacity
           style={[styles.ayBtn, !secilenCari && styles.ayBtnDisabled]}
           onPress={pdfAc}
           disabled={!secilenCari || pdfYukleniyor}
         >
           {pdfYukleniyor
-            ? <ActivityIndicator size={16} color={Colors.white} />
-            : <Ionicons name="document-outline" size={20} color={Colors.white} />
+            ? <ActivityIndicator size={16} color="#fff" />
+            : <Ionicons name="document-outline" size={20} color="#fff" />
           }
         </TouchableOpacity>
         <View style={styles.ayNavGrup}>
           <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(-1)}>
-            <Ionicons name="chevron-back" size={20} color={Colors.white} />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.ayBaslik}>{ayBasligiFormatla(secilenAy)}</Text>
           <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(1)}>
-            <Ionicons name="chevron-forward" size={20} color={Colors.white} />
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
         <View style={styles.ayBtnPlaceholder} />
@@ -274,18 +286,18 @@ export default function StokluCariEkstreListesi() {
 
       {/* Arama */}
       {liste.length > 0 && (
-        <View style={styles.aramaContainer}>
-          <Ionicons name="search" size={16} color={Colors.gray} />
+        <View style={[styles.aramaContainer, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+          <Ionicons name="search" size={16} color={Colors.textSecondary} />
           <TextInput
-            style={styles.aramaInput}
+            style={[styles.aramaInput, { color: Colors.text }]}
             placeholder="Stok kodu veya cinsi ara"
-            placeholderTextColor={Colors.gray}
+            placeholderTextColor={Colors.textSecondary}
             value={aramaMetni}
             onChangeText={setAramaMetni}
           />
           {aramaMetni.length > 0 && (
             <TouchableOpacity onPress={() => setAramaMetni('')}>
-              <Ionicons name="close-circle" size={16} color={Colors.gray} />
+              <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -295,12 +307,12 @@ export default function StokluCariEkstreListesi() {
       {!secilenCari ? (
         <View style={styles.merkez}>
           <Ionicons name="person-circle-outline" size={56} color={Colors.border} />
-          <Text style={styles.merkezMetin}>Ekstre görmek için cari seçin</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Ekstre görmek için cari seçin</Text>
         </View>
       ) : yukleniyor ? (
         <View style={styles.merkez}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.merkezMetin}>Yükleniyor...</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
         </View>
       ) : (
         <FlatList
@@ -326,24 +338,20 @@ export default function StokluCariEkstreListesi() {
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: Colors.lightGray },
+  ekran: { flex: 1 },
   cariBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 13,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  cariText: { flex: 1, fontSize: 14, color: Colors.gray },
-  cariTextSecili: { color: Colors.darkGray, fontWeight: '600' },
+  cariText: { flex: 1, fontSize: 14 },
   aramaBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 10,
   },
@@ -365,7 +373,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   ayBaslik: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 15,
     fontWeight: '700',
     textTransform: 'capitalize',
@@ -373,17 +381,14 @@ const styles = StyleSheet.create({
   aramaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  aramaInput: { flex: 1, fontSize: 14, color: Colors.darkGray, height: 32 },
+  aramaInput: { flex: 1, fontSize: 14, height: 32 },
   liste: { padding: 10, paddingBottom: 24 },
   kart: {
-    backgroundColor: Colors.white,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -399,13 +404,13 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 6,
   },
-  tarih: { fontSize: 11, color: Colors.gray, fontWeight: '600', width: 56 },
-  tip: { fontSize: 11, color: Colors.primary, fontWeight: '700', width: 52 },
-  aciklama: { flex: 1, fontSize: 12, color: Colors.darkGray },
+  tarih: { fontSize: 11, fontWeight: '600', width: 56 },
+  tip: { fontSize: 11, fontWeight: '700', width: 52 },
+  aciklama: { flex: 1, fontSize: 12 },
   baslikSatir: { flexDirection: 'row', gap: 4, marginBottom: 2, marginTop: 4 },
-  baslik: { flex: 1, fontSize: 10, color: Colors.gray, fontWeight: '700' },
+  baslik: { flex: 1, fontSize: 10, fontWeight: '700' },
   degerSatir: { flexDirection: 'row', gap: 4, marginBottom: 2 },
-  deger: { flex: 1, fontSize: 12, fontWeight: '600', color: Colors.error },
+  deger: { flex: 1, fontSize: 12, fontWeight: '600' },
   sag: { textAlign: 'right' },
   ayirac: { height: 6 },
   merkez: {
@@ -415,17 +420,16 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: 12,
   },
-  merkezMetin: { fontSize: 14, color: Colors.gray, textAlign: 'center' },
-  pdfModal: { flex: 1, backgroundColor: Colors.white },
+  merkezMetin: { fontSize: 14, textAlign: 'center' },
+  pdfModal: { flex: 1 },
   pdfBaslik: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     gap: 8,
   },
-  pdfBaslikMetin: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.darkGray },
+  pdfBaslikMetin: { flex: 1, fontSize: 14, fontWeight: '600' },
   pdfBtn: { padding: 6 },
 });

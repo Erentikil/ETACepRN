@@ -5,14 +5,28 @@ export type RootStackParamList = {
   Drawer: undefined;
   Ayarlar: { fromLogin?: boolean };
   CariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean } | undefined;
+  CRMCariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean } | undefined;
   SepetListesi: {
     sepet: SepetBaslik;
     genelIndirimYuzde?: number;
+    genelIndirimTutar?: number;
+    aciklama1?: string;
+    aciklama2?: string;
     onKalemlerGuncellendi?: (kalemler: SepetKalem[]) => void;
     rbKalemler?: SepetRBKalem[];
     onRBKalemlerGuncellendi?: (kalemler: SepetRBKalem[]) => void;
+    crmModu?: boolean;
+    crmMusteriId?: number;
+    crmTeklifFisId?: number;
+    onayModu?: boolean;
+    onayGuidId?: string;
+    onayDurumu?: number;
+    evrakEkrani?: 'ALSAT' | 'HIZLI';
   };
   OnayDuzenleme: {
+    item: OnayListesiBilgileri;
+  };
+  KontrolPaneliDetay: {
     item: OnayListesiBilgileri;
   };
 };
@@ -24,7 +38,7 @@ export type DrawerParamList = {
   AlisSatisIslemleri: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
   RenkBedenIslemleri: { secilenCari?: CariKartBilgileri } | undefined;
   SiparisKapama: { secilenCari?: CariKartBilgileri } | undefined;
-  Tahsilatlar: { secilenCari?: CariKartBilgileri } | undefined;
+  Tahsilatlar: { secilenCari?: CariKartBilgileri; tahsilatTipi?: 'cari' | 'kasa' | 'cek' | 'senet' } | undefined;
   Raporlar: undefined;
   BekleyenEvraklar: undefined;
   CariEkstreListesi: { secilenCari?: CariKartBilgileri; kaynakEkran?: string } | undefined;

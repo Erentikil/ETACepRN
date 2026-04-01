@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -14,13 +14,14 @@ export default function EmptyState({
   baslik,
   aciklama,
 }: EmptyStateProps) {
+  const Colors = useColors();
   return (
     <View style={styles.kapsayici}>
       <View style={styles.ikonKutu}>
         <Ionicons name={icon} size={72} color={`${Colors.primary}40`} />
       </View>
-      <Text style={styles.baslik}>{baslik}</Text>
-      {aciklama ? <Text style={styles.aciklama}>{aciklama}</Text> : null}
+      <Text style={[styles.baslik, { color: Colors.text }]}>{baslik}</Text>
+      {aciklama ? <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>{aciklama}</Text> : null}
     </View>
   );
 }
@@ -38,12 +39,10 @@ const styles = StyleSheet.create({
   baslik: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.darkGray,
     textAlign: 'center',
   },
   aciklama: {
     fontSize: 13,
-    color: Colors.gray,
     textAlign: 'center',
     lineHeight: 18,
   },

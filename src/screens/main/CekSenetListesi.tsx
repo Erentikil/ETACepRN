@@ -18,7 +18,7 @@ import { WebView } from 'react-native-webview';
 import { useAppStore } from '../../store/appStore';
 import { cekSenetListesiniAl } from '../../api/cekSenetApi';
 import { raporPdfAl } from '../../api/raporApi';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import type { CekSenetBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -28,6 +28,7 @@ function sayiFormatla(n: number): string {
 }
 
 export default function CekSenetListesi() {
+  const Colors = useColors();
   const { calisilanSirket } = useAppStore();
 
   const [liste, setListe] = useState<CekSenetBilgileri[]>([]);
@@ -107,19 +108,19 @@ export default function CekSenetListesi() {
 
   const renderKalem = ({ item }: { item: CekSenetBilgileri }) => (
     <TouchableOpacity
-      style={styles.kart}
+      style={[styles.kart, { backgroundColor: Colors.card }]}
       onPress={() => pdfAc(item)}
       activeOpacity={0.75}
     >
       <View style={styles.satirSol}>
         <View style={[styles.tipBadge, item.cekSenetTipi.toUpperCase() === 'SENET' ? styles.senetBadge : styles.cekBadge]}>
-          <Text style={styles.tipText}>{item.cekSenetTipi}</Text>
+          <Text style={[styles.tipText, { color: Colors.text }]}>{item.cekSenetTipi}</Text>
         </View>
-        <Text style={styles.pozisyon}>{item.pozisyon}</Text>
+        <Text style={[styles.pozisyon, { color: Colors.text }]}>{item.pozisyon}</Text>
       </View>
       <View style={styles.satirSag}>
-        <Text style={styles.tutar}>{sayiFormatla(item.tutar)}</Text>
-        <Text style={styles.sayi}>{item.cekSenetSayisi} evrak</Text>
+        <Text style={[styles.tutar, { color: Colors.error }]}>{sayiFormatla(item.tutar)}</Text>
+        <Text style={[styles.sayi, { color: Colors.textSecondary }]}>{item.cekSenetSayisi} evrak</Text>
       </View>
       {pdfYukleniyor && secilenKalem?.pozisyon === item.pozisyon ? (
         <ActivityIndicator size={18} color={Colors.primary} style={styles.satirIkon} />
@@ -130,19 +131,19 @@ export default function CekSenetListesi() {
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* PDF Modal */}
       <Modal visible={!!pdfUri} animationType="slide" onRequestClose={() => setPdfUri(null)}>
-        <SafeAreaView style={styles.pdfModal}>
-          <View style={styles.pdfBaslik}>
-            <Text style={styles.pdfBaslikMetin} numberOfLines={1}>
+        <SafeAreaView style={[styles.pdfModal, { backgroundColor: Colors.card }]}>
+          <View style={[styles.pdfBaslik, { borderBottomColor: Colors.border }]}>
+            <Text style={[styles.pdfBaslikMetin, { color: Colors.text }]} numberOfLines={1}>
               {secilenKalem?.cekSenetTipi} — {secilenKalem?.pozisyon}
             </Text>
             <TouchableOpacity onPress={pdfPaylas} style={styles.pdfBtn}>
               <Ionicons name="share-outline" size={22} color={Colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setPdfUri(null)} style={styles.pdfBtn}>
-              <Ionicons name="close" size={24} color={Colors.darkGray} />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
           {pdfUri && (
@@ -156,8 +157,8 @@ export default function CekSenetListesi() {
       </Modal>
 
       {/* Arama */}
-      <View style={styles.aramaContainer}>
-        <Ionicons name="search" size={18} color={Colors.white} style={styles.aramaIkon} />
+      <View style={[styles.aramaContainer, { backgroundColor: Colors.primary }]}>
+        <Ionicons name="search" size={18} color="#fff" style={styles.aramaIkon} />
         <TextInput
           style={styles.aramaInput}
           placeholder="Pozisyonda ara"
@@ -176,7 +177,7 @@ export default function CekSenetListesi() {
       {yukleniyor ? (
         <View style={styles.merkez}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.merkezMetin}>Yükleniyor...</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
         </View>
       ) : (
         <FlatList
@@ -204,12 +205,10 @@ export default function CekSenetListesi() {
 const styles = StyleSheet.create({
   ekran: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   aramaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 8,
     paddingHorizontal: 10,
-    color: Colors.white,
+    color: '#fff',
     fontSize: 14,
   },
   liste: {
@@ -231,7 +230,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   kart: {
-    backgroundColor: Colors.white,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -262,13 +260,11 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.darkGray,
     textTransform: 'uppercase',
   },
   pozisyon: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   satirSag: {
     alignItems: 'flex-end',
@@ -278,11 +274,9 @@ const styles = StyleSheet.create({
   tutar: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.error,
   },
   sayi: {
     fontSize: 11,
-    color: Colors.gray,
   },
   satirIkon: {
     marginLeft: 4,
@@ -299,11 +293,9 @@ const styles = StyleSheet.create({
   },
   merkezMetin: {
     fontSize: 14,
-    color: Colors.gray,
   },
   pdfModal: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   pdfBaslik: {
     flexDirection: 'row',
@@ -311,14 +303,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     gap: 8,
   },
   pdfBaslikMetin: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   pdfBtn: {
     padding: 6,

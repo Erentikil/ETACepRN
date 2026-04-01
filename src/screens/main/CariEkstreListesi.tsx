@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -20,7 +20,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { useAppStore } from '../../store/appStore';
 import { cariEkstreBilgileriAl } from '../../api/cariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import type { CariEkstreBilgileri, CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -62,9 +62,10 @@ function sayiFormatla(n: number): string {
 }
 
 export default function CariEkstreListesi() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
-  const { calisilanSirket } = useAppStore();
+  const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
 
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
   const [secilenAy, setSecilenAy] = useState(new Date());
@@ -73,12 +74,22 @@ export default function CariEkstreListesi() {
   const [pdfYukleniyor, setPdfYukleniyor] = useState(false);
   const [pdfUri, setPdfUri] = useState<string | null>(null);
 
-  // CariSecim'den geri dönünce
+  // CariSecim'den geri dönünce (route params — "+" butonu akışı)
   useEffect(() => {
     if (route.params?.secilenCari) {
       setSecilenCari(route.params.secilenCari);
     }
   }, [route.params?.secilenCari]);
+
+  // CariSecim'den geri dönünce (pendingCari — normal seçim akışı)
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingCari?.target === 'CariEkstreListesi') {
+        setSecilenCari(pendingCari.cari);
+        clearPendingCari();
+      }
+    }, [pendingCari])
+  );
 
   const ekstreYukle = useCallback(async (cari: CariKartBilgileri, ay: Date) => {
     setYukleniyor(true);
@@ -154,27 +165,27 @@ export default function CariEkstreListesi() {
   const sonBakiye = liste.length > 0 ? liste[liste.length - 1].bakiye : 0;
 
   const renderKalem = ({ item }: { item: CariEkstreBilgileri }) => (
-    <View style={styles.kalemKart}>
+    <View style={[styles.kalemKart, { backgroundColor: Colors.card }]}>
       {/* Satır 1: tarih | tipKodu | aciklama */}
       <View style={styles.kalemUstSatir}>
-        <Text style={styles.kalemTarih}>{tarihGoster(item.tarih)}</Text>
-        <Text style={styles.kalemTip}>{item.tipKodu}</Text>
-        <Text style={styles.kalemAciklama} numberOfLines={1}>
+        <Text style={[styles.kalemTarih, { color: Colors.textSecondary }]}>{tarihGoster(item.tarih)}</Text>
+        <Text style={[styles.kalemTip, { color: Colors.primary }]}>{item.tipKodu}</Text>
+        <Text style={[styles.kalemAciklama, { color: Colors.text }]} numberOfLines={1}>
           {item.aciklama}
         </Text>
       </View>
       {/* Satır 2: başlıklar */}
       <View style={styles.kalemBaslikSatir}>
-        <Text style={[styles.kalemBaslik, styles.sag]}>Borç</Text>
-        <Text style={[styles.kalemBaslik, styles.sag]}>Alacak</Text>
-        <Text style={[styles.kalemBaslik, styles.sag]}>Bakiye</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Borç</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Alacak</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Bakiye</Text>
       </View>
       {/* Satır 3: değerler */}
       <View style={styles.kalemDegerSatir}>
-        <Text style={[styles.kalemDeger, styles.sag]}>
+        <Text style={[styles.kalemDeger, styles.sag, { color: Colors.error }]}>
           {item.borc > 0 ? sayiFormatla(item.borc) : '-'}
         </Text>
-        <Text style={[styles.kalemDeger, styles.sag]}>
+        <Text style={[styles.kalemDeger, styles.sag, { color: Colors.error }]}>
           {item.alacak > 0 ? sayiFormatla(item.alacak) : '-'}
         </Text>
         <Text
@@ -191,19 +202,19 @@ export default function CariEkstreListesi() {
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* PDF Modal */}
       <Modal visible={!!pdfUri} animationType="slide" onRequestClose={() => setPdfUri(null)}>
-        <SafeAreaView style={styles.pdfModal}>
-          <View style={styles.pdfBaslik}>
-            <Text style={styles.pdfBaslikMetin} numberOfLines={1}>
+        <SafeAreaView style={[styles.pdfModal, { backgroundColor: Colors.card }]}>
+          <View style={[styles.pdfBaslik, { borderBottomColor: Colors.border }]}>
+            <Text style={[styles.pdfBaslikMetin, { color: Colors.text }]} numberOfLines={1}>
               {secilenCari?.cariUnvan} — {ayBasligiFormatla(secilenAy)}
             </Text>
             <TouchableOpacity onPress={pdfPaylas} style={styles.pdfPaylasBtn}>
               <Ionicons name="share-outline" size={22} color={Colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setPdfUri(null)} style={styles.pdfKapatBtn}>
-              <Ionicons name="close" size={24} color={Colors.darkGray} />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
           {pdfUri && (
@@ -217,40 +228,42 @@ export default function CariEkstreListesi() {
       </Modal>
 
       {/* Cari seçim butonu */}
-      <TouchableOpacity
-        style={styles.cariBtn}
-        onPress={() => navigation.navigate('CariSecim', { returnScreen: 'CariEkstreListesi' })}
-      >
-        <Ionicons
-          name="person-outline"
-          size={18}
-          color={secilenCari ? Colors.primary : Colors.gray}
-        />
-        <Text style={[styles.cariText, secilenCari && styles.cariTextSecili]} numberOfLines={1}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
-        </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
-      </TouchableOpacity>
+      {route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' && (
+        <TouchableOpacity
+          style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
+          onPress={() => navigation.navigate('CariSecim', { returnScreen: 'CariEkstreListesi' })}
+        >
+          <Ionicons
+            name="person-outline"
+            size={18}
+            color={secilenCari ? Colors.primary : Colors.textSecondary}
+          />
+          <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]} numberOfLines={1}>
+            {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      )}
 
       {/* Ay seçici */}
-      <View style={styles.aySecici}>
+      <View style={[styles.aySecici, { backgroundColor: Colors.primary }]}>
         <TouchableOpacity
           style={[styles.ayBtn, !secilenCari && styles.ayBtnDisabled]}
           onPress={pdfAc}
           disabled={!secilenCari || pdfYukleniyor}
         >
           {pdfYukleniyor
-            ? <ActivityIndicator size={16} color={Colors.white} />
-            : <Ionicons name="document-outline" size={20} color={Colors.white} />
+            ? <ActivityIndicator size={16} color="#fff" />
+            : <Ionicons name="document-outline" size={20} color="#fff" />
           }
         </TouchableOpacity>
         <View style={styles.ayNavGrup}>
           <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(-1)}>
-            <Ionicons name="chevron-back" size={20} color={Colors.white} />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.ayBaslik}>{ayBasligiFormatla(secilenAy)}</Text>
           <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(1)}>
-            <Ionicons name="chevron-forward" size={20} color={Colors.white} />
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
         <View style={styles.ayBtnPlaceholder} />
@@ -258,23 +271,23 @@ export default function CariEkstreListesi() {
 
       {/* Özet şerit */}
       {liste.length > 0 && (
-        <View style={styles.ozetBar}>
+        <View style={[styles.ozetBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
           <View style={styles.ozetKalem}>
-            <Text style={styles.ozetBaslik}>Toplam Borç</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Toplam Borç</Text>
             <Text style={[styles.ozetDeger, { color: Colors.error }]}>
               {sayiFormatla(toplamBorc)}
             </Text>
           </View>
-          <View style={styles.ozetAyrac} />
+          <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
           <View style={styles.ozetKalem}>
-            <Text style={styles.ozetBaslik}>Toplam Alacak</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Toplam Alacak</Text>
             <Text style={[styles.ozetDeger, { color: Colors.success }]}>
               {sayiFormatla(toplamAlacak)}
             </Text>
           </View>
-          <View style={styles.ozetAyrac} />
+          <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
           <View style={styles.ozetKalem}>
-            <Text style={styles.ozetBaslik}>Son Bakiye</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Son Bakiye</Text>
             <Text
               style={[
                 styles.ozetDeger,
@@ -291,12 +304,12 @@ export default function CariEkstreListesi() {
       {!secilenCari ? (
         <View style={styles.beklemeEkran}>
           <Ionicons name="person-circle-outline" size={56} color={Colors.border} />
-          <Text style={styles.beklemeMetin}>Ekstre görmek için cari seçin</Text>
+          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>Ekstre görmek için cari seçin</Text>
         </View>
       ) : yukleniyor ? (
         <View style={styles.beklemeEkran}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.beklemeMetin}>Yükleniyor...</Text>
+          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
         </View>
       ) : (
         <FlatList
@@ -324,31 +337,22 @@ export default function CariEkstreListesi() {
 const styles = StyleSheet.create({
   ekran: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   cariBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 13,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   cariText: {
     flex: 1,
     fontSize: 14,
-    color: Colors.gray,
-  },
-  cariTextSecili: {
-    color: Colors.darkGray,
-    fontWeight: '600',
   },
   aySecici: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 10,
   },
@@ -373,7 +377,6 @@ const styles = StyleSheet.create({
   },
   pdfModal: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   pdfBaslik: {
     flexDirection: 'row',
@@ -381,14 +384,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     gap: 8,
   },
   pdfBaslikMetin: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   pdfPaylasBtn: {
     padding: 6,
@@ -397,18 +398,16 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   ayBaslik: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 15,
     fontWeight: '700',
     textTransform: 'capitalize',
   },
   ozetBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   ozetKalem: {
     flex: 1,
@@ -417,7 +416,6 @@ const styles = StyleSheet.create({
   },
   ozetBaslik: {
     fontSize: 10,
-    color: Colors.gray,
     fontWeight: '600',
   },
   ozetDeger: {
@@ -426,7 +424,6 @@ const styles = StyleSheet.create({
   },
   ozetAyrac: {
     width: 1,
-    backgroundColor: Colors.border,
     marginVertical: 2,
   },
   liste: {
@@ -434,7 +431,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   kalemKart: {
-    backgroundColor: Colors.white,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -452,20 +448,17 @@ const styles = StyleSheet.create({
   },
   kalemTarih: {
     fontSize: 11,
-    color: Colors.gray,
     fontWeight: '600',
     width: 56,
   },
   kalemTip: {
     fontSize: 11,
-    color: Colors.primary,
     fontWeight: '700',
     width: 52,
   },
   kalemAciklama: {
     flex: 1,
     fontSize: 12,
-    color: Colors.darkGray,
   },
   kalemBaslikSatir: {
     flexDirection: 'row',
@@ -475,7 +468,6 @@ const styles = StyleSheet.create({
   kalemBaslik: {
     flex: 1,
     fontSize: 10,
-    color: Colors.gray,
     fontWeight: '700',
   },
   kalemDegerSatir: {
@@ -486,7 +478,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.error,
   },
   sag: {
     textAlign: 'right',
@@ -503,7 +494,6 @@ const styles = StyleSheet.create({
   },
   beklemeMetin: {
     fontSize: 14,
-    color: Colors.gray,
     textAlign: 'center',
   },
 });

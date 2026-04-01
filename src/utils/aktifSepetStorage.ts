@@ -4,17 +4,18 @@ import type { SepetBaslik } from '../models';
 
 const BASE_KEY = Config.STORAGE_KEYS.AKTIF_SEPET;
 
-function sepetKey(sirketAdi: string | undefined): string {
-  return sirketAdi ? `${BASE_KEY}_${sirketAdi}` : BASE_KEY;
+function sepetKey(sirketAdi: string | undefined, prefix = ''): string {
+  const base = prefix ? `${prefix}${BASE_KEY}` : BASE_KEY;
+  return sirketAdi ? `${base}_${sirketAdi}` : base;
 }
 
-export async function aktifSepetKaydet(sepet: SepetBaslik, sirketAdi?: string): Promise<void> {
-  await AsyncStorage.setItem(sepetKey(sirketAdi), JSON.stringify(sepet));
+export async function aktifSepetKaydet(sepet: SepetBaslik, sirketAdi?: string, prefix = ''): Promise<void> {
+  await AsyncStorage.setItem(sepetKey(sirketAdi, prefix), JSON.stringify(sepet));
 }
 
-export async function aktifSepetAl(sirketAdi?: string): Promise<SepetBaslik | null> {
+export async function aktifSepetAl(sirketAdi?: string, prefix = ''): Promise<SepetBaslik | null> {
   try {
-    const json = await AsyncStorage.getItem(sepetKey(sirketAdi));
+    const json = await AsyncStorage.getItem(sepetKey(sirketAdi, prefix));
     if (!json) return null;
     return JSON.parse(json) as SepetBaslik;
   } catch {
@@ -22,6 +23,6 @@ export async function aktifSepetAl(sirketAdi?: string): Promise<SepetBaslik | nu
   }
 }
 
-export async function aktifSepetTemizle(sirketAdi?: string): Promise<void> {
-  await AsyncStorage.removeItem(sepetKey(sirketAdi));
+export async function aktifSepetTemizle(sirketAdi?: string, prefix = ''): Promise<void> {
+  await AsyncStorage.removeItem(sepetKey(sirketAdi, prefix));
 }

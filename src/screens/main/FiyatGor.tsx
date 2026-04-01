@@ -18,7 +18,7 @@ import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul, stokKartlariniKodCinsB
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { Config } from '../../constants/Config';
 import { paraTL, paraFormat, miktarFormat } from '../../utils/format';
 import type { StokListesiBilgileri, StokFiyatBilgileri } from '../../models';
@@ -38,6 +38,7 @@ const ARAMA_TIPLERI = [
 ];
 
 export default function FiyatGor() {
+  const Colors = useColors();
   const { yetkiBilgileri, fiyatTipListesi, calisilanSirket } = useAppStore();
 
 
@@ -160,7 +161,7 @@ export default function FiyatGor() {
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
       <TouchableOpacity
-        style={styles.stokSatiri}
+        style={[styles.stokSatiri, { backgroundColor: Colors.card }]}
         onPress={() => {
           hafifTitresim();
           setSecilenStok(item);
@@ -169,50 +170,50 @@ export default function FiyatGor() {
         delayLongPress={400}
       >
         <View style={styles.stokBilgi}>
-          <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-          <Text style={styles.stokCinsi} numberOfLines={1}>{item.stokCinsi}</Text>
+          <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+          <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
           {item.barkod ? (
-            <Text style={styles.stokBarkod}>{item.barkod}</Text>
+            <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text>
           ) : null}
         </View>
         <View style={styles.stokSag}>
-          <Text style={styles.stokFiyat}>{paraTL(item.fiyat)}</Text>
-          <Text style={styles.stokBakiye}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+          <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
+          <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
         </View>
       </TouchableOpacity>
     </AnimatedListItem>
   );
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* Ust bar - barkod */}
-      <View style={styles.ustBar}>
+      <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <View style={styles.ustBarBilgi}>
-          <Ionicons name="pricetag-outline" size={18} color={Colors.white} />
+          <Ionicons name="pricetag-outline" size={18} color={'#fff'} />
           <Text style={styles.ustBarText}>Fiyat Gor</Text>
         </View>
         <TouchableOpacity
           style={styles.barkodBtn}
           onPress={() => setScannerAcik(true)}
         >
-          <Ionicons name="barcode-outline" size={24} color={Colors.white} />
+          <Ionicons name="barcode-outline" size={24} color={'#fff'} />
         </TouchableOpacity>
       </View>
 
       {/* Arama satırı — tip seçici + input + ara butonu */}
-      <View style={styles.aramaRow}>
+      <View style={[styles.aramaRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
         <TouchableOpacity
-          style={styles.aramaTipiBtn}
+          style={[styles.aramaTipiBtn, { backgroundColor: `${Colors.primary}15` }]}
           onPress={() => setAramaTipiAcik(!aramaTipiAcik)}
         >
-          <Text style={styles.aramaTipiBtnText}>{aramaTipiLabel}</Text>
+          <Text style={[styles.aramaTipiBtnText, { color: Colors.primary }]}>{aramaTipiLabel}</Text>
           <Ionicons name="chevron-down" size={14} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
           ref={aramaInputRef}
-          style={styles.aramaInput}
+          style={[styles.aramaInput, { color: Colors.text }]}
           placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı...'}
-          placeholderTextColor={Colors.gray}
+          placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
           returnKeyType="search"
@@ -220,26 +221,27 @@ export default function FiyatGor() {
         />
         {aramaMetni.length > 0 && (
           <TouchableOpacity onPress={() => { setAramaMetni(''); setStokListesi([]); }}>
-            <Ionicons name="close-circle" size={18} color={Colors.gray} />
+            <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={styles.araBtn}
+          style={[styles.araBtn, { backgroundColor: Colors.primary }]}
           onPress={() => aramaYap()}
         >
-          <Ionicons name="search" size={20} color={Colors.white} />
+          <Ionicons name="search" size={20} color={'#fff'} />
         </TouchableOpacity>
       </View>
 
       {/* Arama tipi dropdown */}
       {aramaTipiAcik && (
-        <View style={styles.aramaTipiDropdown}>
+        <View style={[styles.aramaTipiDropdown, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
           {ARAMA_TIPLERI.map((tip) => (
             <TouchableOpacity
               key={tip.value}
               style={[
                 styles.aramaTipiItem,
-                tip.value === aramaTipi && styles.aramaTipiItemActive,
+                { borderBottomColor: Colors.border },
+                tip.value === aramaTipi && { backgroundColor: `${Colors.primary}10` },
               ]}
               onPress={() => {
                 setAramaTipi(tip.value);
@@ -249,7 +251,8 @@ export default function FiyatGor() {
               <Text
                 style={[
                   styles.aramaTipiItemText,
-                  tip.value === aramaTipi && styles.aramaTipiItemTextActive,
+                  { color: Colors.text },
+                  tip.value === aramaTipi && { fontWeight: '700', color: Colors.primary },
                 ]}
               >
                 {tip.label}
@@ -263,7 +266,7 @@ export default function FiyatGor() {
       )}
 
       {/* Liste baslik */}
-      <View style={styles.listeBaslik}>
+      <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
         <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
         <Text style={[styles.listeBaslikText, { flex: 2 }]}>CINS</Text>
         <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FIYAT</Text>
@@ -299,10 +302,10 @@ export default function FiyatGor() {
       {/* Alt barkod butonu */}
       <View style={styles.altBar}>
         <TouchableOpacity
-          style={styles.altBarkodBtnFull}
+          style={[styles.altBarkodBtnFull, { backgroundColor: Colors.primary }]}
           onPress={() => setScannerAcik(true)}
         >
-          <Ionicons name="barcode-outline" size={24} color={Colors.white} />
+          <Ionicons name="barcode-outline" size={24} color={'#fff'} />
           <Text style={styles.altBarkodText}>Barkod Tara</Text>
         </TouchableOpacity>
       </View>
@@ -315,26 +318,26 @@ export default function FiyatGor() {
         onRequestClose={() => { setSecilenStok(null); setTimeout(() => aramaInputRef.current?.focus(), 350); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { backgroundColor: Colors.card }]}>
             {/* Modal baslik */}
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalStokKodu}>{secilenStok?.stokKodu}</Text>
-                <Text style={styles.modalStokCinsi} numberOfLines={2}>{secilenStok?.stokCinsi}</Text>
+                <Text style={[styles.modalStokKodu, { color: Colors.textSecondary }]}>{secilenStok?.stokKodu}</Text>
+                <Text style={[styles.modalStokCinsi, { color: Colors.text }]} numberOfLines={2}>{secilenStok?.stokCinsi}</Text>
               </View>
               <TouchableOpacity onPress={() => { setSecilenStok(null); setTimeout(() => aramaInputRef.current?.focus(), 350); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close-circle" size={28} color={Colors.gray} />
+                <Ionicons name="close-circle" size={28} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Buyuk fiyat gosterimi */}
-            <View style={styles.buyukFiyatContainer}>
+            <View style={[styles.buyukFiyatContainer, { backgroundColor: Colors.background }]}>
               {fiyatYukleniyor ? (
                 <ActivityIndicator size="large" color={Colors.primary} />
               ) : (
                 <>
-                  <Text style={styles.buyukFiyat}>{paraFormat(gosterilecekFiyat)}</Text>
-                  <Text style={[styles.dovizKodu, !isTL(gosterilecekDoviz) && styles.dovizKoduAccent]}>
+                  <Text style={[styles.buyukFiyat, { color: Colors.primary }]}>{paraFormat(gosterilecekFiyat)}</Text>
+                  <Text style={[styles.dovizKodu, { color: Colors.textSecondary }, !isTL(gosterilecekDoviz) && styles.dovizKoduAccent]}>
                     {isTL(gosterilecekDoviz) ? '₺' : gosterilecekDoviz}
                   </Text>
                   {seciliFiyat && (
@@ -366,12 +369,12 @@ export default function FiyatGor() {
             )}
 
             {/* Fiyat No combobox — sadece fiyati olan secenekler */}
-            <Text style={styles.fiyatNoLabel}>Fiyat Tipi</Text>
+            <Text style={[styles.fiyatNoLabel, { color: Colors.text }]}>Fiyat Tipi</Text>
             <TouchableOpacity
-              style={styles.fiyatNoSelector}
+              style={[styles.fiyatNoSelector, { borderColor: Colors.primary, backgroundColor: Colors.inputBackground }]}
               onPress={() => setFiyatNoDropdownAcik(!fiyatNoDropdownAcik)}
             >
-              <Text style={styles.fiyatNoSelectorText}>
+              <Text style={[styles.fiyatNoSelectorText, { color: Colors.text }]}>
                 {seciliFiyatTipi
                   ? `${seciliFiyatTipi.fiyatNo} - ${seciliFiyatTipi.fiyatAdi} (${fiyatGoster(seciliFiyat?.tutar ?? 0, seciliFiyat?.dovizKodu)})`
                   : 'Fiyat tipi seciniz...'}
@@ -381,7 +384,7 @@ export default function FiyatGor() {
 
             {/* Fiyat tipi dropdown — fiyatTipListesi'nden, stokFiyatlari'nda karşılığı olanlar */}
             {fiyatNoDropdownAcik && (
-              <View style={styles.fiyatNoDropdown}>
+              <View style={[styles.fiyatNoDropdown, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
                 <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
                   {fiyatTipListesi.filter((ft) => stokFiyatlari.some((sf) => sf.fiyatNo === ft.fiyatNo)).map((ft) => {
                     const sfb = stokFiyatlari.find((sf) => sf.fiyatNo === ft.fiyatNo);
@@ -391,7 +394,8 @@ export default function FiyatGor() {
                         key={ft.fiyatNo}
                         style={[
                           styles.fiyatNoItem,
-                          aktif && styles.fiyatNoItemActive,
+                          { borderBottomColor: Colors.border },
+                          aktif && { backgroundColor: `${Colors.primary}10` },
                         ]}
                         onPress={() => {
                           setSecilenFiyatNo(ft.fiyatNo);
@@ -401,12 +405,13 @@ export default function FiyatGor() {
                         <View style={{ flex: 1 }}>
                           <Text style={[
                             styles.fiyatNoItemText,
-                            aktif && styles.fiyatNoItemTextActive,
+                            { color: Colors.text },
+                            aktif && { fontWeight: '700', color: Colors.primary },
                           ]}>
                             {ft.fiyatNo} - {ft.fiyatAdi}
                           </Text>
                           {sfb && (
-                            <Text style={[styles.fiyatNoItemFiyat, !isTL(sfb.dovizKodu) && styles.dovizKoduAccent]}>
+                            <Text style={[styles.fiyatNoItemFiyat, { color: Colors.textSecondary }, !isTL(sfb.dovizKodu) && styles.dovizKoduAccent]}>
                               {fiyatGoster(sfb.tutar, sfb.dovizKodu)}
                             </Text>
                           )}
@@ -422,18 +427,18 @@ export default function FiyatGor() {
             )}
 
             {/* Stok bilgileri */}
-            <View style={styles.stokDetayRow}>
+            <View style={[styles.stokDetayRow, { backgroundColor: Colors.background }]}>
               <View style={styles.stokDetayItem}>
-                <Text style={styles.stokDetayLabel}>Bakiye</Text>
-                <Text style={styles.stokDetayDeger}>{miktarFormat(secilenStok?.bakiye ?? 0)}</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Bakiye</Text>
+                <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{miktarFormat(secilenStok?.bakiye ?? 0)}</Text>
               </View>
               <View style={styles.stokDetayItem}>
-                <Text style={styles.stokDetayLabel}>Birim</Text>
-                <Text style={styles.stokDetayDeger}>{secilenStok?.birim2?.split(';')[0]?.trim() || secilenStok?.birim}</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Birim</Text>
+                <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{secilenStok?.birim2?.split(';')[0]?.trim() || secilenStok?.birim}</Text>
               </View>
               <View style={styles.stokDetayItem}>
-                <Text style={styles.stokDetayLabel}>KDV</Text>
-                <Text style={styles.stokDetayDeger}>%{secilenStok?.kdvOrani ?? 0}</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>KDV</Text>
+                <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>%{secilenStok?.kdvOrani ?? 0}</Text>
               </View>
             </View>
           </View>
@@ -477,12 +482,11 @@ export default function FiyatGor() {
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: Colors.lightGray ?? '#f5f5f5' },
+  ekran: { flex: 1 },
   ustBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -491,7 +495,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  ustBarText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
+  ustBarText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   barkodBtn: {
     padding: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -500,19 +504,16 @@ const styles = StyleSheet.create({
   aramaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     margin: 10,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: Colors.border,
     gap: 6,
   },
   aramaTipiBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${Colors.primary}15`,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
@@ -521,16 +522,13 @@ const styles = StyleSheet.create({
   aramaTipiBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary,
   },
   aramaInput: {
     flex: 1,
     fontSize: 14,
-    color: Colors.black,
     paddingVertical: 2,
   },
   araBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 6,
     padding: 8,
   },
@@ -538,10 +536,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginTop: -6,
     marginBottom: 6,
-    backgroundColor: Colors.white,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
@@ -556,24 +552,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  aramaTipiItemActive: {
-    backgroundColor: `${Colors.primary}10`,
   },
   aramaTipiItemText: {
     fontSize: 14,
-    color: Colors.darkGray,
-  },
-  aramaTipiItemTextActive: {
-    fontWeight: '700',
-    color: Colors.primary,
   },
   listeBaslik: {
     flexDirection: 'row',
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: Colors.primary,
     marginHorizontal: 10,
     borderRadius: 8,
     marginBottom: 4,
@@ -587,7 +573,6 @@ const styles = StyleSheet.create({
   liste: { flex: 1, paddingHorizontal: 10 },
   stokSatiri: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
@@ -598,12 +583,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   stokBilgi: { flex: 3.2 },
-  stokKodu: { fontSize: 11, color: Colors.gray, fontWeight: '600' },
-  stokCinsi: { fontSize: 14, color: Colors.darkGray, fontWeight: '500', marginTop: 2 },
-  stokBarkod: { fontSize: 11, color: Colors.gray, marginTop: 1 },
+  stokKodu: { fontSize: 11, fontWeight: '600' },
+  stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
+  stokBarkod: { fontSize: 11, marginTop: 1 },
   stokSag: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
-  stokFiyat: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-  stokBakiye: { fontSize: 11, color: Colors.gray, marginTop: 2 },
+  stokFiyat: { fontSize: 14, fontWeight: '700' },
+  stokBakiye: { fontSize: 11, marginTop: 2 },
   ayirac: { height: 4 },
   altBar: {
     paddingHorizontal: 10,
@@ -613,13 +598,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     gap: 8,
   },
   altBarkodText: {
-    color: Colors.white,
+    color: '#fff',
     fontWeight: '700',
     fontSize: 15,
   },
@@ -633,7 +617,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: Colors.white,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -648,40 +631,35 @@ const styles = StyleSheet.create({
   },
   modalStokKodu: {
     fontSize: 13,
-    color: Colors.gray,
     fontWeight: '600',
   },
   modalStokCinsi: {
     fontSize: 17,
-    color: Colors.darkGray,
     fontWeight: '700',
     marginTop: 2,
   },
   buyukFiyatContainer: {
     alignItems: 'center',
     paddingVertical: 20,
-    backgroundColor: Colors.lightGray ?? '#f5f5f5',
     borderRadius: 16,
     marginBottom: 16,
   },
   buyukFiyat: {
     fontSize: 38,
     fontWeight: '800',
-    color: Colors.primary,
   },
   dovizKodu: {
     fontSize: 14,
-    color: Colors.gray,
     fontWeight: '600',
     marginTop: 4,
   },
   dovizKoduAccent: {
-    color: Colors.accent,
+    color: '#FF9800',
     fontWeight: '700',
   },
   fiyatAdi: {
     fontSize: 13,
-    color: Colors.accent,
+    color: '#FF9800',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -700,12 +678,11 @@ const styles = StyleSheet.create({
   indirimText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.accent,
+    color: '#FF9800',
   },
   fiyatNoLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.darkGray,
     marginBottom: 6,
   },
   fiyatNoSelector: {
@@ -713,25 +690,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderColor: Colors.primary,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: Colors.inputBackground,
     marginBottom: 12,
   },
   fiyatNoSelectorText: {
     fontSize: 14,
-    color: Colors.darkGray,
     fontWeight: '500',
   },
   fiyatNoDropdown: {
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 10,
     marginBottom: 12,
     overflow: 'hidden',
-    backgroundColor: Colors.white,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -744,28 +716,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  fiyatNoItemActive: {
-    backgroundColor: `${Colors.primary}10`,
   },
   fiyatNoItemText: {
     fontSize: 14,
-    color: Colors.darkGray,
-  },
-  fiyatNoItemTextActive: {
-    fontWeight: '700',
-    color: Colors.primary,
   },
   fiyatNoItemFiyat: {
     fontSize: 12,
-    color: Colors.gray,
     marginTop: 2,
   },
   stokDetayRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: Colors.lightGray ?? '#f5f5f5',
     borderRadius: 12,
     paddingVertical: 14,
   },
@@ -774,12 +735,10 @@ const styles = StyleSheet.create({
   },
   stokDetayLabel: {
     fontSize: 11,
-    color: Colors.gray,
     fontWeight: '600',
   },
   stokDetayDeger: {
     fontSize: 15,
-    color: Colors.darkGray,
     fontWeight: '700',
     marginTop: 2,
   },

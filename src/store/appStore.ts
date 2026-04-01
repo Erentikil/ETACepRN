@@ -93,10 +93,7 @@ export const useAppStore = create<AppState>()((set) => ({
   clearPendingCari: () => set({ pendingCari: null }),
 
   setOnLineCalisma: (val) => set({ onLineCalisma: val }),
-  setYetkiBilgileri: (val) => {
-    console.log('yetkiBilgileri:', JSON.stringify(val, null, 2));
-    set({ yetkiBilgileri: val });
-  },
+  setYetkiBilgileri: (val) => set({ yetkiBilgileri: val }),
   setMenuYetkiBilgileri: (val) => set({ menuYetkiBilgileri: val }),
   setKameraYetkiBilgileri: (val) => set({ kameraYetkiBilgileri: val }),
   setSirketBilgileri: (val) => set({ sirketBilgileri: val }),

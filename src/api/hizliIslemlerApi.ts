@@ -21,6 +21,18 @@ export async function stokListesiniAl(
   return res.data;
 }
 
+// ─── Stok Kart Sayısını Bul ──────────────────────────────────────────────────
+// GET /StokKartSayisiniBul/{telefonCihazKodu}/{veriTabaniAdi}
+export async function stokKartSayisiniBul(
+  veriTabaniAdi: string
+): Promise<Sonuc<number>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('StokKartSayisiniBul', cihazKodu, veriTabaniAdi);
+  const res = await api.get<Sonuc<number>>(url);
+  return res.data;
+}
+
 // ─── Stok Bilgilerini Sayfalama ile Al ────────────────────────────────────────
 // "StokBilgileriniSayfalamaileAl/{gecerliSayfa}/{sayfaUzunlugu}/{telefonCihazKodu}/{veriTabaniAdi}"
 export async function stokBilgileriniSayfalamaIleAl(
@@ -286,7 +298,7 @@ export async function evrakKaydet(
     kalemIndirim1: k.kalemIndirim1,
     kalemIndirim2: k.kalemIndirim2,
     kalemIndirim3: k.kalemIndirim3,
-    kdvOrani: k.kdvOrani,
+    kdvOrani: Math.max(0, k.kdvOrani),
     dovizKodu: '',
     dovizTuru: '',
     dovizKuru: 0,

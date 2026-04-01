@@ -10,12 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
@@ -36,6 +37,7 @@ type Props = {
 };
 
 export default function LoginSayfasi({ navigation }: Props) {
+  const Colors = useColors();
   const [kullaniciKodu, setKullaniciKodu] = useState('');
   const [sifre, setSifre] = useState('');
   const [sifreGoster, setSifreGoster] = useState(false);
@@ -215,31 +217,34 @@ export default function LoginSayfasi({ navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { backgroundColor: Colors.primary }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo / Başlık */}
         <View style={styles.logoContainer}>
-          <Ionicons name="business" size={64} color={Colors.white} />
-          <Text style={styles.appAdi}>ETACep</Text>
+          <Image
+            source={require('../../../assets/eta-logo-white-red.png')}
+            style={{ width: 120, height: 120 }}
+            resizeMode="contain"
+          />
           <Text style={styles.versiyon}>v{Config.VERSIYON}</Text>
         </View>
 
         {/* Form Kartı */}
-        <View style={styles.kart}>
-          <Text style={styles.kartBaslik}>Giriş Yap</Text>
+        <View style={[styles.kart, { backgroundColor: Colors.card }]}>
+          <Text style={[styles.kartBaslik, { color: Colors.primary }]}>Giriş Yap</Text>
 
           {/* Kullanıcı Kodu */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Kullanıcı Kodu</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="person-outline" size={18} color={Colors.gray} style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: Colors.text }]}>Kullanıcı Kodu</Text>
+            <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+              <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: Colors.text }]}
                 value={kullaniciKodu}
                 onChangeText={setKullaniciKodu}
                 placeholder="Kullanıcı kodunuzu giriniz"
-                placeholderTextColor={Colors.gray}
+                placeholderTextColor={Colors.textSecondary}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 returnKeyType="next"
@@ -249,15 +254,15 @@ export default function LoginSayfasi({ navigation }: Props) {
 
           {/* Şifre */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Şifre</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.gray} style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: Colors.text }]}>Şifre</Text>
+            <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+              <Ionicons name="lock-closed-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, styles.flex]}
+                style={[styles.input, styles.flex, { color: Colors.text }]}
                 value={sifre}
                 onChangeText={setSifre}
                 placeholder="Şifrenizi giriniz"
-                placeholderTextColor={Colors.gray}
+                placeholderTextColor={Colors.textSecondary}
                 secureTextEntry={!sifreGoster}
                 autoCorrect={false}
                 returnKeyType="done"
@@ -267,7 +272,7 @@ export default function LoginSayfasi({ navigation }: Props) {
                 <Ionicons
                   name={sifreGoster ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={Colors.gray}
+                  color={Colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -281,14 +286,14 @@ export default function LoginSayfasi({ navigation }: Props) {
               trackColor={{ false: Colors.border, true: Colors.primary }}
               thumbColor={Colors.white}
             />
-            <Text style={styles.hatirlaText}>Beni Hatırla</Text>
+            <Text style={[styles.hatirlaText, { color: Colors.text }]}>Beni Hatırla</Text>
           </View>
 
           {/* Hata Mesajı */}
           {hata ? (
             <View style={styles.hataContainer}>
               <Ionicons name="alert-circle-outline" size={16} color={Colors.error} />
-              <Text style={styles.hataText}>{hata}</Text>
+              <Text style={[styles.hataText, { color: Colors.error }]}>{hata}</Text>
             </View>
           ) : null}
 
@@ -306,7 +311,7 @@ export default function LoginSayfasi({ navigation }: Props) {
             onPress={() => navigation.navigate('Ayarlar', { fromLogin: true })}
           >
             <Ionicons name="settings-outline" size={16} color={Colors.primary} />
-            <Text style={styles.ayarlarText}>Bağlantı Ayarları</Text>
+            <Text style={[styles.ayarlarText, { color: Colors.primary }]}>Bağlantı Ayarları</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -320,7 +325,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
-    backgroundColor: Colors.primary,
     paddingBottom: 40,
   },
   logoContainer: {
@@ -330,7 +334,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   appAdi: {
-    color: Colors.white,
     fontSize: 32,
     fontWeight: '800',
     letterSpacing: 2,
@@ -340,7 +343,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   kart: {
-    backgroundColor: Colors.white,
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 24,
@@ -353,7 +355,6 @@ const styles = StyleSheet.create({
   kartBaslik: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.primary,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -363,16 +364,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.darkGray,
     marginBottom: 6,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderRadius: 10,
-    backgroundColor: Colors.inputBackground,
     paddingHorizontal: 12,
     minHeight: 50,
   },
@@ -382,7 +380,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: Colors.black,
     paddingVertical: 12,
   },
   gozBtn: {
@@ -397,7 +394,6 @@ const styles = StyleSheet.create({
   },
   hatirlaText: {
     fontSize: 14,
-    color: Colors.darkGray,
   },
   hataContainer: {
     flexDirection: 'row',
@@ -409,7 +405,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   hataText: {
-    color: Colors.error,
     fontSize: 13,
     flex: 1,
   },
@@ -425,7 +420,6 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   ayarlarText: {
-    color: Colors.primary,
     fontSize: 14,
     fontWeight: '500',
   },

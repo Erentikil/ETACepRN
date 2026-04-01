@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { depoKartlariniAl } from '../api/hizliIslemlerApi';
 import { useAppStore } from '../store/appStore';
 import type { FisTipiItem, DepoKarti } from '../models';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 import DropdownSecim from './DropdownSecim';
 
 export interface FisTipiDepoSecimSonuc {
@@ -24,9 +24,9 @@ export interface FisTipiDepoSecimSonuc {
 
 interface Props {
   visible: boolean;
-  evrakLabel: string;       // "Fatura Satış"
-  evrakTipiStr: string;     // "Fatura" | "İrsaliye" | "Sipariş" | "Stok"
-  alimSatimStr: string;     // "Alış" | "Satış" | "Sayım"
+  evrakLabel: string;       // "Fatura Satis"
+  evrakTipiStr: string;     // "Fatura" | "Irsaliye" | "Siparis" | "Stok"
+  alimSatimStr: string;     // "Alis" | "Satis" | "Sayim"
   veriTabaniAdi: string;
   defaultAnaDepo: string;
   defaultKarsiDepo: string;
@@ -49,12 +49,13 @@ export default function FisTipiDepoSecimModal({
   onConfirm,
   onClose,
 }: Props) {
+  const Colors = useColors();
   const { ftBaslikListesi } = useAppStore();
 
   const [yukleniyor, setYukleniyor] = useState(false);
   const [fisTipleri, setFisTipleri] = useState<FisTipiItem[]>([]);
   const [depolar, setDepolar] = useState<DepoKarti[]>([]);
-  // Dropdown için string value'lar
+  // Dropdown icin string value'lar
   const [seciliFisTipiKodu, setSeciliFisTipiKodu] = useState('');
   const [secilenAnaDepo, setSecilenAnaDepo] = useState(defaultAnaDepo);
   const [secilenKarsiDepo, setSecilenKarsiDepo] = useState(defaultKarsiDepo);
@@ -65,7 +66,7 @@ export default function FisTipiDepoSecimModal({
     setSecilenAnaDepo(defaultAnaDepo);
     setSecilenKarsiDepo(defaultKarsiDepo);
 
-    // Fiş tiplerini store'dan al (Login'de override uygulanmış)
+    // Fis tiplerini store'dan al (Login'de override uygulanmis)
     const grup = ftBaslikListesi.find(
       (g) => g.evrakTipi === evrakTipiStr && g.alimSatim === alimSatimStr
     );
@@ -74,7 +75,7 @@ export default function FisTipiDepoSecimModal({
     const varsayilan = grup?.ft ?? liste[0];
     if (varsayilan) setSeciliFisTipiKodu(String(varsayilan.fisTipiKodu));
 
-    // Depoları API'den al
+    // Depolari API'den al
     yukleDepolar();
   }, [visible]);
 
@@ -93,7 +94,7 @@ export default function FisTipiDepoSecimModal({
         }
       }
     } catch {
-      // Hata durumunda varsayılan değerlerle devam edilir
+      // Hata durumunda varsayilan degerlerle devam edilir
     } finally {
       setYukleniyor(false);
     }
@@ -112,35 +113,35 @@ export default function FisTipiDepoSecimModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.kart}>
-          {/* Başlık */}
+        <View style={[styles.kart, { backgroundColor: Colors.card }]}>
+          {/* Baslik */}
           <View style={styles.baslik}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.baslikUst}>Evrak Ayarları</Text>
-              <Text style={styles.baslikAlt}>{evrakLabel}</Text>
+              <Text style={[styles.baslikUst, { color: Colors.textSecondary }]}>Evrak Ayarlari</Text>
+              <Text style={[styles.baslikAlt, { color: Colors.primary }]}>{evrakLabel}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.kapatBtn}>
-              <Ionicons name="close" size={24} color={Colors.darkGray} />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
           {yukleniyor ? (
             <View style={styles.yukleniyorKap}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.yukleniyorText}>Yükleniyor...</Text>
+              <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Yukleniyor...</Text>
             </View>
           ) : (
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              {/* Fiş Tipi */}
+              {/* Fis Tipi */}
               {fisTipleri.length > 0 && (
                 <View style={[styles.satirGrup, fisTipiReadOnly && styles.readOnlyGrup]}>
-                  <Text style={styles.bolumBaslik}>FİŞ TİPİ</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>FIS TIPI</Text>
                   {fisTipiReadOnly ? (
-                    <View style={styles.readOnlyDeger}>
-                      <Text style={styles.readOnlyText}>
+                    <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+                      <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)
                           ? `${seciliFisTipiKodu} - ${fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)!.fisTipiAdi}`
-                          : 'Fiş tipi seçilmedi'}
+                          : 'Fis tipi secilmedi'}
                       </Text>
                     </View>
                   ) : (
@@ -150,7 +151,7 @@ export default function FisTipiDepoSecimModal({
                         label: `${ft.fisTipiKodu} - ${ft.fisTipiAdi}`,
                         value: String(ft.fisTipiKodu),
                       }))}
-                      placeholder="Fiş tipi seçiniz..."
+                      placeholder="Fis tipi seciniz..."
                       onChange={setSeciliFisTipiKodu}
                     />
                   )}
@@ -160,13 +161,13 @@ export default function FisTipiDepoSecimModal({
               {/* Ana Depo */}
               {depolar.length > 0 && (
                 <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
-                  <Text style={styles.bolumBaslik}>ANA DEPO</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>ANA DEPO</Text>
                   {depoReadOnly ? (
-                    <View style={styles.readOnlyDeger}>
-                      <Text style={styles.readOnlyText}>
+                    <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+                      <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {depolar.find((d) => d.depoKod === secilenAnaDepo)
                           ? `${depolar.find((d) => d.depoKod === secilenAnaDepo)!.depoAdi || ''} (${secilenAnaDepo})`
-                          : secilenAnaDepo || 'Depo seçilmedi'}
+                          : secilenAnaDepo || 'Depo secilmedi'}
                       </Text>
                     </View>
                   ) : (
@@ -176,23 +177,24 @@ export default function FisTipiDepoSecimModal({
                         label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
                         value: d.depoKod,
                       }))}
-                      placeholder="Depo seçiniz..."
+                      placeholder="Depo seciniz..."
                       onChange={setSecilenAnaDepo}
                     />
                   )}
                 </View>
               )}
 
-              {/* Karşı Depo — şimdilik gizli */}
-              {/* {depolar.length > 0 && (
+              {/* Karsi Depo -- secili fis tipinin fisTipiOzelligi "Depo" ise goster */}
+              {depolar.length > 0 && evrakTipiStr === 'Stok' &&
+                fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)?.fisTipiOzelligi === 'Depo' && (
                 <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
-                  <Text style={styles.bolumBaslik}>KARŞI DEPO</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>KARSI DEPO</Text>
                   {depoReadOnly ? (
-                    <View style={styles.readOnlyDeger}>
-                      <Text style={styles.readOnlyText}>
+                    <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+                      <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {depolar.find((d) => d.depoKod === secilenKarsiDepo)
                           ? `${depolar.find((d) => d.depoKod === secilenKarsiDepo)!.depoAdi || ''} (${secilenKarsiDepo})`
-                          : secilenKarsiDepo || 'Depo seçilmedi'}
+                          : secilenKarsiDepo || 'Depo secilmedi'}
                       </Text>
                     </View>
                   ) : (
@@ -202,19 +204,19 @@ export default function FisTipiDepoSecimModal({
                         label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
                         value: d.depoKod,
                       }))}
-                      placeholder="Depo seçiniz..."
+                      placeholder="Depo seciniz..."
                       onChange={setSecilenKarsiDepo}
                     />
                   )}
                 </View>
-              )} */}
+              )}
 
               <View style={{ height: 8 }} />
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.onaylaBtn} onPress={handleConfirm} disabled={yukleniyor}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+          <TouchableOpacity style={[styles.onaylaBtn, { backgroundColor: Colors.primary }]} onPress={handleConfirm} disabled={yukleniyor}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
             <Text style={styles.onaylaBtnText}>ONAYLA</Text>
           </TouchableOpacity>
         </View>
@@ -230,7 +232,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   kart: {
-    backgroundColor: Colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -241,18 +242,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  baslikUst: { fontSize: 12, color: Colors.gray, fontWeight: '600', letterSpacing: 1 },
-  baslikAlt: { fontSize: 18, fontWeight: '700', color: Colors.primary, marginTop: 2 },
+  baslikUst: { fontSize: 12, fontWeight: '600', letterSpacing: 1 },
+  baslikAlt: { fontSize: 18, fontWeight: '700', marginTop: 2 },
   kapatBtn: { padding: 4 },
   yukleniyorKap: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  yukleniyorText: { fontSize: 14, color: Colors.gray },
+  yukleniyorText: { fontSize: 14 },
   satirGrup: {
     marginBottom: 16,
   },
   bolumBaslik: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.gray,
     letterSpacing: 1,
     marginBottom: 6,
   },
@@ -261,18 +261,14 @@ const styles = StyleSheet.create({
   },
   readOnlyDeger: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderRadius: 10,
-    backgroundColor: Colors.inputBackground,
     paddingHorizontal: 12,
     paddingVertical: 11,
   },
   readOnlyText: {
     fontSize: 14,
-    color: Colors.gray,
   },
   onaylaBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -282,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   onaylaBtnText: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 1,

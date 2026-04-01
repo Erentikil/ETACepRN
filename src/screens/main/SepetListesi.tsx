@@ -22,13 +22,17 @@ import { useAppStore } from '../../store/appStore';
 import { evrakKaydet, generateGuid, adresBilgileriniAl, kurBilgileriniAl, entegratoreYolla } from '../../api/hizliIslemlerApi';
 import { evrakRBKaydet } from '../../api/renkBedenApi';
 import type { EvrakRBKaydetOptions } from '../../api/renkBedenApi';
+import { crmTeklifKaydet, crmTeklifPdfAl } from '../../api/crmTeklifApi';
+import { onayKaydet } from '../../api/onayApi';
+import type { OnayKaydetOptions } from '../../api/onayApi';
+import type { CRMTeklifFisBilgileri, CRMTeklifHareketBilgileri } from '../../models';
 import { evrakiKaydet as taslakKaydet } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetTemizle } from '../../utils/aktifSepetStorage';
 import type { EvrakKaydetOptions } from '../../api/hizliIslemlerApi';
 import { evrakPdfAl } from '../../api/raporApi';
 import UrunMiktariBelirleModal from '../../components/UrunMiktariBelirleModal';
 import DropdownSecim from '../../components/DropdownSecim';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { paraFormat, paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type { SepetKalem, SepetRBKalem, SepetBaslik, StokListesiBilgileri, AdresBilgileri, KDVKisimTablosu, KurBilgileri } from '../../models';
@@ -82,7 +86,7 @@ function hesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndirimYuzde: nu
     kalemIndirimlerToplam += ham - netKalem;
 
     const netAfterGenel = netKalem * (1 - indirimYuzdeOrani / 100);
-    kdvToplam += netAfterGenel * (k.kdvOrani / 100);
+    kdvToplam += netAfterGenel * (Math.max(0, k.kdvOrani) / 100);
   }
 
   const genelIndirimTutar = genelIndirimTutarDeger > 0
@@ -118,11 +122,13 @@ function rbToSepetKalem(rbk: SepetRBKalem): SepetKalem {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SepetListesi() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { yetkiBilgileri, calisilanSirket, kdvBilgileri, fiyatTipListesi } = useAppStore();
 
-  // RB modu tespiti
+  // Mod tespiti
+  const isCRMMode = !!route.params.crmModu;
   const isRBMode = !!route.params.rbKalemler;
   const [rbKalemler, setRbKalemler] = useState<SepetRBKalem[]>(route.params.rbKalemler ?? []);
 
@@ -145,12 +151,14 @@ export default function SepetListesi() {
   const [taslakYukleniyor, setTaslakYukleniyor] = useState(false);
   const [duzenleUrunu, setDuzenleUrunu] = useState<{ stok: StokListesiBilgileri; miktar: number; aciklama?: string } | null>(null);
   const [duzenleIndex, setDuzenleIndex] = useState<number | null>(null);
-  const evrakGuidRef = useRef(generateGuid());
+  const evrakGuidRef = useRef(route.params.onayGuidId ?? generateGuid());
   const [yuzerMenuAcik, setYuzerMenuAcik] = useState(false);
   const menuAnim = useRef(new Animated.Value(0)).current;
   const [evrakKaydedildi, setEvrakKaydedildi] = useState(false);
   const evrakKaydedildiRef = useRef(false);
   const [kaydedilenRefNo, setKaydedilenRefNo] = useState<number | null>(null);
+  const [kaydedilenCrmTeklifId, setKaydedilenCrmTeklifId] = useState<number | null>(route.params.crmTeklifFisId ?? null);
+  const [kaydedilenCrmMusteriId, setKaydedilenCrmMusteriId] = useState<number>(route.params.crmMusteriId ?? 0);
   const [pdfModalAcik, setPdfModalAcik] = useState(false);
   const [pdfYukleniyor, setPdfYukleniyor] = useState(false);
   const [pdfDosyaUri, setPdfDosyaUri] = useState<string | null>(null);
@@ -164,18 +172,22 @@ export default function SepetListesi() {
         } else {
           route.params.onKalemlerGuncellendi?.([]);
         }
-        aktifSepetTemizle(calisilanSirket);
+        if (!route.params.onayModu) {
+          aktifSepetTemizle(calisilanSirket);
+        }
       }
     });
     return unsubscribe;
   }, [navigation]);
 
+  const isOnayliReadOnly = route.params.onayDurumu === 1;
+
   // Evrak Fiş Bilgileri state
   const [fisAcik, setFisAcik] = useState(false);
   const [genelIndirimYuzde, setGenelIndirimYuzde] = useState(route.params.genelIndirimYuzde ?? 0);
-  const [genelIndirimTutar, setGenelIndirimTutar] = useState(0);
-  const [aciklama1, setAciklama1] = useState('');
-  const [aciklama2, setAciklama2] = useState('');
+  const [genelIndirimTutar, setGenelIndirimTutar] = useState(route.params.genelIndirimTutar ?? 0);
+  const [aciklama1, setAciklama1] = useState(route.params.aciklama1 ?? '');
+  const [aciklama2, setAciklama2] = useState(route.params.aciklama2 ?? '');
   const [belgeTipiDeger, setBelgeTipiDeger] = useState(() => {
     if (yetkiBilgileri?.eevrakKaydetmeYetkisi) {
       if (sepet.evrakTipi === EvrakTipi.Fatura || sepet.evrakTipi === EvrakTipi.Irsaliye)
@@ -227,9 +239,9 @@ export default function SepetListesi() {
   // Seçilen KDV kısımının oranı
   const secilenKdvOrani = kdvKisimListesi.find((k) => k.kdvKisimNo === secilenKdvKisimNo)?.kdvKisimOran ?? 0;
 
-  // Kalemlere seçilen KDV oranını uygula (kdvOrani 0 olanlar için)
+  // Kalemlere seçilen KDV oranını uygula (kdvOrani -1 olanlar için; API'den 0 gelenler sabit kalır)
   const efektifKalemler = sepet.kalemler.map((k) =>
-    k.kdvOrani === 0 ? { ...k, kdvOrani: secilenKdvOrani } : k
+    k.kdvOrani === -1 ? { ...k, kdvOrani: secilenKdvOrani } : k
   );
 
   // Toplamlar
@@ -397,52 +409,249 @@ export default function SepetListesi() {
     setKaydetYukleniyor(true);
     try {
       let sonuc;
-      if (isRBMode) {
-        const opts: EvrakRBKaydetOptions = {
-          saticiKodu: yetkiBilgileri?.kullaniciKodu ?? '',
-          kdvDurum: yetkiBilgileri?.kdvDurum ?? 0,
-          anaDepo: sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '',
-          karsiDepo: sepet.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '',
-          guidId: evrakGuidRef.current,
-          genelIndirimYuzde,
-          genelIndirimTutar,
+      if (isCRMMode) {
+        // CRM Teklif kaydet
+        const h = hesapla(sepet.kalemler, yetkiBilgileri?.kdvDurum ?? 0, genelIndirimYuzde, genelIndirimTutar);
+        const teklifFisId = route.params.crmTeklifFisId ?? 0;
+        const teklifFis: CRMTeklifFisBilgileri = {
+          id: teklifFisId,
+          musteriid: route.params.crmMusteriId ?? 0,
+          kdvdahilflag: yetkiBilgileri?.kdvDurum === 1 ? 1 : 0,
+          etadurum: 0,
+          etaislflag: 0,
+          kdvyuzde: secilenKdvOrani,
+          dovizkuru: secilenKur?.dovizKuru ?? 0,
+          maltoplam: h.malToplam,
+          kalemindirimtoplam: h.kalemIndirimlerToplam,
+          indirimyuzde1: genelIndirimYuzde,
+          indirimtutar1: h.genelIndirimTutar,
+          indirimyuzde2: 0,
+          indirimtutar2: 0,
+          matrah: h.malToplam - h.kalemIndirimlerToplam - h.genelIndirimTutar,
+          kdvtutar: h.kdvToplam,
+          geneltoplam: h.genelToplam,
+          musterikodu: sepet.cariKodu,
+          musteriadi: sepet.cariUnvan,
+          yetkili: '',
           aciklama1,
+          dovizturu: secilenKur?.dovizTuru ?? '',
+          hazirlayan: yetkiBilgileri?.kullaniciKodu ?? '',
+          etasirketadi: '',
+          ilce: '',
+          ulke: '',
+          mail: '',
+          telefon: '',
+          notlar: '',
+          not1: '',
+          not2: '',
+          not3: '',
+          not4: '',
+          not5: '',
+          not6: '',
+          dovizkodu: secilenKur?.dovizKodu ?? '',
           aciklama2,
-          dovizKodu: secilenKur?.dovizKodu ?? '',
-          dovizTuru: secilenKur?.dovizTuru ?? '',
-          dovizKuru: secilenKur?.dovizKuru ?? 0,
-          belgeTipi: belgeTipiDeger as 'eevrak' | 'normal' | 'diger',
+          aciklama3: '',
+          adres1: '',
+          adres2: '',
+          adres3: '',
+          il: '',
+          vergidairesi: '',
+          vergino: '',
+          tckimlikno: '',
+          evrakDosyaYolu: '',
+          teklifRevizyonNo: '',
+          teklifSonRevizyonu: 0,
+          odemesekli: '',
+          tarih: new Date().toISOString(),
         };
-        sonuc = await evrakRBKaydet(sepet, rbKalemler, calisilanSirket, opts);
+        const teklifHareketler: CRMTeklifHareketBilgileri[] = sepet.kalemler.map((k) => ({
+          id: k.crmKalemId ?? 0,
+          tekliffisid: teklifFisId,
+          musteriid: route.params.crmMusteriId ?? 0,
+          kodtipi: 0,
+          dovizkuru: secilenKur?.dovizKuru ?? 0,
+          fiyat: k.birimFiyat,
+          miktar: k.miktar,
+          kdvyuzde: k.kdvOrani,
+          kalemindirimyuzde1: k.kalemIndirim1,
+          kalemindirimtutar1: 0,
+          kalemindirimyuzde2: k.kalemIndirim2,
+          kalemindirimtutar2: 0,
+          barkod: k.barkod,
+          stokkodu: k.stokKodu,
+          stokcinsi: k.stokCinsi,
+          birim: k.birim,
+          depo: sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '',
+          aciklama1: k.aciklama ?? '',
+          aciklama2: '',
+          aciklama3: '',
+          dovizkodu: secilenKur?.dovizKodu ?? '',
+          dovizturu: secilenKur?.dovizTuru ?? '',
+          miktar2: 0,
+          birim2: '',
+        }));
+        sonuc = await crmTeklifKaydet(teklifFis, teklifHareketler, calisilanSirket);
       } else {
-        const opts: EvrakKaydetOptions = {
-          saticiKodu: yetkiBilgileri?.kullaniciKodu ?? '',
-          kdvDurum: yetkiBilgileri?.kdvDurum ?? 0,
-          anaDepo: sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '',
-          karsiDepo: sepet.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '',
-          guidId: evrakGuidRef.current,
-          genelIndirimYuzde,
-          genelIndirimTutar,
-          aciklama1,
-          aciklama2,
-          dovizKodu: secilenKur?.dovizKodu ?? '',
-          dovizTuru: secilenKur?.dovizTuru ?? '',
-          dovizKuru: secilenKur?.dovizKuru ?? 0,
-          belgeTipi: belgeTipiDeger as 'eevrak' | 'normal' | 'diger',
-        };
-        sonuc = await evrakKaydet(sepet, calisilanSirket, opts);
+        const anaDepo = sepet.anaDepo ?? yetkiBilgileri?.anaDepo ?? '';
+        const karsiDepo = sepet.karsiDepo ?? yetkiBilgileri?.karsiDepo ?? '';
+        const saticiKodu = yetkiBilgileri?.kullaniciKodu ?? '';
+        const kdvDurum = yetkiBilgileri?.kdvDurum ?? 0;
+        const belgeTipi = belgeTipiDeger as 'eevrak' | 'normal' | 'diger';
+        const belgeTipiIndex = belgeTipi === 'eevrak' ? 0 : belgeTipi === 'normal' ? 1 : 2;
+
+        const h = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar);
+
+        const onayFlagAktif =
+          (sepet.evrakTipi === EvrakTipi.Fatura && (yetkiBilgileri?.faturaOnaySatis ?? false)) ||
+          (sepet.evrakTipi === EvrakTipi.Irsaliye && (yetkiBilgileri?.irsaliyeOnaySatis ?? false)) ||
+          (sepet.evrakTipi === EvrakTipi.Siparis && (yetkiBilgileri?.siparisOnaySatis ?? false));
+
+        const onayMekanizmasiAktif =
+          !isOnayliReadOnly &&
+          onayFlagAktif &&
+          (yetkiBilgileri?.onayAltSiniri ?? 0) > 0;
+
+        const onayAltSiniriAsimi =
+          onayMekanizmasiAktif &&
+          h.genelToplam > (yetkiBilgileri?.onayAltSiniri ?? 0);
+
+        if (onayAltSiniriAsimi) {
+          // Durum 1: Onay mekanizmasına tabi, alt sınırı aştı → sadece onaya kaydet
+          const onayOpts: OnayKaydetOptions = {
+            guidId: evrakGuidRef.current,
+            genelIndirimYuzde,
+            genelIndirimTutar,
+            genelToplam: h.genelToplam,
+            anaDepo,
+            karsiDepo,
+            saticiKodu,
+            kullaniciKodu: saticiKodu,
+            kdvDahilFlag: kdvDurum,
+            aciklama1,
+            aciklama2,
+            dovizKodu: secilenKur?.dovizKodu ?? '',
+            dovizTuru: secilenKur?.dovizTuru ?? '',
+            dovizKuru: secilenKur?.dovizKuru ?? 0,
+            belgeTipiIndex,
+            evrakEkrani: route.params.evrakEkrani ?? 'ALSAT',
+          };
+          sonuc = await onayKaydet(sepet, sepet.kalemler, onayOpts, calisilanSirket);
+        } else if (isRBMode) {
+          const opts: EvrakRBKaydetOptions = {
+            saticiKodu,
+            kdvDurum,
+            anaDepo,
+            karsiDepo,
+            guidId: evrakGuidRef.current,
+            genelIndirimYuzde,
+            genelIndirimTutar,
+            aciklama1,
+            aciklama2,
+            dovizKodu: secilenKur?.dovizKodu ?? '',
+            dovizTuru: secilenKur?.dovizTuru ?? '',
+            dovizKuru: secilenKur?.dovizKuru ?? 0,
+            belgeTipi,
+          };
+          sonuc = await evrakRBKaydet(sepet, rbKalemler, calisilanSirket, opts);
+          if (onayMekanizmasiAktif) {
+            // Durum 2 (RB): Onay mekanizmasına tabi, alt sınırın altında → hem evrağa hem onaya kaydet
+            const rbRefNo = parseInt(String(sonuc.data), 10);
+            const onayOpts: OnayKaydetOptions = {
+              guidId: evrakGuidRef.current,
+              genelIndirimYuzde,
+              genelIndirimTutar,
+              genelToplam: h.genelToplam,
+              anaDepo,
+              karsiDepo,
+              saticiKodu,
+              kullaniciKodu: saticiKodu,
+              kdvDahilFlag: kdvDurum,
+              aciklama1,
+              aciklama2,
+              dovizKodu: secilenKur?.dovizKodu ?? '',
+              dovizTuru: secilenKur?.dovizTuru ?? '',
+              dovizKuru: secilenKur?.dovizKuru ?? 0,
+              belgeTipiIndex,
+              evrakEkrani: route.params.evrakEkrani ?? 'ALSAT',
+              onaylamaDurumu: 6,
+              onaylayan: saticiKodu,
+              onaylamaNotu: 'Kullanıcı tarafından kaydedildi',
+              referansNo: !isNaN(rbRefNo) && rbRefNo > 0 ? rbRefNo : 0,
+            };
+            onayKaydet(sepet, sepet.kalemler, onayOpts, calisilanSirket);
+          }
+          // Durum 3 (RB): Onay mekanizmasına tabi değil → sadece evrağa kaydedildi, onay çağrılmaz
+        } else {
+          const opts: EvrakKaydetOptions = {
+            saticiKodu,
+            kdvDurum,
+            anaDepo,
+            karsiDepo,
+            guidId: evrakGuidRef.current,
+            genelIndirimYuzde,
+            genelIndirimTutar,
+            aciklama1,
+            aciklama2,
+            dovizKodu: secilenKur?.dovizKodu ?? '',
+            dovizTuru: secilenKur?.dovizTuru ?? '',
+            dovizKuru: secilenKur?.dovizKuru ?? 0,
+            belgeTipi,
+          };
+          sonuc = await evrakKaydet(sepet, calisilanSirket, opts);
+          if (onayMekanizmasiAktif) {
+            // Durum 2: Onay mekanizmasına tabi, alt sınırın altında → hem evrağa hem onaya kaydet
+            const evrakRefNo = parseInt(String(sonuc.data), 10);
+            const onayOpts: OnayKaydetOptions = {
+              guidId: evrakGuidRef.current,
+              genelIndirimYuzde,
+              genelIndirimTutar,
+              genelToplam: h.genelToplam,
+              anaDepo,
+              karsiDepo,
+              saticiKodu,
+              kullaniciKodu: saticiKodu,
+              kdvDahilFlag: kdvDurum,
+              aciklama1,
+              aciklama2,
+              dovizKodu: secilenKur?.dovizKodu ?? '',
+              dovizTuru: secilenKur?.dovizTuru ?? '',
+              dovizKuru: secilenKur?.dovizKuru ?? 0,
+              belgeTipiIndex,
+              evrakEkrani: route.params.evrakEkrani ?? 'ALSAT',
+              onaylamaDurumu: 6,
+              onaylayan: saticiKodu,
+              onaylamaNotu: 'Kullanıcı tarafından kaydedildi',
+              referansNo: !isNaN(evrakRefNo) && evrakRefNo > 0 ? evrakRefNo : 0,
+            };
+            onayKaydet(sepet, sepet.kalemler, onayOpts, calisilanSirket);
+          }
+          // Durum 3: Onay mekanizmasına tabi değil → sadece evrağa kaydedildi, onay çağrılmaz
+        }
       }
+      
       if (sonuc.sonuc) {
         basariliTitresim();
-        const refNo = parseInt(String(sonuc.data), 10);
-        if (!isNaN(refNo) && refNo > 0) {
-          setKaydedilenRefNo(refNo);
+        if (isCRMMode) {
+          // CRM Teklif kaydet: API sadece id (number) döner
+          const donen = sonuc.data;
+          if (typeof donen === 'number' && donen > 0) {
+            setKaydedilenCrmTeklifId(donen);
+          } else if (typeof donen === 'object' && donen !== null && (donen as CRMTeklifFisBilgileri).id > 0) {
+            const teklifData = donen as CRMTeklifFisBilgileri;
+            setKaydedilenCrmTeklifId(teklifData.id);
+            if (teklifData.musteriid > 0) setKaydedilenCrmMusteriId(teklifData.musteriid);
+          }
+        } else {
+          const refNo = parseInt(String(sonuc.data), 10);
+          if (!isNaN(refNo) && refNo > 0) {
+            setKaydedilenRefNo(refNo);
+          }
         }
         setEvrakKaydedildi(true);
         evrakKaydedildiRef.current = true;
-        toast.success(sonuc.mesaj || 'Evrak kaydedildi.');
+        toast.success(sonuc.mesaj || (isCRMMode ? 'Teklif kaydedildi.' : 'Evrak kaydedildi.'));
       } else {
-        toast.error(sonuc.mesaj || 'Evrak kaydedilemedi.');
+        toast.error(sonuc.mesaj || (isCRMMode ? 'Teklif kaydedilemedi.' : 'Evrak kaydedilemedi.'));
       }
     } catch (e: any) {
       const mesaj =
@@ -517,36 +726,56 @@ export default function SepetListesi() {
   const evrakAdi = evrakTipiAdi(sepet.evrakTipi, sepet.alimSatim);
 
   const handlePdfGoster = async () => {
-    if (sepet.alimSatim === AlimSatim.Alim) {
-      toast.error('Alım işlemlerinde PDF dosyası alınamaz.');
-      return;
-    }
-    if (!kaydedilenRefNo) {
+    if (isCRMMode) {
+      if (!kaydedilenCrmTeklifId) {
+        toast.error('Teklif daha kaydedilmemiş, PDF alınamaz.');
+        return;
+      }
+    } else if (!kaydedilenRefNo) {
       toast.error('Evrak daha kaydedilmemiş, PDF alınamaz.');
       return;
     }
-    let evrakTipiStr = '';
-    switch (sepet.evrakTipi) {
-      case EvrakTipi.Stok:
-        evrakTipiStr = 'Stok';
-        break;
-      case EvrakTipi.Fatura:
-        evrakTipiStr = belgeTipiDeger === 'eevrak' ? 'Fatura' : 'Fatura2';
-        break;
-      case EvrakTipi.Irsaliye:
-        evrakTipiStr = belgeTipiDeger === 'eevrak' ? 'Irsaliye' : 'Irsaliye2';
-        break;
-      case EvrakTipi.Siparis:
-        evrakTipiStr = 'Sipariş';
-        break;
-    }
-    if (!evrakTipiStr) return;
+
     setPdfModalAcik(true);
     setPdfYukleniyor(true);
     setPdfDosyaUri(null);
+
     try {
-      const base64 = await evrakPdfAl(kaydedilenRefNo, evrakTipiStr, calisilanSirket);
-      const dosyaYolu = `${FileSystem.cacheDirectory}evrak_${kaydedilenRefNo}.pdf`;
+      let base64: string;
+      let dosyaAdi: string;
+
+      if (isCRMMode) {
+        const musteriId = kaydedilenCrmMusteriId || (route.params.crmMusteriId ?? 0);
+        const kullaniciKodu = yetkiBilgileri?.kullaniciKodu ?? '';
+        base64 = await crmTeklifPdfAl(kaydedilenCrmTeklifId!, musteriId, kullaniciKodu, calisilanSirket);
+        dosyaAdi = `teklif_${kaydedilenCrmTeklifId}`;
+      } else {
+        if (sepet.alimSatim === AlimSatim.Alim) {
+          setPdfModalAcik(false);
+          toast.error('Alım işlemlerinde PDF dosyası alınamaz.');
+          return;
+        }
+        let evrakTipiStr = '';
+        switch (sepet.evrakTipi) {
+          case EvrakTipi.Stok:
+            evrakTipiStr = 'Stok';
+            break;
+          case EvrakTipi.Fatura:
+            evrakTipiStr = belgeTipiDeger === 'eevrak' ? 'Fatura' : 'Fatura2';
+            break;
+          case EvrakTipi.Irsaliye:
+            evrakTipiStr = belgeTipiDeger === 'eevrak' ? 'Irsaliye' : 'Irsaliye2';
+            break;
+          case EvrakTipi.Siparis:
+            evrakTipiStr = 'Sipariş';
+            break;
+        }
+        if (!evrakTipiStr) { setPdfModalAcik(false); return; }
+        base64 = await evrakPdfAl(kaydedilenRefNo!, evrakTipiStr, calisilanSirket);
+        dosyaAdi = `evrak_${kaydedilenRefNo}`;
+      }
+
+      const dosyaYolu = `${FileSystem.cacheDirectory}${dosyaAdi}.pdf`;
       await FileSystem.writeAsStringAsync(dosyaYolu, base64, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -617,9 +846,9 @@ export default function SepetListesi() {
 
   const yuzerMenuItems = [
     { label: 'Kaydet', icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleKaydet(); }, disabled: kaydetYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 },
-    { label: 'Entegratöre Gönder', icon: 'send-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleEntegratorGonder(); }, disabled: entegratorYukleniyor || sepet.kalemler.length === 0 },
+    ...(!isCRMMode ? [{ label: 'Entegratöre Gönder', icon: 'send-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleEntegratorGonder(); }, disabled: entegratorYukleniyor || sepet.kalemler.length === 0 }] : []),
     { label: 'PDF Göster', icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: sepet.kalemler.length === 0 },
-    { label: 'Taslak Kaydet', icon: 'bookmark-outline' as const, color: Colors.accent, onPress: () => { toggleYuzerMenu(false); handleTaslakKaydet(); }, disabled: taslakYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 },
+    ...(!isCRMMode ? [{ label: 'Taslak Kaydet', icon: 'bookmark-outline' as const, color: Colors.accent, onPress: () => { toggleYuzerMenu(false); handleTaslakKaydet(); }, disabled: taslakYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 || isOnayliReadOnly }] : []),
     { label: 'Temizle', icon: 'trash-outline' as const, color: Colors.error, onPress: () => { toggleYuzerMenu(false); handleTemizle(); }, disabled: sepet.kalemler.length === 0 },
   ];
 
@@ -627,7 +856,7 @@ export default function SepetListesi() {
 
   // Kalem bazlı KDV hesaplama (her kalem için ayrı)
   const kalemToplam = (k: SepetKalem) => {
-    const efektifKdv = k.kdvOrani === 0 ? secilenKdvOrani : k.kdvOrani;
+    const efektifKdv = k.kdvOrani === -1 ? secilenKdvOrani : k.kdvOrani;
     const ham = k.miktar * k.birimFiyat;
     const netKalem =
       ham *
@@ -645,7 +874,7 @@ export default function SepetListesi() {
     onToggle: () => void
   ) => (
     <TouchableOpacity
-      style={styles.expanderBaslik}
+      style={[styles.expanderBaslik, { backgroundColor: Colors.primary }]}
       onPress={onToggle}
       activeOpacity={0.7}
     >
@@ -653,7 +882,7 @@ export default function SepetListesi() {
       <Ionicons
         name={acik ? 'chevron-up' : 'chevron-down'}
         size={20}
-        color={Colors.white}
+        color={'#fff'}
       />
     </TouchableOpacity>
   );
@@ -661,24 +890,24 @@ export default function SepetListesi() {
   const renderFisBilgileri = () => (
     <View style={styles.expanderContainer}>
       {renderExpanderBaslik(
-        `Evrak Fiş Bilgileri (${evrakAdi})`,
+        isCRMMode ? 'Teklif Bilgileri' : `Evrak Fiş Bilgileri (${evrakAdi})`,
         fisAcik,
         () => setFisAcik(!fisAcik)
       )}
       {fisAcik && (
-        <View style={styles.fisIcerik}>
+        <View style={[styles.fisIcerik, { backgroundColor: Colors.card }]}>
           {/* Cari Ünvanı */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Cari Ünvanı</Text>
-            <Text style={styles.fisValueRed} numberOfLines={2}>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Cari Ünvanı</Text>
+            <Text style={[styles.fisValueRed, { color: Colors.error }]} numberOfLines={2}>
               {sepet.cariUnvan || 'Lütfen cari seçiniz'}
             </Text>
           </View>
 
           {/* KDV Oranı + Dahil Checkbox */}
           <View style={[styles.kdvSatir, { zIndex: 30 }]}>
-            <View style={styles.kdvDropdown}>
-              <Text style={styles.fisLabel}>KDV Oranı</Text>
+            <View style={[styles.kdvDropdown, isOnayliReadOnly && { pointerEvents: 'none', opacity: 0.5 }]}>
+              <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>KDV Oranı</Text>
               <DropdownSecim
                 value={String(secilenKdvKisimNo)}
                 options={kdvKisimListesi.map((k) => ({
@@ -692,22 +921,22 @@ export default function SepetListesi() {
             </View>
             <TouchableOpacity
               style={styles.kdvCheckboxRow}
-              onPress={() => setKdvDurum((prev) => (prev === 1 ? 0 : 1))}
-              activeOpacity={0.7}
+              onPress={isOnayliReadOnly ? undefined : () => setKdvDurum((prev) => (prev === 1 ? 0 : 1))}
+              activeOpacity={isOnayliReadOnly ? 1 : 0.7}
             >
               <Ionicons
                 name={kdvDurum === 1 ? 'checkbox' : 'square-outline'}
                 size={22}
-                color={kdvDurum === 1 ? Colors.primary : Colors.gray}
+                color={kdvDurum === 1 ? Colors.primary : Colors.textSecondary}
               />
-              <Text style={styles.kdvCheckboxLabel}>KDV Dahil</Text>
+              <Text style={[styles.kdvCheckboxLabel, { color: Colors.text }]}>KDV Dahil</Text>
             </TouchableOpacity>
           </View>
 
           {/* Belge Tipi */}
           <View style={styles.fisRowCol}>
-            <Text style={styles.fisLabel}>Belge Tipi</Text>
-            <View style={styles.belgeTipiDropdown}>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Belge Tipi</Text>
+            <View style={[styles.belgeTipiDropdown, isOnayliReadOnly && { pointerEvents: 'none', opacity: 0.5 }]}>
               <DropdownSecim
                 value={belgeTipiDeger}
                 options={belgeTipleri}
@@ -719,66 +948,66 @@ export default function SepetListesi() {
           </View>
 
           {/* Ayırıcı */}
-          <View style={styles.fisAyirac} />
+          <View style={[styles.fisAyirac, { backgroundColor: Colors.border }]} />
 
           {/* Mal Toplam */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Mal Toplam</Text>
-            <Text style={styles.fisValue}>{paraFormat(t.malToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Mal Toplam</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.malToplam)}</Text>
           </View>
 
           {/* Genel İsk. */}
-          <TouchableOpacity style={styles.fisRow} onPress={indirimDegistir}>
-            <Text style={styles.fisLabel}>Genel İsk.</Text>
+          <TouchableOpacity style={styles.fisRow} onPress={isOnayliReadOnly ? undefined : indirimDegistir}>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Genel İsk.</Text>
             {genelIndirimTutar > 0 ? (
-              <Text style={styles.fisValueAccent}>Tutar: {paraFormat(genelIndirimTutar)}</Text>
+              <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>Tutar: {paraFormat(genelIndirimTutar)}</Text>
             ) : (
               <>
-                <Text style={styles.fisValueAccent}>% {paraFormat(genelIndirimYuzde)}</Text>
-                <Text style={styles.fisValueAccent}>{paraFormat(t.genelIndirimTutar)}</Text>
+                <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>% {paraFormat(genelIndirimYuzde)}</Text>
+                <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>{paraFormat(t.genelIndirimTutar)}</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Kalem İsk. */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Kalem İsk.</Text>
-            <Text style={styles.fisValue}>{paraFormat(t.kalemIndirimlerToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Kalem İsk.</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.kalemIndirimlerToplam)}</Text>
           </View>
 
           {/* KDV Toplam */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>KDV Toplam</Text>
-            <Text style={styles.fisValue}>{paraFormat(t.kdvToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>KDV Toplam</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.kdvToplam)}</Text>
           </View>
 
           {/* Genel Top. */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Genel Top.</Text>
-            <Text style={styles.fisValue}>{paraFormat(t.genelToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Genel Top.</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.genelToplam)}</Text>
           </View>
 
           {/* Ayırıcı */}
-          <View style={styles.fisAyirac} />
+          <View style={[styles.fisAyirac, { backgroundColor: Colors.border }]} />
 
           {/* Döviz */}
-          <TouchableOpacity style={styles.fisRow} onPress={() => setDovizModalAcik(true)}>
-            <Text style={styles.fisLabel}>Döviz Kodu</Text>
-            <Text style={styles.fisValueAccent}>
+          <TouchableOpacity style={styles.fisRow} onPress={isOnayliReadOnly ? undefined : () => setDovizModalAcik(true)}>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Döviz Kodu</Text>
+            <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>
               {secilenKur ? secilenKur.dovizKodu : 'Seçiniz...'}
             </Text>
-            <Text style={styles.fisLabelSmall}>Döviz Türü</Text>
-            <Text style={styles.fisValueAccent}>
+            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>Döviz Türü</Text>
+            <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>
               {secilenKur ? secilenKur.dovizTuru : ''}
             </Text>
           </TouchableOpacity>
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Döviz Kuru</Text>
-            <Text style={styles.fisValue}>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Döviz Kuru</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>
               {secilenKur ? secilenKur.dovizKuru.toFixed(5).replace('.', ',') : '0,00000'}
             </Text>
-            <Text style={styles.fisLabelSmall}>Döviz Toplam</Text>
-            <Text style={styles.fisValue}>
+            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>Döviz Toplam</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>
               {secilenKur && secilenKur.dovizKuru > 0
                 ? paraFormat(t.genelToplam / secilenKur.dovizKuru)
                 : '0,00'}
@@ -786,27 +1015,29 @@ export default function SepetListesi() {
           </View>
 
           {/* Ayırıcı */}
-          <View style={styles.fisAyirac} />
+          <View style={[styles.fisAyirac, { backgroundColor: Colors.border }]} />
 
           {/* Açıklama 1 */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Açıklama 1</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 1</Text>
             <TextInput
-              style={styles.fisInput}
+              style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               value={aciklama1}
               onChangeText={setAciklama1}
               placeholder=""
+              editable={!isOnayliReadOnly}
             />
           </View>
 
           {/* Açıklama 2 */}
           <View style={styles.fisRow}>
-            <Text style={styles.fisLabel}>Açıklama 2</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 2</Text>
             <TextInput
-              style={styles.fisInput}
+              style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               value={aciklama2}
               onChangeText={setAciklama2}
               placeholder=""
+              editable={!isOnayliReadOnly}
             />
           </View>
 
@@ -818,49 +1049,49 @@ export default function SepetListesi() {
   const renderAdresKarti = (adres: AdresBilgileri) => (
     <TouchableOpacity
       key={adres.adresNo}
-      style={styles.adresKart}
+      style={[styles.adresKart, { backgroundColor: Colors.background, borderColor: Colors.border }]}
       onPress={() => adresSec(adres)}
       activeOpacity={0.7}
     >
       {/* Adres No + Yetkili */}
       <View style={styles.adresRow}>
-        <Text style={styles.adresLabel}>Adres No</Text>
-        <Text style={styles.adresValueAccent}>{adres.adresNo}</Text>
-        <Text style={styles.adresLabel}>Yetkili</Text>
-        <Text style={styles.adresValueAccent}>{adres.yetkili}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres No</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.adresNo}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Yetkili</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.yetkili}</Text>
       </View>
       {/* Adres 1-3 */}
       {adres.adres1 ? (
         <View style={styles.adresRow}>
-          <Text style={styles.adresLabel}>Adres 1</Text>
-          <Text style={styles.adresValue}>{adres.adres1}</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 1</Text>
+          <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres1}</Text>
         </View>
       ) : null}
       {adres.adres2 ? (
         <View style={styles.adresRow}>
-          <Text style={styles.adresLabel}>Adres 2</Text>
-          <Text style={styles.adresValue}>{adres.adres2}</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 2</Text>
+          <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres2}</Text>
         </View>
       ) : null}
       {adres.adres3 ? (
         <View style={styles.adresRow}>
-          <Text style={styles.adresLabel}>Adres 3</Text>
-          <Text style={styles.adresValue}>{adres.adres3}</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 3</Text>
+          <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres3}</Text>
         </View>
       ) : null}
       {/* İl + İlçe */}
       <View style={styles.adresRow}>
-        <Text style={styles.adresLabel}>İl</Text>
-        <Text style={styles.adresValueAccent}>{adres.il}</Text>
-        <Text style={styles.adresLabel}>İlçe</Text>
-        <Text style={styles.adresValueAccent}>{adres.ilce}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>İl</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.il}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>İlçe</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.ilce}</Text>
       </View>
       {/* Vergi */}
       <View style={styles.adresRow}>
-        <Text style={styles.adresLabel}>Vergi{'\n'}Dairesi</Text>
-        <Text style={styles.adresValueAccent}>{adres.vergiDairesi}</Text>
-        <Text style={styles.adresLabel}>Vergi{'\n'}Numarası</Text>
-        <Text style={styles.adresValueAccent}>{adres.vergiNumarasi}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Vergi{'\n'}Dairesi</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.vergiDairesi}</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Vergi{'\n'}Numarası</Text>
+        <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.vergiNumarasi}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -875,11 +1106,11 @@ export default function SepetListesi() {
         () => setAdreslerAcik(!adreslerAcik)
       )}
       {adreslerAcik && (
-        <View style={styles.adreslerIcerik}>
+        <View style={[styles.adreslerIcerik, { backgroundColor: Colors.card }]}>
           {adresler.length > 0 ? (
             adresler.map(renderAdresKarti)
           ) : (
-            <Text style={styles.bosAdresText}>Adres bilgisi bulunamadı</Text>
+            <Text style={[styles.bosAdresText, { color: Colors.textSecondary }]}>Adres bilgisi bulunamadı</Text>
           )}
         </View>
       )}
@@ -887,10 +1118,10 @@ export default function SepetListesi() {
   );
 
   const renderHeaderInfo = () => (
-    <View style={styles.headerInfo}>
+    <View style={[styles.headerInfo, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
       <View style={styles.headerRow}>
         <Ionicons name="document-text-outline" size={18} color={Colors.primary} />
-        <Text style={styles.headerEvrakBold}>{evrakAdi}</Text>
+        <Text style={[styles.headerEvrakBold, { color: Colors.primary }]}>{isCRMMode ? 'CRM Teklif' : evrakAdi}</Text>
       </View>
       {sepet.fisTipiBaslikNo > 0 && (
         <View style={styles.headerRow}>
@@ -906,14 +1137,20 @@ export default function SepetListesi() {
   const renderListHeader = () => (
     <>
       {renderHeaderInfo()}
+      {isOnayliReadOnly && (
+        <View style={styles.onayBanner}>
+          <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+          <Text style={styles.onayBannerText}>Bu evrak onaylanmıştır. İçerik değiştirilemez.</Text>
+        </View>
+      )}
       {renderFisBilgileri()}
-      <View style={styles.expanderAyirac} />
+      <View style={[styles.expanderAyirac, { backgroundColor: Colors.border }]} />
       {renderAdresler()}
     </>
   );
 
   const renderKalem = ({ item, index }: { item: SepetKalem; index: number }) => {
-    const efektifKdv = item.kdvOrani === 0 ? secilenKdvOrani : item.kdvOrani;
+    const efektifKdv = item.kdvOrani === -1 ? secilenKdvOrani : item.kdvOrani;
     const ham = item.miktar * item.birimFiyat;
     const netKalem =
       ham *
@@ -929,42 +1166,44 @@ export default function SepetListesi() {
 
     return (
       <AnimatedListItem index={index}>
-        <View style={styles.kartContainer}>
+        <View style={[styles.kartContainer, { backgroundColor: Colors.card }]}>
           {/* Üst satır: stok kodu + düzenle/sil butonları */}
           <View style={styles.kartUstSatir}>
-            <Text style={styles.kartStokKodu}>{item.stokKodu}</Text>
-            <View style={styles.kartAksiyonlar}>
-              <TouchableOpacity
-                style={styles.kartAksiyonBtn}
-                onPress={() => {
-                  if (isRBMode) setDuzenleIndex(index);
-                  kalemDuzenle(item);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="create-outline" size={20} color="#FFD54F" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.kartAksiyonBtn}
-                onPress={() => {
-                  Alert.alert('Sil', `${item.stokKodu} silinsin mi?`, [
-                    { text: 'İptal', style: 'cancel' },
-                    { text: 'Sil', style: 'destructive', onPress: () => kalemSil(item.stokKodu, index) },
-                  ]);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.kartStokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+            {!isOnayliReadOnly && (
+              <View style={styles.kartAksiyonlar}>
+                <TouchableOpacity
+                  style={styles.kartAksiyonBtn}
+                  onPress={() => {
+                    if (isRBMode) setDuzenleIndex(index);
+                    kalemDuzenle(item);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="create-outline" size={20} color="#FFD54F" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.kartAksiyonBtn}
+                  onPress={() => {
+                    Alert.alert('Sil', `${item.stokKodu} silinsin mi?`, [
+                      { text: 'İptal', style: 'cancel' },
+                      { text: 'Sil', style: 'destructive', onPress: () => kalemSil(item.stokKodu, index) },
+                    ]);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Stok cinsi */}
-          <Text style={styles.kartStokCinsi}>{item.stokCinsi}</Text>
+          <Text style={[styles.kartStokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
 
           {/* Açıklama */}
           {item.aciklama ? (
-            <Text style={styles.kartAciklama}>{item.aciklama}</Text>
+            <Text style={[styles.kartAciklama, { color: Colors.textSecondary }]}>{item.aciklama}</Text>
           ) : null}
 
           {/* Renk-Beden bilgisi (sadece RB modda) */}
@@ -973,29 +1212,29 @@ export default function SepetListesi() {
               {rbItem.renkKodu > 0 && (
                 <View style={styles.rbChip}>
                   <Ionicons name="color-fill-outline" size={10} color={Colors.primary} />
-                  <Text style={styles.rbChipText}>{rbItem.renkKodu}-{rbItem.renk}</Text>
+                  <Text style={[styles.rbChipText, { color: Colors.primary }]}>{rbItem.renkKodu}-{rbItem.renk}</Text>
                 </View>
               )}
               {rbItem.bedenKodu > 0 && (
                 <View style={styles.rbChip}>
                   <Ionicons name="resize-outline" size={10} color={Colors.primary} />
-                  <Text style={styles.rbChipText}>{rbItem.bedenKodu}-{rbItem.beden}</Text>
+                  <Text style={[styles.rbChipText, { color: Colors.primary }]}>{rbItem.bedenKodu}-{rbItem.beden}</Text>
                 </View>
               )}
             </View>
           )}
 
           {/* Miktar x Fiyat */}
-          <Text style={styles.kartMiktarFiyat}>
+          <Text style={[styles.kartMiktarFiyat, { color: Colors.text }]}>
             {miktarFormat(item.miktar)} {item.birim}  × {paraFormat(item.birimFiyat)} ₺
           </Text>
 
           {/* KDV bilgisi + Toplam fiyat */}
           <View style={styles.kartAltSatir}>
-            <Text style={styles.kartKdvBilgi}>
+            <Text style={[styles.kartKdvBilgi, { color: Colors.textSecondary }]}>
               KDV Hariç: {paraFormat(netAfterGenel)} ₺   KDV %{efektifKdv}: {paraFormat(kdvTutari)} ₺
             </Text>
-            <Text style={styles.kartToplam}>{paraFormat(toplam)} ₺</Text>
+            <Text style={[styles.kartToplam, { color: Colors.primary }]}>{paraFormat(toplam)} ₺</Text>
           </View>
         </View>
       </AnimatedListItem>
@@ -1005,26 +1244,26 @@ export default function SepetListesi() {
   const renderOzetKarti = () => {
     const kdvHaricToplam = t.malToplam - t.kalemIndirimlerToplam - t.genelIndirimTutar;
     return (
-      <View style={styles.ozetKart}>
+      <View style={[styles.ozetKart, { backgroundColor: Colors.card }]}>
         <View style={styles.ozetSatir}>
-          <Text style={styles.ozetLabel}>KDV Hariç Toplam</Text>
-          <Text style={styles.ozetDeger}>{paraFormat(kdvHaricToplam)} ₺</Text>
+          <Text style={[styles.ozetLabel, { color: Colors.text }]}>KDV Hariç Toplam</Text>
+          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(kdvHaricToplam)} ₺</Text>
         </View>
         <View style={styles.ozetSatir}>
-          <Text style={styles.ozetLabel}>KDV Toplam</Text>
-          <Text style={styles.ozetDeger}>{paraFormat(t.kdvToplam)} ₺</Text>
+          <Text style={[styles.ozetLabel, { color: Colors.text }]}>KDV Toplam</Text>
+          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(t.kdvToplam)} ₺</Text>
         </View>
-        <View style={styles.ozetAyirac} />
+        <View style={[styles.ozetAyirac, { backgroundColor: Colors.border }]} />
         <View style={styles.ozetSatir}>
-          <Text style={styles.ozetGenelLabel}>GENEL TOPLAM</Text>
-          <Text style={styles.ozetGenelDeger}>{paraFormat(t.genelToplam)} ₺</Text>
+          <Text style={[styles.ozetGenelLabel, { color: Colors.primary }]}>GENEL TOPLAM</Text>
+          <Text style={[styles.ozetGenelDeger, { color: Colors.primary }]}>{paraFormat(t.genelToplam)} ₺</Text>
         </View>
       </View>
     );
   };
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       <FlatList
         data={sepet.kalemler}
         keyExtractor={(item, idx) => item.stokKodu.trim() || String(idx)}
@@ -1058,11 +1297,11 @@ export default function SepetListesi() {
       {/* İndirim modal */}
       <Modal visible={indirimModalAcik} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalKutu}>
-            <Text style={styles.modalBaslik}>Genel İskonto</Text>
-            <Text style={styles.modalAlt}>Yüzde</Text>
+          <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
+            <Text style={[styles.modalBaslik, { color: Colors.text }]}>Genel İskonto</Text>
+            <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Yüzde</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               value={indirimInput}
               onChangeText={(val) => {
                 setIndirimInput(val);
@@ -1072,9 +1311,9 @@ export default function SepetListesi() {
               placeholder="% 0"
               autoFocus
             />
-            <Text style={styles.modalAlt}>Tutar</Text>
+            <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Tutar</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               value={indirimTutarInput}
               onChangeText={(val) => {
                 setIndirimTutarInput(val);
@@ -1085,10 +1324,10 @@ export default function SepetListesi() {
             />
             <View style={styles.modalBtnRow}>
               <TouchableOpacity onPress={() => setIndirimModalAcik(false)}>
-                <Text style={styles.modalIptal}>İptal</Text>
+                <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={indirimOnayla}>
-                <Text style={styles.modalTamam}>Tamam</Text>
+                <Text style={[styles.modalTamam, { color: Colors.primary }]}>Tamam</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1098,21 +1337,21 @@ export default function SepetListesi() {
       {/* Döviz seçim modal */}
       <Modal visible={dovizModalAcik} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.dovizModalKutu}>
-            <Text style={styles.modalBaslik}>Döviz Seçimi</Text>
+          <View style={[styles.dovizModalKutu, { backgroundColor: Colors.card }]}>
+            <Text style={[styles.modalBaslik, { color: Colors.text }]}>Döviz Seçimi</Text>
             {kurListesi.length === 0 ? (
-              <Text style={styles.modalAlt}>Kur bilgisi bulunamadı</Text>
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Kur bilgisi bulunamadı</Text>
             ) : (
               <FlatList
                 data={kurListesi}
                 keyExtractor={(item, index) => item.kurID != null ? String(item.kurID) : `kur-${index}`}
                 style={styles.dovizListe}
-                ItemSeparatorComponent={() => <View style={styles.dovizAyirac} />}
+                ItemSeparatorComponent={() => <View style={[styles.dovizAyirac, { backgroundColor: Colors.border }]} />}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={[
                       styles.dovizSatir,
-                      secilenKur?.kurID === item.kurID && styles.dovizSatirSecili,
+                      secilenKur?.kurID === item.kurID && { backgroundColor: Colors.primary + '15' },
                     ]}
                     onPress={() => {
                       setSecilenKur(item);
@@ -1120,10 +1359,10 @@ export default function SepetListesi() {
                     }}
                   >
                     <View style={styles.dovizSol}>
-                      <Text style={styles.dovizKodu}>{item.dovizKodu}</Text>
-                      <Text style={styles.dovizTuru}>{item.dovizTuru}</Text>
+                      <Text style={[styles.dovizKodu, { color: Colors.primary }]}>{item.dovizKodu}</Text>
+                      <Text style={[styles.dovizTuru, { color: Colors.textSecondary }]}>{item.dovizTuru}</Text>
                     </View>
-                    <Text style={styles.dovizKuru}>
+                    <Text style={[styles.dovizKuru, { color: Colors.text }]}>
                       {item.dovizKuru.toFixed(5).replace('.', ',')}
                     </Text>
                   </TouchableOpacity>
@@ -1133,11 +1372,11 @@ export default function SepetListesi() {
             <View style={styles.modalBtnRow}>
               {secilenKur && (
                 <TouchableOpacity onPress={() => { setSecilenKur(null); setDovizModalAcik(false); }}>
-                  <Text style={styles.modalIptal}>Temizle</Text>
+                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>Temizle</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => setDovizModalAcik(false)}>
-                <Text style={styles.modalTamam}>Kapat</Text>
+                <Text style={[styles.modalTamam, { color: Colors.primary }]}>Kapat</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1145,9 +1384,9 @@ export default function SepetListesi() {
       </Modal>
 
       {/* Alt bilgi barı */}
-      <View style={styles.altBar}>
+      <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
         <Ionicons name="cart-outline" size={18} color={Colors.primary} />
-        <Text style={styles.altBarText}>
+        <Text style={[styles.altBarText, { color: Colors.text }]}>
           {sepet.kalemler.length} satır · Miktar {t.toplamMiktar}
         </Text>
       </View>
@@ -1168,7 +1407,7 @@ export default function SepetListesi() {
               return (
                 <Animated.View key={item.label} style={{ transform: [{ translateY }], opacity }}>
                   <TouchableOpacity
-                    style={[styles.yuzerMenuItem, item.disabled && styles.btnPasif]}
+                    style={[styles.yuzerMenuItem, { backgroundColor: Colors.card }, item.disabled && styles.btnPasif]}
                     onPress={item.onPress}
                     disabled={item.disabled}
                     activeOpacity={0.7}
@@ -1187,26 +1426,29 @@ export default function SepetListesi() {
 
       {/* PDF Modal */}
       <Modal visible={pdfModalAcik} animationType="slide" onRequestClose={() => setPdfModalAcik(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
-          <View style={styles.pdfBar}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.card }}>
+          <View style={[styles.pdfBar, { borderBottomColor: Colors.border }]}>
             <TouchableOpacity onPress={() => setPdfModalAcik(false)}>
-              <Ionicons name="close" size={28} color={Colors.darkGray} />
+              <Ionicons name="close" size={28} color={Colors.text} />
             </TouchableOpacity>
-            <Text style={styles.pdfBarBaslik}>{evrakAdi}</Text>
+            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>{isCRMMode ? 'Teklif' : evrakAdi}</Text>
             <TouchableOpacity onPress={handlePdfPaylas} disabled={!pdfDosyaUri}>
-              <Ionicons name="share-outline" size={24} color={pdfDosyaUri ? Colors.primary : Colors.gray} />
+              <Ionicons name="share-outline" size={24} color={pdfDosyaUri ? Colors.primary : Colors.textSecondary} />
             </TouchableOpacity>
           </View>
           {pdfYukleniyor ? (
             <View style={styles.pdfMerkez}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={{ color: Colors.gray, marginTop: 8 }}>PDF yükleniyor...</Text>
+              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
             </View>
           ) : pdfDosyaUri ? (
             <WebView
               originWhitelist={['*']}
               source={{ uri: pdfDosyaUri }}
               style={{ flex: 1 }}
+              allowFileAccess
+              allowFileAccessFromFileURLs
+              allowUniversalAccessFromFileURLs
             />
           ) : null}
         </SafeAreaView>
@@ -1214,11 +1456,11 @@ export default function SepetListesi() {
 
       {/* FAB butonu */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: Colors.primary }]}
         onPress={() => toggleYuzerMenu(!yuzerMenuAcik)}
         activeOpacity={0.8}
       >
-        <Ionicons name={yuzerMenuAcik ? 'close' : 'ellipsis-vertical'} size={24} color={Colors.white} />
+        <Ionicons name={yuzerMenuAcik ? 'close' : 'ellipsis-vertical'} size={24} color={'#fff'} />
       </TouchableOpacity>
     </View>
   );
@@ -1227,16 +1469,14 @@ export default function SepetListesi() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: Colors.lightGray },
+  ekran: { flex: 1 },
   listePadding: { paddingBottom: 12 },
 
   // ── Header Info ─────────────────────────────────────────────────────────────
   headerInfo: {
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     gap: 4,
   },
   headerRow: {
@@ -1247,7 +1487,6 @@ const styles = StyleSheet.create({
   headerEvrakBold: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
   },
   headerFisTipi: {
     flex: 1,
@@ -1260,25 +1499,22 @@ const styles = StyleSheet.create({
   expanderContainer: { },
   expanderAyirac: {
     height: 1,
-    backgroundColor: Colors.border,
   },
   expanderBaslik: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   expanderBaslikText: {
-    color: Colors.white,
+    color: '#fff',
     fontSize: 14,
     fontWeight: '700',
   },
 
   // ── Fiş Bilgileri ──────────────────────────────────────────────────────────
   fisIcerik: {
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 6,
@@ -1291,48 +1527,39 @@ const styles = StyleSheet.create({
   fisLabel: {
     width: 90,
     fontSize: 12,
-    color: Colors.gray,
     fontWeight: '600',
   },
   fisLabelSmall: {
     fontSize: 12,
-    color: Colors.gray,
     fontWeight: '600',
     marginLeft: 8,
   },
   fisValue: {
     flex: 1,
     fontSize: 14,
-    color: Colors.darkGray,
     textAlign: 'right',
   },
   fisValueRed: {
     flex: 1,
     fontSize: 13,
-    color: Colors.error,
   },
   fisValueAccent: {
     flex: 1,
     fontSize: 14,
-    color: Colors.primary,
     fontWeight: '600',
     textAlign: 'right',
   },
   fisAyirac: {
     height: 1,
-    backgroundColor: Colors.border,
     marginVertical: 4,
   },
   fisInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: Platform.OS === 'ios' ? 6 : 2,
     fontSize: 13,
-    color: Colors.darkGray,
-    backgroundColor: Colors.inputBackground,
   },
   fisRowCol: {
     flexDirection: 'row',
@@ -1360,23 +1587,19 @@ const styles = StyleSheet.create({
   kdvCheckboxLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
 
   // ── Adresler ───────────────────────────────────────────────────────────────
   adreslerIcerik: {
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   adresKart: {
-    backgroundColor: Colors.lightGray,
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
     gap: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   adresRow: {
     flexDirection: 'row',
@@ -1386,22 +1609,18 @@ const styles = StyleSheet.create({
   },
   adresLabel: {
     fontSize: 11,
-    color: Colors.gray,
     width: 55,
   },
   adresValue: {
     flex: 1,
     fontSize: 12,
-    color: Colors.darkGray,
   },
   adresValueAccent: {
     flex: 1,
     fontSize: 12,
-    color: Colors.primary,
     fontWeight: '600',
   },
   bosAdresText: {
-    color: Colors.gray,
     fontSize: 13,
     textAlign: 'center',
     paddingVertical: 12,
@@ -1409,7 +1628,6 @@ const styles = StyleSheet.create({
 
   // ── Kalem Kartları ─────────────────────────────────────────────────────────
   kartContainer: {
-    backgroundColor: Colors.white,
     marginHorizontal: 12,
     marginTop: 10,
     borderRadius: 12,
@@ -1427,7 +1645,6 @@ const styles = StyleSheet.create({
   },
   kartStokKodu: {
     fontSize: 13,
-    color: Colors.gray,
     fontWeight: '600',
   },
   kartAksiyonlar: {
@@ -1440,12 +1657,10 @@ const styles = StyleSheet.create({
   kartStokCinsi: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.darkGray,
     marginTop: 2,
   },
   kartAciklama: {
     fontSize: 12,
-    color: Colors.gray,
     fontStyle: 'italic',
     marginTop: 2,
   },
@@ -1465,12 +1680,10 @@ const styles = StyleSheet.create({
   },
   rbChipText: {
     fontSize: 10,
-    color: Colors.primary,
     fontWeight: '600',
   },
   kartMiktarFiyat: {
     fontSize: 13,
-    color: Colors.darkGray,
     marginTop: 4,
   },
   kartAltSatir: {
@@ -1481,19 +1694,16 @@ const styles = StyleSheet.create({
   },
   kartKdvBilgi: {
     fontSize: 11,
-    color: Colors.gray,
     flex: 1,
   },
   kartToplam: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary,
     marginLeft: 8,
   },
 
   // ── Özet Kartı ─────────────────────────────────────────────────────────────
   ozetKart: {
-    backgroundColor: Colors.white,
     marginHorizontal: 12,
     marginTop: 16,
     borderRadius: 12,
@@ -1512,54 +1722,45 @@ const styles = StyleSheet.create({
   },
   ozetLabel: {
     fontSize: 14,
-    color: Colors.darkGray,
   },
   ozetDeger: {
     fontSize: 14,
-    color: Colors.darkGray,
     fontWeight: '600',
   },
   ozetAyirac: {
     height: 1,
-    backgroundColor: Colors.border,
     marginVertical: 8,
   },
   ozetGenelLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary,
   },
   ozetGenelDeger: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
   },
 
   // ── Boş Ekran ─────────────────────────────────────────────────────────────
   bosEkran: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  bosMetin: { fontSize: 14, color: Colors.gray },
+  bosMetin: { fontSize: 14 },
 
   // ── Alt Bar ────────────────────────────────────────────────────────────────
   altBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
     gap: 6,
   },
   altBarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
   altBarToplam: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
   },
 
   // ── FAB & Yüzer Menü ─────────────────────────────────────────────────────
@@ -1570,7 +1771,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
@@ -1594,7 +1794,6 @@ const styles = StyleSheet.create({
   yuzerMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1617,6 +1816,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   btnPasif: { opacity: 0.5 },
+  onayBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 10,
+    marginBottom: 6,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#43a047',
+  },
+  onayBannerText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
 
   // ── PDF Modal ─────────────────────────────────────────────────────────────
   pdfBar: {
@@ -1626,9 +1841,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  pdfBarBaslik: { fontSize: 16, fontWeight: '600', color: Colors.darkGray },
+  pdfBarBaslik: { fontSize: 16, fontWeight: '600' },
   pdfMerkez: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // ── Modal (Android indirim) ────────────────────────────────────────────────
@@ -1639,7 +1853,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 20,
     width: '80%',
@@ -1650,17 +1863,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  modalBaslik: { fontSize: 16, fontWeight: '700', color: Colors.darkGray },
-  modalAlt: { fontSize: 13, color: Colors.gray },
+  modalBaslik: { fontSize: 16, fontWeight: '700' },
+  modalAlt: { fontSize: 13 },
   modalInput: {
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    color: Colors.darkGray,
-    backgroundColor: Colors.inputBackground,
   },
   modalBtnRow: {
     flexDirection: 'row',
@@ -1668,12 +1878,11 @@ const styles = StyleSheet.create({
     gap: 20,
     marginTop: 8,
   },
-  modalIptal: { fontSize: 14, color: Colors.gray },
-  modalTamam: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  modalIptal: { fontSize: 14 },
+  modalTamam: { fontSize: 14, fontWeight: '700' },
 
   // ── Döviz Modal ──────────────────────────────────────────────────────────────
   dovizModalKutu: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 20,
     width: '85%',
@@ -1690,7 +1899,6 @@ const styles = StyleSheet.create({
   },
   dovizAyirac: {
     height: 1,
-    backgroundColor: Colors.border,
   },
   dovizSatir: {
     flexDirection: 'row',
@@ -1700,25 +1908,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 8,
   },
-  dovizSatirSecili: {
-    backgroundColor: Colors.primary + '15',
-  },
   dovizSol: {
     flex: 1,
   },
   dovizKodu: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
   },
   dovizTuru: {
     fontSize: 12,
-    color: Colors.gray,
     marginTop: 2,
   },
   dovizKuru: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.darkGray,
   },
 });

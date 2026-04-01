@@ -1,6 +1,6 @@
 import { getApiInstance, buildUrl } from './axiosInstance';
 import { getCihazKodu } from './authApi';
-import type { Sonuc, TahsilatEvrak, IslemTipiBasliklari } from '../models';
+import type { Sonuc, TahsilatEvrak, IslemTipiBasliklari, KasaTahsilatEvrak, CekSenetEvrak } from '../models';
 
 // GET CariBakiyeyiAl/{cariKodu}/{cihazKodu}/{veriTabaniAdi}
 export async function cariBakiyeAl(
@@ -36,5 +36,33 @@ export async function tahsilatKaydet(
     telefonCihazKodu: cihazKodu,
   };
   const res = await api.post<Sonuc<number>>('TahsilatSirket', payload);
+  return res.data;
+}
+
+// POST /KasaTahsilatSirket
+export async function kasaTahsilatKaydet(
+  evrak: KasaTahsilatEvrak
+): Promise<Sonuc<number>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const payload = {
+    ...evrak,
+    telefonCihazKodu: cihazKodu,
+  };
+  const res = await api.post<Sonuc<number>>('KasaTahsilatSirket', payload);
+  return res.data;
+}
+
+// POST /CekSenetSirket
+export async function cekSenetKaydet(
+  evrak: CekSenetEvrak
+): Promise<Sonuc<number>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const payload = {
+    ...evrak,
+    telefonCihazKodu: cihazKodu,
+  };
+  const res = await api.post<Sonuc<number>>('CekSenetSirket', payload);
   return res.data;
 }

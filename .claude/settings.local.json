@@ -12,7 +12,9 @@
       "Bash(npx expo:*)",
       "Bash(npx eas:*)",
       "Bash(grep -v \".tsx:.* //\")",
-      "Bash(grep -n \"const ARAMA_TIPLERI\\\\|const.*ARAMA.*=\" c:/Users/ErenHrz/Desktop/ETACepRN/src/screens/main/*.tsx)"
+      "Bash(grep -n \"const ARAMA_TIPLERI\\\\|const.*ARAMA.*=\" c:/Users/ErenHrz/Desktop/ETACepRN/src/screens/main/*.tsx)",
+      "Bash(find c:/Users/ErenHrz/Desktop/ETACepRN -name *project_crm_teklif* -o -name *teklif*plan*)",
+      "Bash(find c:/Users/ErenHrz/Desktop/ETACepRN -name *memory* -o -name *plan*)"
     ]
   }
 }

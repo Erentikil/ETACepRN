@@ -7,13 +7,14 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Colors } from '../constants/Colors';
+import { useColors } from '../contexts/ThemeContext';
 
 interface SkeletonLoaderProps {
   satirSayisi?: number;
 }
 
 function SkeletonSatir() {
+  const Colors = useColors();
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -29,13 +30,13 @@ function SkeletonSatir() {
   }));
 
   return (
-    <Animated.View style={[styles.satir, animStyle]}>
-      <View style={styles.solBlok} />
+    <Animated.View style={[styles.satir, { backgroundColor: Colors.card }, animStyle]}>
+      <View style={[styles.solBlok, { backgroundColor: Colors.border }]} />
       <View style={styles.icerik}>
-        <View style={styles.ustCizgi} />
-        <View style={styles.altCizgi} />
+        <View style={[styles.ustCizgi, { backgroundColor: Colors.border }]} />
+        <View style={[styles.altCizgi, { backgroundColor: Colors.border }]} />
       </View>
-      <View style={styles.sagBlok} />
+      <View style={[styles.sagBlok, { backgroundColor: Colors.border }]} />
     </Animated.View>
   );
 }
@@ -59,7 +60,6 @@ const styles = StyleSheet.create({
   satir: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: 8,
     padding: 12,
     gap: 10,
@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: Colors.border,
   },
   icerik: {
     flex: 1,
@@ -78,18 +77,15 @@ const styles = StyleSheet.create({
     height: 12,
     width: '70%',
     borderRadius: 6,
-    backgroundColor: Colors.border,
   },
   altCizgi: {
     height: 10,
     width: '45%',
     borderRadius: 6,
-    backgroundColor: Colors.border,
   },
   sagBlok: {
     width: 50,
     height: 14,
     borderRadius: 6,
-    backgroundColor: Colors.border,
   },
 });

@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { bekleyenSiparisleriAl } from '../../api/hizliIslemlerApi';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type { BekleyenSiparisBilgileri, CariKartBilgileri } from '../../models';
@@ -34,20 +34,31 @@ function formatTarih(tarih: string): string {
 }
 
 export default function BekleyenSiparisler() {
+  const Colors = useColors();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
-  const { calisilanSirket } = useAppStore();
+  const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
 
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
   const [siparisler, setSiparisler] = useState<BekleyenSiparisBilgileri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  // CariSecim'den dönünce seçilen cariyi al
+  // CariSecim'den dönünce seçilen cariyi al (route params — "+" butonu akışı)
   useEffect(() => {
     if (route.params?.secilenCari) {
       setSecilenCari(route.params.secilenCari);
     }
   }, [route.params?.secilenCari]);
+
+  // CariSecim'den geri dönünce (pendingCari — normal seçim akışı)
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingCari?.target === 'BekleyenSiparisler') {
+        setSecilenCari(pendingCari.cari);
+        clearPendingCari();
+      }
+    }, [pendingCari])
+  );
 
   const siparisleriYukle = useCallback(async (cari: CariKartBilgileri) => {
     setYukleniyor(true);
@@ -79,43 +90,49 @@ export default function BekleyenSiparisler() {
   const renderSiparis = ({ item }: { item: BekleyenSiparisBilgileri }) => {
     const tamamlandi = item.kalanMiktar === 0;
     return (
-      <View style={[styles.kart, tamamlandi && styles.kartTamamlandi]}>
+      <View style={[styles.kart, { backgroundColor: Colors.card }, tamamlandi && { backgroundColor: '#f0fdf4' }]}>
         <View style={styles.kartUst}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.stokKodu}>{item.stokKodu}</Text>
-            <Text style={styles.stokCinsi} numberOfLines={2}>{item.stokCinsi}</Text>
+            <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
+            <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={2}>{item.stokCinsi}</Text>
           </View>
-          <View style={styles.tarihBadge}>
-            <Text style={styles.tarihText}>{formatTarih(item.tarih)}</Text>
+          <View style={[styles.tarihBadge, { backgroundColor: `${Colors.primary}18` }]}>
+            <Text style={[styles.tarihText, { color: Colors.primary }]}>{formatTarih(item.tarih)}</Text>
           </View>
         </View>
 
-        <View style={styles.satirlar}>
+        <View style={[styles.satirlar, { backgroundColor: Colors.background, borderBottomColor: Colors.border }]}>
           <MiktarSatiri
             etiket="Sipariş"
             deger={item.siparisMiktari}
             birim={item.birim}
-            renk={Colors.darkGray}
+            renk={Colors.text}
+            etiketRenk={Colors.textSecondary}
+            borderRenk={Colors.border}
           />
           <MiktarSatiri
             etiket="Teslim Edilen"
             deger={item.teslimEdilenMiktar}
             birim={item.birim}
             renk="#43a047"
+            etiketRenk={Colors.textSecondary}
+            borderRenk={Colors.border}
           />
           <MiktarSatiri
             etiket="Kalan"
             deger={item.kalanMiktar}
             birim={item.birim}
             renk={tamamlandi ? '#43a047' : '#e53935'}
+            etiketRenk={Colors.textSecondary}
+            borderRenk={Colors.border}
           />
         </View>
 
         <View style={styles.kartAlt}>
-          <Text style={styles.fiyatText}>
+          <Text style={[styles.fiyatText, { color: Colors.textSecondary }]}>
             {paraTL(item.fiyat)} / {item.birim}
           </Text>
-          <Text style={styles.tutarText}>
+          <Text style={[styles.tutarText, { color: Colors.primary }]}>
             Tutar: {paraTL(item.tutar)}
           </Text>
         </View>
@@ -131,23 +148,23 @@ export default function BekleyenSiparisler() {
   };
 
   return (
-    <View style={styles.ekran}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
       {/* Cari seçim */}
-      <TouchableOpacity style={styles.cariBtn} onPress={cariSec}>
+      {route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' && <TouchableOpacity style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]} onPress={cariSec}>
         <Ionicons
           name="person-outline"
           size={18}
-          color={secilenCari ? Colors.primary : Colors.gray}
+          color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
-        <Text style={[styles.cariText, secilenCari && styles.cariTextSecili]}>
+        <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
           {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
         </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
-      </TouchableOpacity>
+        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+      </TouchableOpacity>}
 
       {/* Özet bilgi */}
       {secilenCari && !yukleniyor && siparisler.length > 0 && (
-        <View style={styles.ozetBar}>
+        <View style={[styles.ozetBar, { backgroundColor: Colors.primary }]}>
           <Text style={styles.ozetText}>
             {siparisler.length} sipariş satırı
           </Text>
@@ -160,8 +177,8 @@ export default function BekleyenSiparisler() {
       {!secilenCari ? (
         <View style={styles.bosEkran}>
           <Ionicons name="person-add-outline" size={56} color={Colors.border} />
-          <Text style={styles.bosMetin}>Bekleyen siparişleri görmek için{'\n'}bir cari seçiniz</Text>
-          <TouchableOpacity style={styles.cariSecBtn} onPress={cariSec}>
+          <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>Bekleyen siparişleri görmek için{'\n'}bir cari seçiniz</Text>
+          <TouchableOpacity style={[styles.cariSecBtn, { backgroundColor: Colors.primary }]} onPress={cariSec}>
             <Text style={styles.cariSecBtnText}>Cari Seç</Text>
           </TouchableOpacity>
         </View>
@@ -197,15 +214,19 @@ function MiktarSatiri({
   deger,
   birim,
   renk,
+  etiketRenk,
+  borderRenk,
 }: {
   etiket: string;
   deger: number;
   birim: string;
   renk: string;
+  etiketRenk?: string;
+  borderRenk?: string;
 }) {
   return (
-    <View style={styles.miktarSatir}>
-      <Text style={styles.miktarEtiket}>{etiket}</Text>
+    <View style={[styles.miktarSatir, borderRenk ? { borderBottomColor: borderRenk } : undefined]}>
+      <Text style={[styles.miktarEtiket, etiketRenk ? { color: etiketRenk } : undefined]}>{etiket}</Text>
       <Text style={[styles.miktarDeger, { color: renk }]}>
         {miktarFormat(deger)} {birim}
       </Text>
@@ -214,27 +235,23 @@ function MiktarSatiri({
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: '#f5f5f5' },
+  ekran: { flex: 1 },
 
   cariBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  cariText: { flex: 1, fontSize: 14, color: Colors.gray },
-  cariTextSecili: { color: Colors.darkGray, fontWeight: '600' },
+  cariText: { flex: 1, fontSize: 14 },
 
   ozetBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: Colors.primary,
     marginHorizontal: 10,
     marginTop: 10,
     borderRadius: 8,
@@ -249,7 +266,6 @@ const styles = StyleSheet.create({
   ayirac: { height: 8 },
 
   kart: {
-    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 14,
     shadowColor: '#000',
@@ -258,9 +274,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  kartTamamlandi: {
-    backgroundColor: '#f0fdf4',
-  },
 
   kartUst: {
     flexDirection: 'row',
@@ -268,19 +281,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 8,
   },
-  stokKodu: { fontSize: 11, color: Colors.gray, fontWeight: '600', letterSpacing: 0.5 },
-  stokCinsi: { fontSize: 15, fontWeight: '700', color: Colors.darkGray, marginTop: 2 },
+  stokKodu: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+  stokCinsi: { fontSize: 15, fontWeight: '700', marginTop: 2 },
 
   tarihBadge: {
-    backgroundColor: '#f0f4ff',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  tarihText: { fontSize: 11, color: Colors.primary, fontWeight: '600' },
+  tarihText: { fontSize: 11, fontWeight: '600' },
 
   satirlar: {
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -292,9 +303,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
-  miktarEtiket: { fontSize: 13, color: Colors.gray },
+  miktarEtiket: { fontSize: 13 },
   miktarDeger: { fontSize: 13, fontWeight: '700' },
 
   kartAlt: {
@@ -302,8 +312,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  fiyatText: { fontSize: 13, color: Colors.gray },
-  tutarText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  fiyatText: { fontSize: 13 },
+  tutarText: { fontSize: 14, fontWeight: '700' },
 
   tamamBadge: {
     flexDirection: 'row',
@@ -322,16 +332,14 @@ const styles = StyleSheet.create({
   },
   bosMetin: {
     fontSize: 14,
-    color: Colors.gray,
     textAlign: 'center',
     lineHeight: 22,
   },
   cariSecBtn: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 28,
     paddingVertical: 11,
     borderRadius: 10,
     marginTop: 4,
   },
-  cariSecBtnText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
+  cariSecBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
