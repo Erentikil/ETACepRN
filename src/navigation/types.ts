@@ -5,7 +5,7 @@ export type RootStackParamList = {
   Drawer: undefined;
   Ayarlar: { fromLogin?: boolean };
   CariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean } | undefined;
-  CRMCariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean } | undefined;
+  CRMCariSecim: { returnScreen?: keyof DrawerParamList; sepetDolu?: boolean; revizyonModu?: boolean } | undefined;
   SepetListesi: {
     sepet: SepetBaslik;
     genelIndirimYuzde?: number;

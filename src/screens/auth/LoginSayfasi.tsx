@@ -11,12 +11,14 @@ import {
   Platform,
   Switch,
   Image,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { RootStackParamList } from '../../navigation/types';
-import { useColors } from '../../contexts/ThemeContext';
+import { useColors, useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
@@ -31,6 +33,8 @@ import {
 } from '../../api/authApi';
 import LoadingIndicator from '../../components/LoadingIndicator';
 import ThemedButton from '../../components/ThemedButton';
+
+const { width: EKRAN_GENISLIK } = Dimensions.get('window');
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Login'>;
@@ -211,110 +215,135 @@ export default function LoginSayfasi({ navigation }: Props) {
     }
   };
 
+  const { isDark } = useTheme();
+
+  const gradientColors: [string, string, string] = isDark
+    ? ['#0d1117', '#1a1f3a', '#0d1117']
+    : ['#1a2260', '#29358a', '#1e3a8a'];
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        contentContainerStyle={[styles.container, { backgroundColor: Colors.primary }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Logo / Başlık */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/eta-logo-white-red.png')}
-            style={{ width: 120, height: 120 }}
-            resizeMode="contain"
-          />
-          <Text style={styles.versiyon}>v{Config.VERSIYON}</Text>
-        </View>
+      <LinearGradient colors={gradientColors} style={styles.flex} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
 
-        {/* Form Kartı */}
-        <View style={[styles.kart, { backgroundColor: Colors.card }]}>
-          <Text style={[styles.kartBaslik, { color: Colors.primary }]}>Giriş Yap</Text>
-
-          {/* Kullanıcı Kodu */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: Colors.text }]}>Kullanıcı Kodu</Text>
-            <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
-              <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: Colors.text }]}
-                value={kullaniciKodu}
-                onChangeText={setKullaniciKodu}
-                placeholder="Kullanıcı kodunuzu giriniz"
-                placeholderTextColor={Colors.textSecondary}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                returnKeyType="next"
+          {/* Logo alanı */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoCerceve}>
+              <Image
+                source={require('../../../assets/eta-logo-white-red.png')}
+                style={{ width: 72, height: 72 }}
+                resizeMode="contain"
               />
             </View>
           </View>
 
-          {/* Şifre */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: Colors.text }]}>Şifre</Text>
-            <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.flex, { color: Colors.text }]}
-                value={sifre}
-                onChangeText={setSifre}
-                placeholder="Şifrenizi giriniz"
-                placeholderTextColor={Colors.textSecondary}
-                secureTextEntry={!sifreGoster}
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={handleGiris}
-              />
-              <TouchableOpacity onPress={() => setSifreGoster(!sifreGoster)} style={styles.gozBtn}>
-                <Ionicons
-                  name={sifreGoster ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={Colors.textSecondary}
+          {/* Form Kartı */}
+          <View style={[styles.kart, { backgroundColor: Colors.card }]}>
+
+            {/* Kart üst çizgisi */}
+            <View style={[styles.kartUstSerit, { backgroundColor: Colors.primary }]} />
+
+            <View style={styles.kartIcerik}>
+              <Text style={[styles.kartBaslik, { color: Colors.text }]}>Oturum Açın</Text>
+              <Text style={[styles.kartAltBaslik, { color: Colors.textSecondary }]}>Devam etmek için kimliğinizi doğrulayın</Text>
+
+              {/* Kullanıcı Kodu */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: Colors.textSecondary }]}>KULLANICI KODU</Text>
+                <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+                  <Ionicons name="person-outline" size={16} color={Colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: Colors.text }]}
+                    value={kullaniciKodu}
+                    onChangeText={setKullaniciKodu}
+                    placeholder="Kullanıcı kodunuzu giriniz"
+                    placeholderTextColor={Colors.textSecondary}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+
+              {/* Şifre */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: Colors.textSecondary }]}>ŞİFRE</Text>
+                <View style={[styles.inputRow, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
+                  <Ionicons name="lock-closed-outline" size={16} color={Colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, styles.flex, { color: Colors.text }]}
+                    value={sifre}
+                    onChangeText={setSifre}
+                    placeholder="Şifrenizi giriniz"
+                    placeholderTextColor={Colors.textSecondary}
+                    secureTextEntry={!sifreGoster}
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    onSubmitEditing={handleGiris}
+                  />
+                  <TouchableOpacity onPress={() => setSifreGoster(!sifreGoster)} style={styles.gozBtn}>
+                    <Ionicons
+                      name={sifreGoster ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color={Colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Beni Hatırla */}
+              <View style={styles.hatirlaRow}>
+                <Switch
+                  value={beniHatirla}
+                  onValueChange={setBeniHatirla}
+                  trackColor={{ false: Colors.border, true: Colors.primary }}
+                  thumbColor={Colors.white}
                 />
+                <Text style={[styles.hatirlaText, { color: Colors.textSecondary }]}>Oturumu açık tut</Text>
+              </View>
+
+              {/* Hata Mesajı */}
+              {hata ? (
+                <View style={[styles.hataContainer, { borderColor: Colors.error }]}>
+                  <Ionicons name="alert-circle-outline" size={15} color={Colors.error} />
+                  <Text style={[styles.hataText, { color: Colors.error }]}>{hata}</Text>
+                </View>
+              ) : null}
+
+              {/* Giriş Butonu */}
+              <ThemedButton
+                baslik="Giriş Yap"
+                onPress={handleGiris}
+                yukleniyor={yukleniyor}
+                style={styles.girisBtn}
+              />
+
+              {/* Ayırıcı */}
+              <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />
+
+              {/* Ayarlar Butonu */}
+              <TouchableOpacity
+                style={styles.ayarlarBtn}
+                onPress={() => navigation.navigate('Ayarlar', { fromLogin: true })}
+              >
+                <Ionicons name="settings-outline" size={14} color={Colors.textSecondary} />
+                <Text style={[styles.ayarlarText, { color: Colors.textSecondary }]}>Bağlantı Ayarları</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Beni Hatırla */}
-          <View style={styles.hatirlaRow}>
-            <Switch
-              value={beniHatirla}
-              onValueChange={setBeniHatirla}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
-            />
-            <Text style={[styles.hatirlaText, { color: Colors.text }]}>Beni Hatırla</Text>
+          {/* Alt bilgi */}
+          <View style={styles.altBilgi}>
+            <Text style={styles.altBilgiText}>© {new Date().getFullYear()} ETA Bilgisayar</Text>
           </View>
-
-          {/* Hata Mesajı */}
-          {hata ? (
-            <View style={styles.hataContainer}>
-              <Ionicons name="alert-circle-outline" size={16} color={Colors.error} />
-              <Text style={[styles.hataText, { color: Colors.error }]}>{hata}</Text>
-            </View>
-          ) : null}
-
-          {/* Giriş Butonu */}
-          <ThemedButton
-            baslik="Giriş Yap"
-            onPress={handleGiris}
-            yukleniyor={yukleniyor}
-            style={styles.girisBtn}
-          />
-
-          {/* Ayarlar Butonu */}
-          <TouchableOpacity
-            style={styles.ayarlarBtn}
-            onPress={() => navigation.navigate('Ayarlar', { fromLogin: true })}
-          >
-            <Ionicons name="settings-outline" size={16} color={Colors.primary} />
-            <Text style={[styles.ayarlarText, { color: Colors.primary }]}>Bağlantı Ayarları</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
 
       <LoadingIndicator visible={yukleniyor} mesaj="Giriş yapılıyor..." />
     </KeyboardAvoidingView>
@@ -325,61 +354,94 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 32,
+  },
+  ustSerit: {
+    height: 3,
+    backgroundColor: '#e53935',
+    width: EKRAN_GENISLIK * 0.3,
+    alignSelf: 'center',
+    marginTop: 0,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
   },
   logoContainer: {
     alignItems: 'center',
-    paddingTop: 80,
-    paddingBottom: 40,
-    gap: 8,
+    paddingTop: 48,
+    paddingBottom: 36,
+    gap: 10,
   },
-  appAdi: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: 2,
+  logoCerceve: {
+    width: 96,
+    height: 96,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  slogan: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   versiyon: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
   kart: {
     marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  kartUstSerit: {
+    height: 3,
+  },
+  kartIcerik: {
+    padding: 28,
   },
   kartBaslik: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 24,
-    textAlign: 'center',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+  },
+  kartAltBaslik: {
+    fontSize: 13,
+    marginBottom: 28,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    minHeight: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    minHeight: 48,
   },
   inputIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     paddingVertical: 12,
   },
   gozBtn: {
@@ -390,19 +452,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 20,
-    marginTop: 4,
+    marginTop: 2,
   },
   hatirlaText: {
-    fontSize: 14,
+    fontSize: 13,
   },
   hataContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fdecea',
+    gap: 8,
+    borderWidth: 1,
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 16,
+    backgroundColor: 'rgba(229, 57, 53, 0.06)',
   },
   hataText: {
     fontSize: 13,
@@ -410,17 +473,29 @@ const styles = StyleSheet.create({
   },
   girisBtn: {
     marginTop: 4,
+    borderRadius: 8,
+  },
+  ayirac: {
+    height: 1,
+    marginVertical: 20,
   },
   ayarlarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 16,
-    padding: 8,
+    padding: 4,
   },
   ayarlarText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+  },
+  altBilgi: {
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  altBilgiText: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
 });

@@ -13,9 +13,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
+import type { RootStackParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import {
   cariSiparisListesiniAl,
@@ -43,7 +43,6 @@ import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import { basariliTitresim } from '../../utils/haptics';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
-type RoutePropType = RouteProp<DrawerParamList, 'SiparisKapama'>;
 
 // ─── Kapama sepet kalemi ─────────────────────────────────────────────────────
 interface KapamaSepetKalem {
@@ -76,7 +75,7 @@ let _savedFisTipi: FisTipiItem | null = null;
 export default function SiparisKapama() {
   const Colors = useColors();
   const navigation = useNavigation<NavProp>();
-  const route = useRoute<RoutePropType>();
+
   const { yetkiBilgileri, calisilanSirket } = useAppStore();
 
 
@@ -120,9 +119,30 @@ export default function SiparisKapama() {
   const { manuelOkuma, baslangicZoom } = useTarayiciAyarlari();
 
   // ── Sayfaya her girişte sıfırla (CariSecim dönüşü hariç) ──────────────────
+  const cariDonus = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (route.params?.secilenCari) return;
+      const pending = useAppStore.getState().pendingCari;
+      if (pending && pending.target === 'SiparisKapama') {
+        setAdim('fisListesi');
+        setFisListesi([]);
+        setAcmaListesi([]);
+        setKapamaSepeti([]);
+        setSecilenFisler([]);
+        setAktifTab('acma');
+        setAramaMetni('');
+        setEvrakNo('');
+        setSecilenCari(pending.cari);
+        cariDonus.current = true;
+        if (_savedGrup) {
+          setSecilenGrup(_savedGrup);
+          setSecilenFisTipi(_savedFisTipi);
+          _savedGrup = null;
+          _savedFisTipi = null;
+        }
+        useAppStore.getState().clearPendingCari();
+        return;
+      }
       setAdim('fisListesi');
       setSecilenCari(null);
       setEvrakNo('');
@@ -132,23 +152,8 @@ export default function SiparisKapama() {
       setSecilenFisler([]);
       setAktifTab('acma');
       setAramaMetni('');
-    }, [route.params?.secilenCari])
+    }, [])
   );
-
-  // ── CariSecim'den geri dönünce ─────────────────────────────────────────────
-  const cariDonus = useRef(false);
-  useEffect(() => {
-    if (route.params?.secilenCari) {
-      setSecilenCari(route.params.secilenCari);
-      cariDonus.current = true;
-      if (_savedGrup) {
-        setSecilenGrup(_savedGrup);
-        setSecilenFisTipi(_savedFisTipi);
-        _savedGrup = null;
-        _savedFisTipi = null;
-      }
-    }
-  }, [route.params?.secilenCari]);
 
   // ── FisTipi gruplarını al ──────────────────────────────────────────────────
   useEffect(() => {

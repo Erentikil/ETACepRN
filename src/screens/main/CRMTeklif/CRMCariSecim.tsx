@@ -202,6 +202,7 @@ export default function CRMCariSecim() {
   const cariSec = (cari: CariKartBilgileri) => {
     const returnScreen = route.params?.returnScreen ?? 'ZiyaretIslemleri';
     const sepetDolu = route.params?.sepetDolu ?? false;
+    const revizyonModu = route.params?.revizyonModu ?? false;
 
     const onayla = () => {
       hafifTitresim();
@@ -209,7 +210,16 @@ export default function CRMCariSecim() {
       navigation.goBack();
     };
 
-    if (sepetDolu) {
+    if (revizyonModu) {
+      Alert.alert(
+        'Revizyondan Çık',
+        'Cariyi değiştirirseniz bu revizyon bağlantısı kesilir ve yeni bir teklif olarak kaydedilir. Emin misiniz?',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Evet, Devam Et', style: 'destructive', onPress: onayla },
+        ]
+      );
+    } else if (sepetDolu) {
       Alert.alert(
         'Cari Değiştir',
         'Sepette ürünler var. Cariyi değiştirmek istediğinize emin misiniz?',

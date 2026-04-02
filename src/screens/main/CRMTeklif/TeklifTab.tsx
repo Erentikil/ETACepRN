@@ -7,7 +7,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   RefreshControl,
   Keyboard,
 } from 'react-native';
@@ -333,19 +332,23 @@ export default function TeklifTab({
     });
   };
 
-  // Revizyon cari degisikligi bayragi
-  const revizyonCariDegisti = useRef(false);
+  // Revizyon durumu için ref'ler (stale closure'dan kaçınmak için)
+  const revizyonFisIdRef = useRef(revizyonFisId);
+  const secilenCariRef = useRef(secilenCari);
+  useEffect(() => { revizyonFisIdRef.current = revizyonFisId; }, [revizyonFisId]);
+  useEffect(() => { secilenCariRef.current = secilenCari; }, [secilenCari]);
 
   // Cari secim ekranindan donus
   useFocusEffect(
     useCallback(() => {
       const pending = useAppStore.getState().pendingCari;
       if (pending && pending.target === 'ZiyaretIslemleri') {
-        // Revizyondan cikildi — artik yeni teklif gibi davran
-        if (revizyonCariDegisti.current) {
-          revizyonCariDegisti.current = false;
+        // Revizyon modunda farklı cari seçildiyse — revizyon linkini kes
+        if (revizyonFisIdRef.current && secilenCariRef.current?.cariKodu !== pending.cari.cariKodu) {
           setRevizyonFisId(null);
           setRevizyonMusteriId(0);
+          setSepetKalemleri(prev => prev.map(k => ({ ...k, crmKalemId: undefined })));
+          toast.warning('Revizyon bağlantısı kesildi. Önceki teklifi Revizyon sekmesinden tekrar yükleyebilirsiniz.');
         }
         setSecilenCari(pending.cari);
         setPotansiyelCari(null);
@@ -405,25 +408,11 @@ export default function TeklifTab({
       <TouchableOpacity
         style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
         onPress={() => {
-          if (revizyonFisId) {
-            Alert.alert(
-              'Revizyondan Çık',
-              'Cariyi değiştirirseniz bu revizyon bağlantısı kesilir ve yeni bir teklif olarak kaydedilir. Emin misiniz?',
-              [
-                { text: 'Vazgeç', style: 'cancel' },
-                {
-                  text: 'Evet, Devam Et',
-                  style: 'destructive',
-                  onPress: () => {
-                    revizyonCariDegisti.current = true;
-                    navigation.navigate('CRMCariSecim', { returnScreen: 'ZiyaretIslemleri', sepetDolu: sepetKalemlerRef.current.length > 0 });
-                  },
-                },
-              ]
-            );
-          } else {
-            navigation.navigate('CRMCariSecim', { returnScreen: 'ZiyaretIslemleri', sepetDolu: sepetKalemlerRef.current.length > 0 });
-          }
+          navigation.navigate('CRMCariSecim', {
+            returnScreen: 'ZiyaretIslemleri',
+            sepetDolu: sepetKalemlerRef.current.length > 0,
+            revizyonModu: !!revizyonFisId,
+          });
         }}
       >
         <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.textSecondary} />
