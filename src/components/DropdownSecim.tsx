@@ -60,6 +60,7 @@ export default function DropdownSecim({
             bounces={false}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={options.length > 5}
+            nestedScrollEnabled
           >
             {options.map((opt, i) => {
               const secili = opt.value === value;

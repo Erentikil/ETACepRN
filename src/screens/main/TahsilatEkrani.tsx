@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
@@ -27,6 +28,7 @@ import { useAppStore } from '../../store/appStore';
 import { cariBakiyeAl, islemTipleriniAl, tahsilatKaydet, kasaTahsilatKaydet, cekSenetKaydet } from '../../api/tahsilatApi';
 import { kasaKartListesiniAl, evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from '../../components/Toast';
 import type { CariKartBilgileri, IslemTipleri, KasaKartBilgileri } from '../../models';
 
@@ -90,6 +92,7 @@ function sayiFormatla(n: number): string {
 
 export default function TahsilatEkrani() {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
@@ -846,7 +849,7 @@ export default function TahsilatEkrani() {
       {/* ─── Yüzer Menü Overlay ───────────────────────────────── */}
       {yuzerMenuAcik && (
         <Pressable style={styles.yuzerOverlay} onPress={() => toggleYuzerMenu(false)}>
-          <View style={styles.yuzerMenuKapsayici}>
+          <View style={[styles.yuzerMenuKapsayici, { bottom: 90 + insets.bottom }]}>
             {[
               { label: 'Kaydet', icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); kaydet(); }, disabled: kaydediliyor },
               { label: 'PDF Göster', icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: false },
@@ -892,14 +895,7 @@ export default function TahsilatEkrani() {
               <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
             </View>
           ) : pdfDosyaUri ? (
-            <WebView
-              originWhitelist={['*']}
-              source={{ uri: pdfDosyaUri }}
-              style={{ flex: 1 }}
-              allowFileAccess
-              allowFileAccessFromFileURLs
-              allowUniversalAccessFromFileURLs
-            />
+            <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />
           ) : null}
         </SafeAreaView>
       </Modal>
@@ -907,7 +903,7 @@ export default function TahsilatEkrani() {
       {/* ─── FAB ──────────────────────────────────────────────── */}
       {aktifTip && (
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: Colors.primary }]}
+          style={[styles.fab, { backgroundColor: Colors.primary, bottom: 24 + insets.bottom }]}
           onPress={() => toggleYuzerMenu(!yuzerMenuAcik)}
           activeOpacity={0.8}
         >

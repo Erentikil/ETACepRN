@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { stokluCariEkstreBilgileriAl } from '../../api/stokluCariEkstreApi';
@@ -243,7 +244,7 @@ export default function StokluCariEkstreListesi() {
             </TouchableOpacity>
           </View>
           {pdfUri && (
-            <WebView source={{ uri: pdfUri }} style={{ flex: 1 }} originWhitelist={['*']} />
+            <PdfViewer fileUri={pdfUri} style={{ flex: 1 }} />
           )}
         </SafeAreaView>
       </Modal>

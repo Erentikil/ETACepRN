@@ -110,7 +110,7 @@ export default function StokRapor() {
           <View style={[styles.satir, { backgroundColor: Colors.card }]}>
             <View style={{ flex: 3 }}>
               <Text style={[styles.stokKodu, { color: Colors.primary }]}>{item.stokKodu}</Text>
-              <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]} numberOfLines={1}>{item.stokCinsi}</Text>
+              <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]}>{item.stokCinsi}</Text>
             </View>
             <Text style={[styles.birim, { flex: 1, textAlign: 'center', color: Colors.textSecondary }]}>{item.birim}</Text>
             <Text

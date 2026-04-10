@@ -11,6 +11,9 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Pressable,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -24,7 +27,8 @@ import {
   evrakAcmaHareketleriniAl,
   siparisKapamaKaydet,
 } from '../../api/siparisKapamaApi';
-import { fisTipleriniAl, generateGuid } from '../../api/hizliIslemlerApi';
+import { fisTipleriniAl, generateGuid, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
+import { evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type {
@@ -40,7 +44,14 @@ import { toast } from '../../components/Toast';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
-import { basariliTitresim } from '../../utils/haptics';
+import { basariliTitresim, hafifTitresim } from '../../utils/haptics';
+import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Config } from '../../constants/Config';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 
@@ -68,12 +79,20 @@ function formatTarih(tarih: string): string {
 
 type Adim = 'fisListesi' | 'hareketler';
 
+const ARAMA_TIPLERI = [
+  { label: 'Başlayan', value: 1 },
+  { label: 'Biten', value: 2 },
+  { label: 'İçeren', value: 3 },
+  { label: 'Barkod', value: 4 },
+];
+
 // CariSecim'e giderken fiş tipi seçimini korumak için module-level değişkenler
 let _savedGrup: FisTipiGrup | null = null;
 let _savedFisTipi: FisTipiItem | null = null;
 
 export default function SiparisKapama() {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
 
   const { yetkiBilgileri, calisilanSirket } = useAppStore();
@@ -99,6 +118,7 @@ export default function SiparisKapama() {
   const [kapamaSepeti, setKapamaSepeti] = useState<KapamaSepetKalem[]>([]);
   const [hareketYukleniyor, setHareketYukleniyor] = useState(false);
   const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [kaydedildi, setKaydedildi] = useState(false);
   const [aktifTab, setAktifTab] = useState<'acma' | 'kapama'>('acma');
   const [aramaMetni, setAramaMetni] = useState('');
   const [secilenFisler, setSecilenFisler] = useState<AcmaSiparisFisBilgileri[]>([]);
@@ -116,7 +136,23 @@ export default function SiparisKapama() {
 
   // Barkod tarayıcı
   const [barkodModalGorunur, setBarkodModalGorunur] = useState(false);
+  const [barkodAcmaIcin, setBarkodAcmaIcin] = useState(false); // true: açma tabı için, false: evrakNo için
   const { manuelOkuma, baslangicZoom } = useTarayiciAyarlari();
+
+  // Arama tipi (açma hareketleri)
+  const [aramaTipi, setAramaTipi] = useState(3);
+  const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
+  const [miktarliGiris, setMiktarliGiris] = useState(false);
+
+  // Yüzer menü (FAB)
+  const [yuzerMenuAcik, setYuzerMenuAcik] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
+
+  // PDF
+  const [kaydedilenRefNo, setKaydedilenRefNo] = useState<number | null>(null);
+  const [pdfModalAcik, setPdfModalAcik] = useState(false);
+  const [pdfYukleniyor, setPdfYukleniyor] = useState(false);
+  const [pdfDosyaUri, setPdfDosyaUri] = useState<string | null>(null);
 
   // ── Sayfaya her girişte sıfırla (CariSecim dönüşü hariç) ──────────────────
   const cariDonus = useRef(false);
@@ -154,6 +190,16 @@ export default function SiparisKapama() {
       setAramaMetni('');
     }, [])
   );
+
+  // ── Ayarlardan varsayılan değerleri yükle ────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(Config.STORAGE_KEYS.MIKTARLI_GIRIS_VARSAYILAN).then((v) => {
+      if (v === 'true') setMiktarliGiris(true);
+    });
+    AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI).then((v) => {
+      if (v !== null) setAramaTipi(parseInt(v, 10));
+    });
+  }, []);
 
   // ── FisTipi gruplarını al ──────────────────────────────────────────────────
   useEffect(() => {
@@ -309,6 +355,8 @@ export default function SiparisKapama() {
       return;
     }
 
+    hafifTitresim();
+
     setAcmaListesi((prev) =>
       prev.map((item) =>
         item.takipNo === ashb.takipNo
@@ -427,15 +475,10 @@ export default function SiparisKapama() {
       if (sonuc.sonuc) basariliTitresim();
       if (sonuc.sonuc) {
         toast.success(sonuc.mesaj || 'Kaydedildi.');
+        if (sonuc.data) setKaydedilenRefNo(sonuc.data);
+        setKaydedildi(true);
       } else {
         toast.error(sonuc.mesaj || 'Hata oluştu.');
-      }
-      if (sonuc.sonuc) {
-        setKapamaSepeti([]);
-        // Hareketleri yeniden çek
-        if (secilenFisler.length > 0) {
-          hareketleriYukle(secilenFisler);
-        }
       }
     } catch (e: any) {
       toast.error(e?.message || 'Bağlantı hatası.');
@@ -464,15 +507,29 @@ export default function SiparisKapama() {
     ]);
   };
 
+  // ── Barkod → açma satırı eşleştirici (kalan > 0 olanı önceliklendir) ───────
+  const stokKodunaBul = (kod: string) =>
+    acmaListesi.find(
+      (a) => a.stokKodu.toLowerCase() === kod.toLowerCase() && kalanMiktar(a) > 0
+    ) ?? acmaListesi.find(
+      (a) => a.stokKodu.toLowerCase() === kod.toLowerCase()
+    );
+
   // ── Filtrelenmiş açma listesi ──────────────────────────────────────────────
-  const filtrelenmisAcma = aramaMetni.trim()
-    ? acmaListesi.filter(
-        (a) =>
-          a.stokKodu.toLowerCase().includes(aramaMetni.toLowerCase()) ||
-          a.stokCinsi.toLowerCase().includes(aramaMetni.toLowerCase()) ||
-          a.takipNo.toLowerCase().includes(aramaMetni.toLowerCase())
-      )
-    : acmaListesi;
+  const filtrelenmisAcma = (() => {
+    if (aramaTipi === 4) return acmaListesi; // Barkod: lokal filtreleme yok, Enter ile API'ye gider
+    const q = aramaMetni.trim().toLowerCase();
+    if (!q) return acmaListesi;
+    const esles = (val: string) => {
+      const v = val.toLowerCase();
+      if (aramaTipi === 1) return v.startsWith(q);
+      if (aramaTipi === 2) return v.endsWith(q);
+      return v.includes(q); // İçeren (varsayılan)
+    };
+    return acmaListesi.filter(
+      (a) => esles(a.stokKodu) || esles(a.stokCinsi) || esles(a.takipNo)
+    );
+  })();
 
   // ── Miktar Modal İşlemleri ─────────────────────────────────────────────────
   const miktarModalAc = (
@@ -512,7 +569,7 @@ export default function SiparisKapama() {
   // ── Geri dön ───────────────────────────────────────────────────────────────
   const geriDon = () => {
     if (kapamaSepeti.length > 0) {
-      Alert.alert('Uyarı', 'Sepette ürün var. Geri dönmek istiyor musunuz?', [
+      Alert.alert('Uyarı', 'Geri dönmek istiyor musunuz?', [
         { text: 'İptal', style: 'cancel' },
         {
           text: 'Geri Dön',
@@ -526,6 +583,50 @@ export default function SiparisKapama() {
       ]);
     } else {
       setAdim('fisListesi');
+    }
+  };
+
+  // ── Yüzer Menü ────────────────────────────────────────────────────────────
+  const toggleYuzerMenu = (acik: boolean) => {
+    setYuzerMenuAcik(acik);
+    Animated.spring(menuAnim, {
+      toValue: acik ? 1 : 0,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 65,
+    }).start();
+  };
+
+  // ── PDF ───────────────────────────────────────────────────────────────────
+  const handlePdfGoster = async () => {
+    if (!kaydedilenRefNo) {
+      toast.error('Evrak henüz kaydedilmemiş, PDF alınamaz.');
+      return;
+    }
+    setPdfModalAcik(true);
+    setPdfYukleniyor(true);
+    setPdfDosyaUri(null);
+    try {
+      const base64 = await evrakPdfAl(kaydedilenRefNo, 'Sipariş', calisilanSirket);
+      const dosyaYolu = `${FileSystem.cacheDirectory}sipariskapama_${kaydedilenRefNo}.pdf`;
+      await FileSystem.writeAsStringAsync(dosyaYolu, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      setPdfDosyaUri(dosyaYolu);
+    } catch (err: any) {
+      setPdfModalAcik(false);
+      toast.error(err?.message || 'PDF alınamadı.');
+    } finally {
+      setPdfYukleniyor(false);
+    }
+  };
+
+  const handlePdfPaylas = async () => {
+    if (!pdfDosyaUri) return;
+    try {
+      await Sharing.shareAsync(pdfDosyaUri, { mimeType: 'application/pdf' });
+    } catch {
+      toast.error('PDF paylaşılamadı.');
     }
   };
 
@@ -574,9 +675,6 @@ export default function SiparisKapama() {
             <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.barkodBtn} onPress={() => setBarkodModalGorunur(true)}>
-          <Ionicons name="barcode-outline" size={22} color={Colors.primary} />
-        </TouchableOpacity>
       </View>
 
       {/* Cari Seçim */}
@@ -651,12 +749,6 @@ export default function SiparisKapama() {
               </>
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.hepsiBarkodBtn, { borderColor: Colors.primary }]}
-            onPress={() => setBarkodModalGorunur(true)}
-          >
-            <Ionicons name="barcode-outline" size={24} color={Colors.primary} />
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -712,7 +804,14 @@ export default function SiparisKapama() {
       <View style={[styles.tabBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <TouchableOpacity
           style={[styles.tabBtn, aktifTab === 'acma' && { borderBottomColor: Colors.primary }]}
-          onPress={() => setAktifTab('acma')}
+          onPress={() => {
+            if (kaydedildi) {
+              setKapamaSepeti([]);
+              setKaydedildi(false);
+              if (secilenFisler.length > 0) hareketleriYukle(secilenFisler);
+            }
+            setAktifTab('acma');
+          }}
         >
           <Text style={[styles.tabText, { color: Colors.textSecondary }, aktifTab === 'acma' && { color: Colors.primary, fontWeight: '700' as const }]}>
             Açma ({acmaListesi.length})
@@ -731,23 +830,119 @@ export default function SiparisKapama() {
       {/* İçerik */}
       {aktifTab === 'acma' ? (
         <View style={{ flex: 1 }}>
-          {/* Arama */}
+          {/* Arama satırı */}
           <View style={[styles.aramaRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
-            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
+            <TouchableOpacity
+              style={[styles.aramaTipiBtn, { backgroundColor: `${Colors.primary}15` }]}
+              onPress={() => setAramaTipiAcik(!aramaTipiAcik)}
+            >
+              <Text style={[styles.aramaTipiBtnText, { color: Colors.primary }]}>
+                {ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren'}
+              </Text>
+              <Ionicons name="chevron-down" size={13} color={Colors.primary} />
+            </TouchableOpacity>
             <TextInput
               style={[styles.aramaInput, { color: Colors.text }]}
-              placeholder="Stok kodu, cinsi veya takip no ara..."
+              placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu, cinsi veya takip no ara...'}
               placeholderTextColor={Colors.textSecondary}
               value={aramaMetni}
               onChangeText={setAramaMetni}
               returnKeyType="search"
+              onSubmitEditing={() => {
+                if (aramaTipi !== 4) return;
+                const barkod = aramaMetni.trim();
+                if (!barkod) return;
+                if (acmaListesi.length === 0) {
+                  toast.warning('Önce sipariş listesini yükleyiniz.');
+                  return;
+                }
+                const bulunan = stokKodunaBul(barkod);
+                if (bulunan) {
+                  const kalan = kalanMiktar(bulunan);
+                  if (kalan <= 0) {
+                    toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
+                  } else if (miktarliGiris) {
+                    miktarModalAc({ tip: 'acma', ashb: bulunan });
+                  } else {
+                    siparisEkle(bulunan, 1);
+                  }
+                  setAramaMetni('');
+                } else {
+                  barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+                    if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+                      const stokKodu = sonuc.data[0].stokKodu;
+                      const apiBulunan = stokKodunaBul(stokKodu);
+                      if (apiBulunan) {
+                        const kalan = kalanMiktar(apiBulunan);
+                        if (kalan <= 0) {
+                          toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
+                        } else if (miktarliGiris) {
+                          miktarModalAc({ tip: 'acma', ashb: apiBulunan });
+                        } else {
+                          siparisEkle(apiBulunan, 1);
+                        }
+                      } else {
+                        toast.warning(`"${barkod}" barkodlu ürün açık siparişlerde bulunamadı.`);
+                      }
+                    } else {
+                      toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+                    }
+                    setAramaMetni('');
+                  });
+                }
+              }}
             />
             {aramaMetni.length > 0 && (
               <TouchableOpacity onPress={() => setAramaMetni('')}>
                 <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              style={[styles.miktarBtn, miktarliGiris && { backgroundColor: Colors.primary }]}
+              onPress={() => setMiktarliGiris(!miktarliGiris)}
+            >
+              <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color={miktarliGiris ? '#fff' : Colors.primary} />
+              <Text style={[styles.miktarBtnText, { color: miktarliGiris ? '#fff' : Colors.primary }]}>Miktarlı</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setBarkodAcmaIcin(true); setBarkodModalGorunur(true); }}
+              style={{ padding: 2 }}
+            >
+              <Ionicons name="barcode-outline" size={24} color={Colors.primary} />
+            </TouchableOpacity>
           </View>
+
+          {/* Arama tipi dropdown */}
+          {aramaTipiAcik && (
+            <View style={[styles.aramaTipiDropdown, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
+
+              {ARAMA_TIPLERI.map((tip) => (
+                <TouchableOpacity
+                  key={tip.value}
+                  style={[
+                    styles.aramaTipiItem,
+                    { borderBottomColor: Colors.border },
+                    tip.value === aramaTipi && { backgroundColor: `${Colors.primary}10` },
+                  ]}
+                  onPress={() => {
+                    setAramaTipi(tip.value);
+                    setAramaTipiAcik(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.aramaTipiItemText,
+                    { color: Colors.text },
+                    tip.value === aramaTipi && { fontWeight: '700', color: Colors.primary },
+                  ]}>
+                    {tip.label}
+                  </Text>
+                  {tip.value === aramaTipi && (
+                    <Ionicons name="checkmark" size={16} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <FlatList
             data={filtrelenmisAcma}
@@ -777,35 +972,81 @@ export default function SiparisKapama() {
         />
       )}
 
-      {/* Alt bar */}
-      {kapamaSepeti.length > 0 && (
-        <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
-          <View style={styles.altBarBilgi}>
-            <Text style={[styles.altBarKalem, { color: Colors.textSecondary }]}>{kapamaSepeti.length} kalem</Text>
-            <Text style={[styles.altBarToplam, { color: Colors.text }]}>
-              {paraTL(kapamaSepeti.reduce((t, k) => t + k.fiyat * k.miktar, 0))}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.temizleBtn} onPress={sepetiTemizle}>
-            <Ionicons name="trash-outline" size={18} color="#e53935" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.kaydetBtn, { backgroundColor: Colors.primary }, kaydediliyor && { opacity: 0.6 }]}
-            onPress={evrakKaydet}
-            disabled={kaydediliyor}
-          >
-            {kaydediliyor ? (
-              <ActivityIndicator size="small" color={'#fff'} />
-            ) : (
-              <>
-                <Ionicons name="save-outline" size={18} color={'#fff'} />
-                <Text style={styles.kaydetBtnText}>Kaydet</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
+  );
+
+  // ── Yüzer Menü + PDF Modal render ─────────────────────────────────────────
+  const renderYuzerMenu = () => (
+    <>
+      {/* Overlay */}
+      {yuzerMenuAcik && (
+        <Pressable style={styles.yuzerOverlay} onPress={() => toggleYuzerMenu(false)}>
+          <View style={[styles.yuzerMenuKapsayici, { bottom: 90 + insets.bottom }]}>
+            {[
+              { label: 'Kaydet', icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); evrakKaydet(); }, disabled: kaydediliyor || kaydedildi },
+              { label: 'PDF Göster', icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: false },
+              { label: 'Temizle', icon: 'trash-outline' as const, color: '#e53935', onPress: () => { toggleYuzerMenu(false); sepetiTemizle(); }, disabled: kaydediliyor || kaydedildi },
+            ].map((item, idx) => {
+              const translateY = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
+              const opacity = menuAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, idx < 1 ? 0.3 : 0.7, 1] });
+              return (
+                <Animated.View key={item.label} style={{ transform: [{ translateY }], opacity }}>
+                  <TouchableOpacity
+                    style={[styles.yuzerMenuItem, { backgroundColor: Colors.card }, item.disabled && styles.butonDisabled]}
+                    onPress={item.onPress}
+                    disabled={item.disabled}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.yuzerMenuIconKutu, { backgroundColor: item.color + '15' }]}>
+                      <Ionicons name={item.icon} size={20} color={item.color} />
+                    </View>
+                    <Text style={[styles.yuzerMenuLabel, { color: item.color }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
+        </Pressable>
+      )}
+
+      {/* PDF Modal */}
+      <Modal visible={pdfModalAcik} animationType="slide" onRequestClose={() => setPdfModalAcik(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: Colors.card }}>
+          <View style={[styles.pdfBar, { borderBottomColor: Colors.border }]}>
+            <TouchableOpacity onPress={() => setPdfModalAcik(false)}>
+              <Ionicons name="close" size={28} color={Colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>Sipariş PDF</Text>
+            <TouchableOpacity onPress={handlePdfPaylas} disabled={!pdfDosyaUri}>
+              <Ionicons name="share-outline" size={24} color={pdfDosyaUri ? Colors.primary : Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          {pdfYukleniyor ? (
+            <View style={styles.pdfMerkez}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
+            </View>
+          ) : pdfDosyaUri ? (
+            <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />
+          ) : null}
+        </SafeAreaView>
+      </Modal>
+
+      {/* FAB */}
+      {adim === 'hareketler' && aktifTab === 'kapama' && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: Colors.primary, bottom: 24 + insets.bottom }]}
+          onPress={() => toggleYuzerMenu(!yuzerMenuAcik)}
+          activeOpacity={0.8}
+        >
+          {kaydediliyor ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name={yuzerMenuAcik ? 'close' : 'ellipsis-vertical'} size={24} color="#fff" />
+          )}
+        </TouchableOpacity>
+      )}
+    </>
   );
 
   // ── Render: Açma satırı ────────────────────────────────────────────────────
@@ -821,7 +1062,11 @@ export default function SiparisKapama() {
             toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
             return;
           }
-          siparisEkle(item, 1);
+          if (miktarliGiris) {
+            miktarModalAc({ tip: 'acma', ashb: item });
+          } else {
+            siparisEkle(item, 1);
+          }
         }}
         onLongPress={() => {
           if (kalan <= 0) return;
@@ -997,8 +1242,48 @@ export default function SiparisKapama() {
         baslangicZoom={baslangicZoom}
         onDetected={(barkod) => {
           setBarkodModalGorunur(false);
-          setEvrakNo(barkod);
-          setSecilenCari(null);
+          if (barkodAcmaIcin) {
+            // Açma hareketleri tabı: listede stokKodu ile ara, bulunamazsa API ile barkoddan stok kodu bul
+            setBarkodAcmaIcin(false);
+            if (acmaListesi.length === 0) {
+              toast.warning('Önce sipariş listesini yükleyiniz.');
+              return;
+            }
+            const islemYap = (ashb: AcmaSiparisHareketBilgileri) => {
+              const kalan = kalanMiktar(ashb);
+              if (kalan <= 0) {
+                toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
+                return;
+              }
+              if (miktarliGiris) {
+                miktarModalAc({ tip: 'acma', ashb });
+              } else {
+                siparisEkle(ashb, 1);
+              }
+            };
+            const lokalde = stokKodunaBul(barkod);
+            if (lokalde) {
+              islemYap(lokalde);
+            } else {
+              barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+                if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
+                  const stokKodu = sonuc.data[0].stokKodu;
+                  const apiBulunan = stokKodunaBul(stokKodu);
+                  if (apiBulunan) {
+                    islemYap(apiBulunan);
+                  } else {
+                    toast.warning(`"${barkod}" barkodlu ürün açık siparişlerde bulunamadı.`);
+                  }
+                } else {
+                  toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+                }
+              });
+            }
+          } else {
+            // Fiş listesi tabı: evrak no olarak kullan
+            setEvrakNo(barkod);
+            setSecilenCari(null);
+          }
         }}
       />
 
@@ -1008,6 +1293,8 @@ export default function SiparisKapama() {
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       )}
+
+      {renderYuzerMenu()}
     </View>
   );
 }
@@ -1371,4 +1658,124 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // Arama tipi dropdown
+  aramaTipiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    gap: 4,
+  },
+  aramaTipiBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  aramaTipiDropdown: {
+    marginHorizontal: 10,
+    marginTop: -4,
+    marginBottom: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  aramaTipiItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+  },
+  aramaTipiItemText: {
+    fontSize: 14,
+  },
+
+  // Miktarlı giriş toggle
+  miktarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  miktarBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // FAB & Yüzer Menü
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  yuzerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 10,
+  },
+  yuzerMenuKapsayici: {
+    position: 'absolute',
+    right: 20,
+    bottom: 90,
+    gap: 8,
+    alignItems: 'flex-end',
+  },
+  yuzerMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  yuzerMenuIconKutu: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yuzerMenuLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  butonDisabled: {
+    opacity: 0.5,
+  },
+
+  // PDF Modal
+  pdfBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  pdfBarBaslik: { fontSize: 16, fontWeight: '600' },
+  pdfMerkez: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

@@ -171,7 +171,7 @@ export default function FiyatGor() {
       >
         <View style={styles.stokBilgi}>
           <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
-          <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
+          <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
           {item.barkod ? (
             <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text>
           ) : null}
@@ -190,7 +190,7 @@ export default function FiyatGor() {
       <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <View style={styles.ustBarBilgi}>
           <Ionicons name="pricetag-outline" size={18} color={'#fff'} />
-          <Text style={styles.ustBarText}>Fiyat Gor</Text>
+          <Text style={styles.ustBarText}>Fiyat Gör</Text>
         </View>
         <TouchableOpacity
           style={styles.barkodBtn}
@@ -292,8 +292,8 @@ export default function FiyatGor() {
           ) : (
             <EmptyState
               icon="search-outline"
-              baslik={aramaMetni.trim() ? 'Sonuc bulunamadi' : 'Urun arayin'}
-              aciklama={aramaMetni.trim() ? 'Farkli bir arama kriteri deneyiniz' : 'Aramak icin yukaridaki arama cubugunu kullanin'}
+              baslik={aramaMetni.trim() ? 'Sonuç bulunamadı' : 'Ürün arayın'}
+              aciklama={aramaMetni.trim() ? 'Farklı bir arama kriteri deneyiniz' : 'Aramak için yukarıdaki arama çubuğunu kullanın'}
             />
           )
         }

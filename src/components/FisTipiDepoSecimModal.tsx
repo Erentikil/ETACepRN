@@ -13,6 +13,7 @@ import { depoKartlariniAl } from '../api/hizliIslemlerApi';
 import { useAppStore } from '../store/appStore';
 import type { FisTipiItem, DepoKarti } from '../models';
 import { useColors } from '../contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DropdownSecim from './DropdownSecim';
 
 export interface FisTipiDepoSecimSonuc {
@@ -50,6 +51,7 @@ export default function FisTipiDepoSecimModal({
   onClose,
 }: Props) {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const { ftBaslikListesi } = useAppStore();
 
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -113,7 +115,7 @@ export default function FisTipiDepoSecimModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={[styles.kart, { backgroundColor: Colors.card }]}>
+        <View style={[styles.kart, { backgroundColor: Colors.card, paddingBottom: 20 + insets.bottom }]}>
           {/* Baslik */}
           <View style={styles.baslik}>
             <View style={{ flex: 1 }}>
@@ -131,7 +133,7 @@ export default function FisTipiDepoSecimModal({
               <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Yukleniyor...</Text>
             </View>
           ) : (
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled>
               {/* Fis Tipi */}
               {fisTipleri.length > 0 && (
                 <View style={[styles.satirGrup, fisTipiReadOnly && styles.readOnlyGrup]}>

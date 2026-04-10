@@ -360,7 +360,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
             >
               <View style={{ flex: 2 }}>
                 <Text style={[styles.stokKodu, { color: Colors.primary }]}>{kalem.stokKodu}</Text>
-                <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]} numberOfLines={1}>
+                <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]}>
                   {kalem.stokCinsi}
                 </Text>
               </View>
@@ -395,7 +395,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
               >
                 <View style={{ flex: 2 }}>
                   <Text style={[styles.stokKodu, { color: Colors.primary }]}>{kalem.stokKodu}</Text>
-                  <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]} numberOfLines={1}>
+                  <Text style={[styles.stokCinsi, { color: Colors.textSecondary }]}>
                     {kalem.stokCinsi} {kalem.renkKodu ? `| R:${kalem.renkKodu}` : ''} {kalem.bedenKodu ? `| B:${kalem.bedenKodu}` : ''}
                   </Text>
                 </View>

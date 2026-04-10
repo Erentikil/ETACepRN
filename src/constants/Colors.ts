@@ -48,7 +48,7 @@ export const LightColors: ThemeColors = {
 };
 
 export const DarkColors: ThemeColors = {
-  primary: '#3449c2',
+  primary: '#29358a',
   accent: '#ffb74d',
   error: '#ef5350',
   success: '#66bb6a',

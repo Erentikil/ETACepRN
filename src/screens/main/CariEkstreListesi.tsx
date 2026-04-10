@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -218,11 +219,7 @@ export default function CariEkstreListesi() {
             </TouchableOpacity>
           </View>
           {pdfUri && (
-            <WebView
-              source={{ uri: pdfUri }}
-              style={{ flex: 1 }}
-              originWhitelist={['*']}
-            />
+            <PdfViewer fileUri={pdfUri} style={{ flex: 1 }} />
           )}
         </SafeAreaView>
       </Modal>

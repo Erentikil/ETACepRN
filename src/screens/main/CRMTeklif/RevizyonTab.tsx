@@ -9,6 +9,7 @@ import {
   RefreshControl,
   TextInput,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -245,13 +246,15 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onTouchStart={Keyboard.dismiss}>
       {renderHeader()}
       <FlatList
         data={filtreliFisler}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderFis}
         contentContainerStyle={styles.liste}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ItemSeparatorComponent={() => <View style={styles.ayirac} />}
         ListEmptyComponent={
           <EmptyState

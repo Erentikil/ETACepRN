@@ -183,7 +183,7 @@ export default function BarkodEkleme() {
       >
         <View style={styles.stokBilgi}>
           <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
-          <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
+          <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
           {item.barkod ? (
             <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text>
           ) : null}

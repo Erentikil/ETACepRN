@@ -40,6 +40,7 @@ import SkeletonLoader from '../../../components/SkeletonLoader';
 import AnimatedListItem from '../../../components/AnimatedListItem';
 import { hafifTitresim } from '../../../utils/haptics';
 import { toast } from '../../../components/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 
@@ -92,6 +93,7 @@ export default function TeklifTab({
   setRevizyonMusteriId,
 }: Props) {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
 
@@ -188,6 +190,11 @@ export default function TeklifTab({
   const barkodAramaYap = useCallback(async (veriOverride?: string) => {
     const veri = (veriOverride ?? aramaMetni).trim();
     if (!veri || !calisilanSirket) { setFiltreli(stokListesi); return; }
+    if (!secilenCari) {
+      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      setAramaMetni('');
+      return;
+    }
     setYukleniyor(true);
     try {
       const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
@@ -299,7 +306,7 @@ export default function TeklifTab({
       return [...prev, kalem];
     });
     setModalUrunu(null);
-    setTimeout(() => aramaInputRef.current?.focus(), 100);
+    if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100);
   };
 
   const sepetToplam = sepetToplamHesapla(sepetKalemleri, yetkiBilgileri?.kdvDurum ?? 0, secilenCari?.indirimYuzde ?? 0);
@@ -326,6 +333,8 @@ export default function TeklifTab({
         if (kalemler.length === 0) {
           setSecilenCari(null);
           setPotansiyelCari(null);
+          setFiltreli(stokListesi);
+          setAramaMetni('');
         }
         setSepetKalemleri(kalemler);
       },
@@ -373,7 +382,7 @@ export default function TeklifTab({
         <TouchableOpacity style={[styles.stokSatiri, { backgroundColor: Colors.card }]} onPress={() => hizliEkle(item)} onLongPress={() => setModalUrunu(item)} delayLongPress={400}>
           <View style={styles.stokBilgi}>
             <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
-            <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
+            <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
             {item.barkod ? <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text> : null}
           </View>
           <View style={styles.stokSag}>
@@ -479,6 +488,7 @@ export default function TeklifTab({
         renderItem={renderStokSatiri}
         style={styles.liste}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ItemSeparatorComponent={ListeAyiraci}
         initialNumToRender={15}
         maxToRenderPerBatch={10}
@@ -527,12 +537,12 @@ export default function TeklifTab({
       )}
 
       {/* Yüzer açıklama butonu */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: Colors.accent }]} onPress={() => setAciklamaModalAcik(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: Colors.accent, bottom: 80 + insets.bottom }]} onPress={() => setAciklamaModalAcik(true)}>
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
       {/* Sepet + Barkod alt bar */}
-      <View style={styles.altBar}>
+      <View style={[styles.altBar, { paddingBottom: 10 + insets.bottom }]}>
         <TouchableOpacity
           style={[styles.sepetBtn, { backgroundColor: Colors.primary }, sepetKalemleri.length === 0 && styles.sepetBtnPasif]}
           onPress={sepeteGit}
@@ -559,6 +569,10 @@ export default function TeklifTab({
         baslangicZoom={baslangicZoom}
         onDetected={(barkod) => {
           setScannerAcik(false);
+          if (!secilenCari) {
+            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            return;
+          }
           hafifTitresim();
           const bulunan = stokListesi.find((s) => s.barkod === barkod);
           if (bulunan) {
@@ -599,7 +613,7 @@ export default function TeklifTab({
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
         onConfirm={kalemEkle}
-        onClose={() => { setModalUrunu(null); setTimeout(() => aramaInputRef.current?.focus(), 100); }}
+        onClose={() => { setModalUrunu(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
 
       <AciklamaModuModal

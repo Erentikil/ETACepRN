@@ -25,6 +25,7 @@ import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import StokInfoModal from '../../components/StokInfoModal';
 import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
 import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimModal';
+import EvrakTipiSecimModal from '../../components/EvrakTipiSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../contexts/ThemeContext';
 import { Config } from '../../constants/Config';
@@ -43,6 +44,7 @@ import AnimatedListItem from '../../components/AnimatedListItem';
 import { hafifTitresim } from '../../utils/haptics';
 
 import { toast } from '../../components/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'AlisSatisIslemleri'>;
@@ -100,6 +102,7 @@ function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndir
 
 export default function AlisSatisIslemleri() {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
 
@@ -153,6 +156,8 @@ export default function AlisSatisIslemleri() {
 
   const [infoStoku, setInfoStoku] = useState<StokListesiBilgileri | null>(null);
   const [pendingEvrak, setPendingEvrak] = useState<EvrakSecenegi | null>(null);
+  const [evrakTipiModalAcik, setEvrakTipiModalAcik] = useState(false);
+  const [evrakTipiSecenekleri, setEvrakTipiSecenekleri] = useState<EvrakSecenegi[]>([]);
   const [secilenAnaDepo, setSecilenAnaDepo] = useState(yetkiBilgileri?.anaDepo ?? '');
   const [secilenKarsiDepo, setSecilenKarsiDepo] = useState(yetkiBilgileri?.karsiDepo ?? '');
 
@@ -388,6 +393,12 @@ export default function AlisSatisIslemleri() {
     setYukleniyor(true);
     try {
       if (aramaTipi === 4) {
+        if (!secilenCari) {
+          toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          setAramaMetni('');
+          setYukleniyor(false);
+          return;
+        }
         // Barkod araması
         const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
         let modalAcilacak = false;
@@ -452,18 +463,8 @@ export default function AlisSatisIslemleri() {
       if (s.evrakTipi === EvrakTipi.Stok     && !yetkiBilgileri.stokYetkisi)        return false;
       return true;
     });
-
-    Alert.alert(
-      'Evrak Tipi Seçin',
-      undefined,
-      [
-        ...izinli.map((s) => ({
-          text: s.label,
-          onPress: () => setPendingEvrak(s),
-        })),
-        { text: 'Vazgeç', style: 'cancel' as const },
-      ]
-    );
+    setEvrakTipiSecenekleri(izinli);
+    setEvrakTipiModalAcik(true);
   };
 
   // Fiş tipi + depo modal onay
@@ -646,7 +647,7 @@ export default function AlisSatisIslemleri() {
       >
         <View style={styles.stokBilgi}>
           <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
-          <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
+          <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
           {item.barkod ? (
             <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text>
           ) : null}
@@ -809,7 +810,7 @@ export default function AlisSatisIslemleri() {
       />
 
       {/* Sepet + Barkod alt bar */}
-      <View style={styles.altBar}>
+      <View style={[styles.altBar, { paddingBottom: 10 + insets.bottom }]}>
         <TouchableOpacity
           style={[styles.sepetBtn, { backgroundColor: Colors.primary }, sepetKalemleri.length === 0 && styles.sepetBtnPasif]}
           onPress={sepeteGit}
@@ -832,6 +833,18 @@ export default function AlisSatisIslemleri() {
           <Ionicons name="barcode-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {/* Evrak Tipi seçim modal */}
+      <EvrakTipiSecimModal
+        visible={evrakTipiModalAcik}
+        secenekler={evrakTipiSecenekleri.map((s) => ({ label: s.label, value: s.label }))}
+        secilenDeger={secilenEvrak.label}
+        onSelect={(val) => {
+          const s = evrakTipiSecenekleri.find((x) => x.label === val);
+          if (s) setPendingEvrak(s);
+        }}
+        onClose={() => setEvrakTipiModalAcik(false)}
+      />
 
       {/* Fiş Tipi + Depo seçim modal */}
       {pendingEvrak && (

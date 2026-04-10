@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,6 +42,7 @@ import { toast } from '../../components/Toast';
 import AnimatedListItem from '../../components/AnimatedListItem';
 import { ortaTitresim, basariliTitresim } from '../../utils/haptics';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
@@ -123,6 +125,7 @@ function rbToSepetKalem(rbk: SepetRBKalem): SepetKalem {
 
 export default function SepetListesi() {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { yetkiBilgileri, calisilanSirket, kdvBilgileri, fiyatTipListesi } = useAppStore();
@@ -186,8 +189,8 @@ export default function SepetListesi() {
   const [fisAcik, setFisAcik] = useState(false);
   const [genelIndirimYuzde, setGenelIndirimYuzde] = useState(route.params.genelIndirimYuzde ?? 0);
   const [genelIndirimTutar, setGenelIndirimTutar] = useState(route.params.genelIndirimTutar ?? 0);
-  const [aciklama1, setAciklama1] = useState(route.params.aciklama1 ?? '');
-  const [aciklama2, setAciklama2] = useState(route.params.aciklama2 ?? '');
+  const aciklama1Ref = useRef(route.params.aciklama1 ?? '');
+  const aciklama2Ref = useRef(route.params.aciklama2 ?? '');
   const [belgeTipiDeger, setBelgeTipiDeger] = useState(() => {
     if (yetkiBilgileri?.eevrakKaydetmeYetkisi) {
       if (sepet.evrakTipi === EvrakTipi.Fatura || sepet.evrakTipi === EvrakTipi.Irsaliye)
@@ -433,7 +436,7 @@ export default function SepetListesi() {
           musterikodu: sepet.cariKodu,
           musteriadi: sepet.cariUnvan,
           yetkili: '',
-          aciklama1,
+          aciklama1: aciklama1Ref.current,
           dovizturu: secilenKur?.dovizTuru ?? '',
           hazirlayan: yetkiBilgileri?.kullaniciKodu ?? '',
           etasirketadi: '',
@@ -449,7 +452,7 @@ export default function SepetListesi() {
           not5: '',
           not6: '',
           dovizkodu: secilenKur?.dovizKodu ?? '',
-          aciklama2,
+          aciklama2: aciklama2Ref.current,
           aciklama3: '',
           adres1: '',
           adres2: '',
@@ -527,8 +530,8 @@ export default function SepetListesi() {
             saticiKodu,
             kullaniciKodu: saticiKodu,
             kdvDahilFlag: kdvDurum,
-            aciklama1,
-            aciklama2,
+            aciklama1: aciklama1Ref.current,
+            aciklama2: aciklama2Ref.current,
             dovizKodu: secilenKur?.dovizKodu ?? '',
             dovizTuru: secilenKur?.dovizTuru ?? '',
             dovizKuru: secilenKur?.dovizKuru ?? 0,
@@ -545,8 +548,8 @@ export default function SepetListesi() {
             guidId: evrakGuidRef.current,
             genelIndirimYuzde,
             genelIndirimTutar,
-            aciklama1,
-            aciklama2,
+            aciklama1: aciklama1Ref.current,
+            aciklama2: aciklama2Ref.current,
             dovizKodu: secilenKur?.dovizKodu ?? '',
             dovizTuru: secilenKur?.dovizTuru ?? '',
             dovizKuru: secilenKur?.dovizKuru ?? 0,
@@ -566,8 +569,8 @@ export default function SepetListesi() {
               saticiKodu,
               kullaniciKodu: saticiKodu,
               kdvDahilFlag: kdvDurum,
-              aciklama1,
-              aciklama2,
+              aciklama1: aciklama1Ref.current,
+              aciklama2: aciklama2Ref.current,
               dovizKodu: secilenKur?.dovizKodu ?? '',
               dovizTuru: secilenKur?.dovizTuru ?? '',
               dovizKuru: secilenKur?.dovizKuru ?? 0,
@@ -590,8 +593,8 @@ export default function SepetListesi() {
             guidId: evrakGuidRef.current,
             genelIndirimYuzde,
             genelIndirimTutar,
-            aciklama1,
-            aciklama2,
+            aciklama1: aciklama1Ref.current,
+            aciklama2: aciklama2Ref.current,
             dovizKodu: secilenKur?.dovizKodu ?? '',
             dovizTuru: secilenKur?.dovizTuru ?? '',
             dovizKuru: secilenKur?.dovizKuru ?? 0,
@@ -611,8 +614,8 @@ export default function SepetListesi() {
               saticiKodu,
               kullaniciKodu: saticiKodu,
               kdvDahilFlag: kdvDurum,
-              aciklama1,
-              aciklama2,
+              aciklama1: aciklama1Ref.current,
+              aciklama2: aciklama2Ref.current,
               dovizKodu: secilenKur?.dovizKodu ?? '',
               dovizTuru: secilenKur?.dovizTuru ?? '',
               dovizKuru: secilenKur?.dovizKuru ?? 0,
@@ -1022,8 +1025,8 @@ export default function SepetListesi() {
             <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 1</Text>
             <TextInput
               style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
-              value={aciklama1}
-              onChangeText={setAciklama1}
+              defaultValue={aciklama1Ref.current}
+              onChangeText={(text) => { aciklama1Ref.current = text; }}
               placeholder=""
               editable={!isOnayliReadOnly}
             />
@@ -1034,8 +1037,8 @@ export default function SepetListesi() {
             <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 2</Text>
             <TextInput
               style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
-              value={aciklama2}
-              onChangeText={setAciklama2}
+              defaultValue={aciklama2Ref.current}
+              onChangeText={(text) => { aciklama2Ref.current = text; }}
               placeholder=""
               editable={!isOnayliReadOnly}
             />
@@ -1384,7 +1387,7 @@ export default function SepetListesi() {
       </Modal>
 
       {/* Alt bilgi barı */}
-      <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
+      <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border, paddingBottom: insets.bottom + 12, marginBottom: 0 }]}>
         <Ionicons name="cart-outline" size={18} color={Colors.primary} />
         <Text style={[styles.altBarText, { color: Colors.text }]}>
           {sepet.kalemler.length} satır · Miktar {t.toplamMiktar}
@@ -1394,7 +1397,7 @@ export default function SepetListesi() {
       {/* Yüzer menü overlay */}
       {yuzerMenuAcik && (
         <Pressable style={styles.yuzerOverlay} onPress={() => toggleYuzerMenu(false)}>
-          <View style={styles.yuzerMenuKapsayici}>
+          <View style={[styles.yuzerMenuKapsayici, { bottom: 130 + insets.bottom }]}>
             {yuzerMenuItems.map((item, idx) => {
               const translateY = menuAnim.interpolate({
                 inputRange: [0, 1],
@@ -1442,21 +1445,14 @@ export default function SepetListesi() {
               <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
             </View>
           ) : pdfDosyaUri ? (
-            <WebView
-              originWhitelist={['*']}
-              source={{ uri: pdfDosyaUri }}
-              style={{ flex: 1 }}
-              allowFileAccess
-              allowFileAccessFromFileURLs
-              allowUniversalAccessFromFileURLs
-            />
+            <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />
           ) : null}
         </SafeAreaView>
       </Modal>
 
       {/* FAB butonu */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: Colors.primary }]}
+        style={[styles.fab, { backgroundColor: Colors.primary, bottom: 70 + insets.bottom }]}
         onPress={() => toggleYuzerMenu(!yuzerMenuAcik)}
         activeOpacity={0.8}
       >

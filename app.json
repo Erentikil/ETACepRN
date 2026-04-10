@@ -29,6 +29,7 @@
       },
       "package": "com.companyname.etacep",
       "usesCleartextTraffic": true,
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -39,7 +40,15 @@
       }
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ]
   }
 }

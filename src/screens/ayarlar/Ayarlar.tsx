@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,25 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { useColors, useTheme, type TemaSecimi } from '../../contexts/ThemeContext';
 import { toast } from '../../components/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
 import ThemedButton from '../../components/ThemedButton';
 import DropdownSecim from '../../components/DropdownSecim';
 import { sirketBilgileriniAl } from '../../api/authApi';
+import * as Device from 'expo-device';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Ayarlar'>;
@@ -30,6 +35,7 @@ type Props = {
 
 export default function Ayarlar({ navigation, route }: Props) {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const { temaSecimi, setTemaSecimi } = useTheme();
   const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi } = useAppStore();
 
@@ -47,7 +53,17 @@ export default function Ayarlar({ navigation, route }: Props) {
   const [varsayilanAramaTipi, setVarsayilanAramaTipi] = useState(3);
   const [sepetSes, setSepetSes] = useState(true);
   const [varsayilanFiyatNo, setVarsayilanFiyatNo] = useState(0);
+  const [cihazId, setCihazId] = useState('');
+  const [cihazAdi, setCihazAdi] = useState('');
   const fromLogin = route.params?.fromLogin === true;
+  const scrollRef = useRef<ScrollView>(null);
+  const headerHeight = useHeaderHeight();
+
+  const generateUUID = () =>
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
 
   useEffect(() => {
     (async () => {
@@ -63,8 +79,8 @@ export default function Ayarlar({ navigation, route }: Props) {
       if (aktifApiStr === '2') setAktifApi('2');
       else if (aktifApiStr === '3') setAktifApi('3');
 
-      if (u1) setApiUrl(u1);
-      if (u2) setApiUrl2(u2);
+      if (u1) setApiUrl(u1); else setApiUrl('http://45.84.189.173:52723');
+      if (u2) setApiUrl2(u2); else setApiUrl2('http://212.252.132.158:4158');
       if (u3) setApiUrl3(u3);
       if (sirket) setCalisilanSirket(sirket);
       if (okumaModu === 'elle') setManuelTarama(true);
@@ -81,6 +97,23 @@ export default function Ayarlar({ navigation, route }: Props) {
 
       const fiyatNoStr = await AsyncStorage.getItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO);
       if (fiyatNoStr !== null) setVarsayilanFiyatNo(parseInt(fiyatNoStr, 10));
+
+      let kayitliCihazId = await AsyncStorage.getItem(Config.STORAGE_KEYS.CIHAZ_ID);
+      if (!kayitliCihazId) {
+        kayitliCihazId = generateUUID();
+        await AsyncStorage.setItem(Config.STORAGE_KEYS.CIHAZ_ID, kayitliCihazId);
+      }
+      setCihazId(kayitliCihazId);
+
+      const kayitliCihazAdi = await AsyncStorage.getItem(Config.STORAGE_KEYS.CIHAZ_ADI);
+      if (kayitliCihazAdi) {
+        setCihazAdi(kayitliCihazAdi);
+      } else {
+        const harfler = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const rastgeleAd = Array.from({ length: 6 }, () => harfler[Math.floor(Math.random() * harfler.length)]).join('');
+        setCihazAdi(rastgeleAd);
+        await AsyncStorage.setItem(Config.STORAGE_KEYS.CIHAZ_ADI, rastgeleAd);
+      }
 
       if (sirketBilgileri?.sirketListesi) {
         setSirketListesi(sirketBilgileri.sirketListesi);
@@ -141,11 +174,6 @@ export default function Ayarlar({ navigation, route }: Props) {
   };
 
   const handleKaydet = async () => {
-    const aktifUrl = aktifApi === '3' ? apiUrl3 : aktifApi === '2' ? apiUrl2 : apiUrl;
-    if (!aktifUrl.trim()) {
-      toast.error('Aktif API URL zorunludur.');
-      return;
-    }
     setKaydediliyor(true);
     try {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL, apiUrl.trim());
@@ -159,6 +187,7 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_ARAMA_TIPI, varsayilanAramaTipi.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.SEPET_SES, sepetSes.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO, varsayilanFiyatNo.toString());
+      await AsyncStorage.setItem(Config.STORAGE_KEYS.CIHAZ_ADI, cihazAdi.trim());
       Alert.alert('Başarılı', 'Ayarlar kaydedildi.', [
         {
           text: 'Tamam',
@@ -177,7 +206,12 @@ export default function Ayarlar({ navigation, route }: Props) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: Colors.background }]} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
+    <ScrollView ref={scrollRef} style={[styles.container, { backgroundColor: Colors.background }]} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
       {/* API URL Bölümü */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
@@ -250,7 +284,7 @@ export default function Ayarlar({ navigation, route }: Props) {
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '3' && { borderColor: Colors.primary }]}
           value={apiUrl3}
           onChangeText={setApiUrl3}
-          placeholder="https://dis-sunucu.com/webapi"
+          placeholder="http://192.168.1.1/webapi"
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
@@ -428,15 +462,44 @@ export default function Ayarlar({ navigation, route }: Props) {
         />
       </View>
 
+      {/* Cihaz Bilgileri */}
+      <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
+        <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
+          <Ionicons name="phone-portrait-outline" size={16} /> Cihaz Bilgileri
+        </Text>
+
+        <Text style={[styles.label, { color: Colors.text }]}>Cihaz ID</Text>
+        <TextInput
+          style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.textSecondary }]}
+          value={cihazId}
+          editable={false}
+          selectTextOnFocus
+        />
+
+        <Text style={[styles.label, { color: Colors.text }]}>Cihaz Adı</Text>
+        <TextInput
+          style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }]}
+          value={cihazAdi}
+          onChangeText={setCihazAdi}
+          placeholder="Cihaz adını girin"
+          placeholderTextColor={Colors.textSecondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+        />
+      </View>
+
+    </ScrollView>
+
       {/* Kaydet Butonu */}
-      <View style={styles.kaydetContainer}>
+      <View style={[styles.kaydetContainer, { backgroundColor: Colors.background, paddingBottom: insets.bottom }]}>
         <ThemedButton
           baslik="Ayarları Kaydet"
           onPress={handleKaydet}
           yukleniyor={kaydediliyor}
         />
       </View>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -538,7 +601,7 @@ const styles = StyleSheet.create({
   },
   kaydetContainer: {
     margin: 16,
-    marginTop: 20,
-    marginBottom: 40,
+    marginTop: 8,
+    marginBottom: 16,
   },
 });

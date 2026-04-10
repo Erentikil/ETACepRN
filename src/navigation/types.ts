@@ -62,6 +62,7 @@ export type DrawerParamList = {
   CariBakiye: undefined;
   FiyatGor: undefined;
   BarkodEkleme: undefined;
+  Hakkinda: undefined;
   StokRapor: { mod: 'bakiye' | 'fiyat' } | undefined;
   CariSecimliRapor: {
     dizaynAdi: string;

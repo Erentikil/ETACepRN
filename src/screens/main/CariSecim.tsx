@@ -11,6 +11,7 @@ import {
   RefreshControl,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Alert,
 } from 'react-native';
@@ -170,7 +171,6 @@ export default function CariSecim() {
     const sepetDolu = route.params?.sepetDolu ?? false;
 
     const onayla = () => {
-      hafifTitresim();
       useAppStore.getState().setPendingCari(cari, returnScreen);
       navigation.goBack();
     };
@@ -267,7 +267,7 @@ export default function CariSecim() {
   );
 
   return (
-    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
       {/* Filtre kutusu */}
       <View style={[styles.aramaKutusu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
@@ -295,6 +295,7 @@ export default function CariSecim() {
           keyExtractor={(item) => item.cariKodu}
           renderItem={renderCariSatiri}
           keyboardShouldPersistTaps="handled"
+
           refreshControl={
             <RefreshControl
               refreshing={yukleniyor}

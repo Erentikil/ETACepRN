@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -13,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../store/appStore';
 import { useColors } from '../contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Config } from '../constants/Config';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -26,6 +28,7 @@ interface MenuItem {
 
 export default function DrawerMenu({ navigation }: DrawerContentComponentProps) {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const { menuYetkiBilgileri, yetkiBilgileri, calisilanSirket, cikisYap } =
     useAppStore();
 
@@ -53,7 +56,7 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     },
     {
       id: 'fiyatGor',
-      baslik: 'Fiyat Gor',
+      baslik: 'Fiyat Gör',
       icon: 'pricetag-outline',
       ekran: 'FiyatGor',
       yetki: menuYetkiBilgileri?.fiyatGor ?? false,
@@ -135,6 +138,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       ekran: 'Ayarlar',
       yetki: menuYetkiBilgileri?.ayarlar ?? true,
     },
+    {
+      id: 'hakkinda',
+      baslik: 'Hakkında',
+      icon: 'information-circle-outline',
+      ekran: 'Hakkinda',
+      yetki: true,
+    },
   ];
   const menuOgeleri = tumMenuOgeleri.filter((m) => m.yetki);
 
@@ -161,12 +171,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
     <View style={[styles.container, { backgroundColor: Colors.drawerBackground }]}>
       {/* Başlık */}
       <View style={styles.header}>
-        <Ionicons name="business-outline" size={36} color={Colors.drawerText} />
+        <Image
+          source={require('../../assets/eta-logo-white-red.png')}
+          style={styles.drawerLogo}
+          resizeMode="contain"
+        />
         <Text style={[styles.sirketAdi, { color: Colors.drawerText }]} numberOfLines={1}>
           {calisilanSirket || 'ETACep'}
-        </Text>
-        <Text style={styles.kullaniciAdi}>
-          {yetkiBilgileri?.kullaniciKodu ?? ''}
         </Text>
       </View>
 
@@ -195,7 +206,7 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       </ScrollView>
 
       {/* Çıkış */}
-      <TouchableOpacity style={styles.cikisBtn} onPress={handleCikis}>
+      <TouchableOpacity style={[styles.cikisBtn, { paddingBottom: 18 + insets.bottom }]} onPress={handleCikis}>
         <Ionicons name="log-out-outline" size={22} color={Colors.drawerText} />
         <Text style={[styles.menuText, { color: Colors.drawerText }]}>Çıkış</Text>
       </TouchableOpacity>
@@ -208,15 +219,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 72,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.2)',
     gap: 6,
   },
+  drawerLogo: {
+    width: 40,
+    height: 40,
+  },
   sirketAdi: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     marginTop: 8,
   },

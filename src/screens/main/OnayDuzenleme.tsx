@@ -18,6 +18,7 @@ import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
 import { onayEvraginiAl, onaylamaDurumunuGuncelle } from '../../api/onayApi';
 import type { OnayEvrakDetay } from '../../models';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = StackScreenProps<RootStackParamList, 'OnayDuzenleme'>;
 
@@ -32,6 +33,7 @@ function tarihFormat(tarih: string): string {
 }
 
 export default function OnayDuzenleme({ route, navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { item } = route.params;
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
 
@@ -369,7 +371,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
       </ScrollView>
 
       {/* ─── Onayla / Reddet Butonları ───────────────────────────────── */}
-      <View style={styles.butonBar}>
+      <View style={[styles.butonBar, { paddingBottom: 12 + insets.bottom }]}>
         <TouchableOpacity
           style={[styles.buton, styles.onaylaBtn, islem && styles.butonDevre]}
           onPress={onaylaIste}

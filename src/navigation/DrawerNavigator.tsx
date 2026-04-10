@@ -32,6 +32,7 @@ import CariSecimliRapor from '../screens/main/CariSecimliRapor';
 import FiyatGor from '../screens/main/FiyatGor';
 import BarkodEkleme from '../screens/main/BarkodEkleme';
 import CRMTeklif from '../screens/main/CRMTeklif/CRMTeklif';
+import Hakkinda from '../screens/main/Hakkinda';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -215,7 +216,7 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="FiyatGor"
         component={FiyatGor}
-        options={{ title: 'Fiyat Gor' }}
+        options={{ title: 'Fiyat Gör' }}
       />
       <Drawer.Screen
         name="BarkodEkleme"
@@ -237,6 +238,11 @@ export default function DrawerNavigator() {
           title: (route.params as any)?.baslik ?? 'Rapor',
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
+      />
+      <Drawer.Screen
+        name="Hakkinda"
+        component={Hakkinda}
+        options={{ title: 'Hakkında' }}
       />
     </Drawer.Navigator>
   );

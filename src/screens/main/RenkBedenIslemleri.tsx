@@ -7,7 +7,6 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +24,7 @@ import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import StokInfoModal from '../../components/StokInfoModal';
 import FisTipiDepoSecimModal from '../../components/FisTipiDepoSecimModal';
 import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimModal';
+import EvrakTipiSecimModal from '../../components/EvrakTipiSecimModal';
 import RenkBedenSecimModal from '../../components/RenkBedenSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../contexts/ThemeContext';
@@ -44,6 +44,7 @@ import type {
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { hafifTitresim } from '../../utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'RenkBedenIslemleri'>;
@@ -112,6 +113,7 @@ let savedRBState: {
 
 export default function RenkBedenIslemleri() {
   const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
 
@@ -150,6 +152,8 @@ export default function RenkBedenIslemleri() {
 
   const [infoStoku, setInfoStoku] = useState<StokListesiBilgileri | null>(null);
   const [pendingEvrak, setPendingEvrak] = useState<EvrakSecenegi | null>(null);
+  const [evrakTipiModalAcik, setEvrakTipiModalAcik] = useState(false);
+  const [evrakTipiSecenekleri, setEvrakTipiSecenekleri] = useState<EvrakSecenegi[]>([]);
 
   // Renk-beden seçim modal
   const [rbModalStok, setRbModalStok] = useState<StokListesiBilgileri | null>(null);
@@ -335,6 +339,12 @@ export default function RenkBedenIslemleri() {
     setYukleniyor(true);
     try {
       if (aramaTipi === 4) {
+        if (!secilenCari) {
+          toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          setAramaMetni('');
+          setYukleniyor(false);
+          return;
+        }
         const sonuc = await barkoddanStokKodunuBul(veri, calisilanSirket);
         let modalAcilacak = false;
         if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
@@ -395,20 +405,8 @@ export default function RenkBedenIslemleri() {
       if (s.evrakTipi === EvrakTipi.Stok     && !yetkiBilgileri.stokYetkisi)        return false;
       return true;
     });
-
-    Alert.alert(
-      'Evrak Tipi Seçin',
-      undefined,
-      [
-        ...izinli.map((s) => ({
-          text: s.label,
-          onPress: () => {
-            setPendingEvrak(s);
-          },
-        })),
-        { text: 'Vazgeç', style: 'cancel' as const },
-      ]
-    );
+    setEvrakTipiSecenekleri(izinli);
+    setEvrakTipiModalAcik(true);
   };
 
   // Fiş tipi + depo modal onay
@@ -598,7 +596,11 @@ export default function RenkBedenIslemleri() {
       genelIndirimYuzde: secilenCari?.indirimYuzde ?? 0,
       rbKalemler: sepetKalemleri,
       onRBKalemlerGuncellendi: (kalemler) => {
-        if (kalemler.length === 0) setSecilenCari(null);
+        if (kalemler.length === 0) {
+          setSecilenCari(null);
+          setFiltreli(stokListesi);
+          setAramaMetni('');
+        }
         setSepetKalemleri(kalemler);
       },
     });
@@ -623,7 +625,7 @@ export default function RenkBedenIslemleri() {
         <TouchableOpacity style={[styles.stokSatiri, { backgroundColor: Colors.card }]} onPress={() => stokSecildi(item)}>
           <View style={styles.stokBilgi}>
             <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
-            <Text style={[styles.stokCinsi, { color: Colors.text }]} numberOfLines={1}>{item.stokCinsi}</Text>
+            <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
             {variantSayisi > 0 && (
               <View style={styles.variantBadge}>
                 <Ionicons name="color-palette-outline" size={11} color={Colors.primary} />
@@ -802,7 +804,7 @@ export default function RenkBedenIslemleri() {
       )}
 
       {/* Alt bar: Sepet + Barkod */}
-      <View style={styles.altBar}>
+      <View style={[styles.altBar, { paddingBottom: 10 + insets.bottom }]}>
         <TouchableOpacity
           style={[styles.sepetBtn, { backgroundColor: Colors.primary }, sepetKalemleri.length === 0 && styles.sepetBtnPasif]}
           onPress={sepeteGit}
@@ -834,6 +836,18 @@ export default function RenkBedenIslemleri() {
         stokListesi={stokListesi}
         onSelect={variantSecildi}
         onClose={() => { setRbModalStok(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
+      />
+
+      {/* Evrak Tipi seçim modal */}
+      <EvrakTipiSecimModal
+        visible={evrakTipiModalAcik}
+        secenekler={evrakTipiSecenekleri.map((s) => ({ label: s.label, value: s.label }))}
+        secilenDeger={secilenEvrak.label}
+        onSelect={(val) => {
+          const s = evrakTipiSecenekleri.find((x) => x.label === val);
+          if (s) setPendingEvrak(s);
+        }}
+        onClose={() => setEvrakTipiModalAcik(false)}
       />
 
       {/* Fiş Tipi + Depo seçim modal */}

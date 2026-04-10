@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../contexts/ThemeContext';
@@ -89,7 +89,7 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.ekran}>
+      <GestureHandlerRootView style={styles.ekran}>
         {!permission ? (
           <View style={styles.merkezle}>
             <Text style={[styles.mesaj, { color: Colors.text }]}>Kamera izni kontrol ediliyor...</Text>
@@ -124,31 +124,34 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
 
             {/* Kamera -- sadece modal acikken ve taranmamissa aktif */}
             {visible && (
-              <GestureDetector gesture={pinchGesture}>
-                <View style={styles.kamera}>
-                  <CameraView
-                    style={StyleSheet.absoluteFill}
-                    facing="back"
-                    enableTorch={torchOn}
-                    zoom={zoom}
-                    barcodeScannerSettings={{
-                      barcodeTypes: [
-                        'ean13', 'ean8', 'code128', 'code39',
-                        'qr', 'upc_a', 'upc_e', 'itf14',
-                      ],
-                    }}
-                    onBarcodeScanned={handleBarkod}
-                  />
-                  {/* Zoom gostergesi */}
-                  {zoomGoster && (
-                    <View style={styles.zoomGosterge}>
-                      <Text style={styles.zoomText}>
-                        {(1 + zoom * 9).toFixed(1)}x
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </GestureDetector>
+              <View style={styles.kamera}>
+                <CameraView
+                  style={StyleSheet.absoluteFill}
+                  facing="back"
+                  enableTorch={torchOn}
+                  zoom={zoom}
+                  barcodeScannerSettings={{
+                    barcodeTypes: [
+                      'ean13', 'ean8', 'code128', 'code39',
+                      'qr', 'upc_a', 'upc_e', 'itf14',
+                    ],
+                  }}
+                  onBarcodeScanned={handleBarkod}
+                />
+                {/* Zoom gostergesi */}
+                {zoomGoster && (
+                  <View style={styles.zoomGosterge}>
+                    <Text style={styles.zoomText}>
+                      {(1 + zoom * 9).toFixed(1)}x
+                    </Text>
+                  </View>
+                )}
+                {/* Android'de CameraView native touch'lari yuttugu icin
+                    gesture detector kameranin ustundeki seffaf View'i sariyor */}
+                <GestureDetector gesture={pinchGesture}>
+                  <View style={StyleSheet.absoluteFill} />
+                </GestureDetector>
+              </View>
             )}
 
             {/* Tarama cercevesi */}
@@ -172,7 +175,7 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
             </View>
           </>
         )}
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

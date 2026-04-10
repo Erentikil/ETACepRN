@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import { useAppStore } from '../../store/appStore';
 import { cekSenetListesiniAl } from '../../api/cekSenetApi';
 import { raporPdfAl } from '../../api/raporApi';
@@ -147,11 +148,7 @@ export default function CekSenetListesi() {
             </TouchableOpacity>
           </View>
           {pdfUri && (
-            <WebView
-              source={{ uri: pdfUri }}
-              style={{ flex: 1 }}
-              originWhitelist={['*']}
-            />
+            <PdfViewer fileUri={pdfUri} style={{ flex: 1 }} />
           )}
         </SafeAreaView>
       </Modal>

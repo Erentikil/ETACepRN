@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -107,7 +108,7 @@ export default function CRMCariSecim() {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          style={[styles.headerYeniButon, { backgroundColor: Colors.accent }]}
+          style={styles.headerYeniButon}
           onPress={() => {
             hafifTitresim();
             setYeniMusteri({ ...bosCariEvrak });
@@ -285,7 +286,7 @@ export default function CRMCariSecim() {
   const yukleniyor = sekme === 'cariler' ? cariYukleniyor : crmYukleniyor;
 
   return (
-    <View style={[styles.ekran, { backgroundColor: Colors.background }]}>
+    <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
       {/* Sekmeler */}
       <View style={[styles.sekmeler, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
         <TouchableOpacity
@@ -331,6 +332,7 @@ export default function CRMCariSecim() {
           keyExtractor={(item) => item.cariKodu}
           renderItem={renderCariSatiri}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={cariYukleniyor} onRefresh={cariYukle} colors={[Colors.primary]} />}
           ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
           ListEmptyComponent={
@@ -347,6 +349,7 @@ export default function CRMCariSecim() {
           keyExtractor={(item) => String(item.id || item.musterikodu)}
           renderItem={renderCrmSatiri}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={crmYukleniyor} onRefresh={crmMusteriYukle} colors={[Colors.primary]} />}
           ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
           ListEmptyComponent={

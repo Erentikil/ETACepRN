@@ -26,6 +26,8 @@ export const Config = {
     VARSAYILAN_FIYAT_NO: 'varsayilanFiyatNo',
     AKTIF_API: 'aktifApi',
     TEMA_SECIMI: 'temaSecimi',
+    CIHAZ_ID: 'cihazId',
+    CIHAZ_ADI: 'cihazAdi',
   },
 
   DEFAULT_API_URL: 'http://212.252.132.158/webapi',

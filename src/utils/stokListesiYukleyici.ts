@@ -60,10 +60,10 @@ export async function stokListesiniGetir(
     while (true) {
       const sonuc = await stokBilgileriniSayfalamaIleAl(sayfa, SAYFA_UZUNLUGU, calisilanSirket);
       if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
-        tumVeri = [...tumVeri, ...sonuc.data];
-        const sirali = tumVeri.sort((a, b) => a.stokKodu.localeCompare(b.stokKodu));
-        _currentPartial = sirali;
-        _progressListeners.forEach((cb) => cb(sirali, _toplamSayisi));
+        tumVeri.push(...sonuc.data);
+        const snapshot = tumVeri.slice();
+        _currentPartial = snapshot;
+        _progressListeners.forEach((cb) => cb(snapshot, _toplamSayisi));
         if (sonuc.data.length < SAYFA_UZUNLUGU) break;
         sayfa++;
       } else {
@@ -72,9 +72,8 @@ export async function stokListesiniGetir(
       }
     }
 
-    const sirali = tumVeri.sort((a, b) => a.stokKodu.localeCompare(b.stokKodu));
-    useAppStore.getState().setStokListesiCache(sirali, calisilanSirket);
-    return sirali;
+    useAppStore.getState().setStokListesiCache(tumVeri, calisilanSirket);
+    return tumVeri;
   })();
 
   _promise.finally(() => {

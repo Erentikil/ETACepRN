@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import PdfViewer from '../../components/PdfViewer';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -76,11 +77,7 @@ export default function PDFRaporGoster() {
   };
 
   const pdfIcerik = pdfDosyaUri ? (
-    <WebView
-      originWhitelist={['*']}
-      source={{ uri: pdfDosyaUri }}
-      style={{ flex: 1 }}
-    />
+    <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />
   ) : null;
 
   if (yukleniyor) {
