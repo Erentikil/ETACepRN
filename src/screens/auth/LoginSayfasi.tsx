@@ -261,7 +261,7 @@ export default function LoginSayfasi({ navigation }: Props) {
             <Text style={[styles.titleETA, { color: '#29358a' }]}>ETA </Text>
             <Text style={[styles.titleMobil, { color: Colors.error }]}>Mobil</Text>
           </View>
-          <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>Horizon</Text>
+          {/* <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>Horizon</Text> */}
 
           {/* Kullanıcı Kodu */}
           <View style={styles.fieldContainer}>

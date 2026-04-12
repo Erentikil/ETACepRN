@@ -43,7 +43,7 @@ export default function Hakkinda() {
           <Text style={[styles.titleETA, { color: Colors.primary }]}>ETA </Text>
           <Text style={[styles.titleMobil, { color: Colors.error }]}>Mobil</Text>
         </View>
-        <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>Horizon</Text>
+        {/* <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>Horizon</Text> */}
       </View>
 
       {/* Firma Bilgileri */}

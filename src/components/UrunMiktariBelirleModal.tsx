@@ -303,13 +303,13 @@ export default function UrunMiktariBelirleModal({
   };
 
   const sonFiyatlariGetir = async () => {
-    if (!urun || !cariKodu) return;
+    if (!urun) return;
     setSonFiyatModalAcik(true);
     setSonFiyatYukleniyor(true);
     setSonFiyatHata(null);
     setSonFiyatListesi([]);
     try {
-      const sonuc = await sonSatisFiyatlariniAl(cariKodu, urun.stokKodu, veriTabaniAdi);
+      const sonuc = await sonSatisFiyatlariniAl(cariKodu || 'YOK', urun.stokKodu, veriTabaniAdi);
       if (sonuc.sonuc && sonuc.data) {
         setSonFiyatListesi(sonuc.data);
       } else {
@@ -420,13 +420,9 @@ export default function UrunMiktariBelirleModal({
 
             {/* Fiyat satiri */}
             <View style={[styles.formSatir, { zIndex: 3 }]}>
-              {cariKodu ? (
-                <TouchableOpacity onPress={sonFiyatlariGetir} style={styles.fiyatEtiketBtn}>
-                  <Text style={[styles.formEtiket, { color: Colors.priceColor, marginBottom: 0, textDecorationLine: 'underline' }]}>Fiyat:</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={[styles.formEtiket, { color: Colors.priceColor }]}>Fiyat:</Text>
-              )}
+              <TouchableOpacity onPress={sonFiyatlariGetir} style={styles.fiyatEtiketBtn}>
+                <Text style={[styles.formEtiket, { color: Colors.priceColor, marginBottom: 0, textDecorationLine: 'underline' }]}>Fiyat:</Text>
+              </TouchableOpacity>
               <View style={styles.formSag}>
                 {fiyatTipListesi.length > 0 ? (
                   <TouchableOpacity style={[styles.fiyatTipiBtn, { backgroundColor: Colors.primary + '12', borderColor: Colors.primary + '30' }]} onPress={toggleFiyatTipi}>
