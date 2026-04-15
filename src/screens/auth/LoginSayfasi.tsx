@@ -69,8 +69,6 @@ export default function LoginSayfasi({ navigation }: Props) {
       const kayitliBeniHatirla = await AsyncStorage.getItem(Config.STORAGE_KEYS.BENI_HATIRLA);
       const kayitliSirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
       const calisma = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISMA_MODU);
-      const apiUrl = await AsyncStorage.getItem(Config.STORAGE_KEYS.API_URL);
-
       if (kayitliBeniHatirla === 'true') {
         setBeniHatirla(true);
         if (kayitliKullanici) setKullaniciKodu(kayitliKullanici);
@@ -82,25 +80,24 @@ export default function LoginSayfasi({ navigation }: Props) {
       if (kayitliSirket) setVeriTabaniAdi(kayitliSirket);
       setOnLineCalisma(calisma !== 'Hibrit');
 
-      // API URL kayıtlıysa şirket listesini otomatik yükle
-      if (apiUrl?.trim()) {
-        try {
-          const sonuc = await sirketBilgileriniAl('');
-          if (sonuc.sonuc) {
-            setSirketBilgileri(sonuc.data);
-            const secilenSirket =
-              kayitliSirket ||
-              sonuc.data.varsayilanSirket ||
-              sonuc.data.sirketListesi?.[0] ||
-              '';
-            if (secilenSirket) {
-              setVeriTabaniAdi(secilenSirket);
-              await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, secilenSirket);
-            }
+      // Varsayılan API axiosInstance içinde fallback olarak uygulanıyor,
+      // ilk kurulumda da şirket listesini otomatik çek
+      try {
+        const sonuc = await sirketBilgileriniAl('');
+        if (sonuc.sonuc) {
+          setSirketBilgileri(sonuc.data);
+          const secilenSirket =
+            kayitliSirket ||
+            sonuc.data.varsayilanSirket ||
+            sonuc.data.sirketListesi?.[0] ||
+            '';
+          if (secilenSirket) {
+            setVeriTabaniAdi(secilenSirket);
+            await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, secilenSirket);
           }
-        } catch {
-          // Sessizce geç, kullanıcı manuel girebilir
         }
+      } catch {
+        // Sessizce geç — bağlantı yoksa kullanıcı "Bağlantı ayarları"ndan ayarlayabilir
       }
     })();
   }, []);
@@ -382,7 +379,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'baseline',
-    marginBottom: 2,
+    marginBottom: 38,
   },
   titleETA: {
     fontSize: 22,

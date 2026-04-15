@@ -303,8 +303,16 @@ export default function AlisSatisIslemleri() {
           } else {
             barkodSonrasiTemizlik.current = false;
             setSecilenCari(null);
-            setSecilenEvrak(defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura'));
-            setSeciliFisTipi(null);
+            const resetEvrak = defaultEvrakSecenek(yetkiBilgileri?.defaultEvrakTipi ?? 'Fatura');
+            setSecilenEvrak(resetEvrak);
+            // defaultEvrakSecenek aynı nesne referansını döndürdüğü için secilenEvrak
+            // değişmeyebilir → useEffect 369 tetiklenmez → fisTipi null kalır.
+            // Stale closure sorununu önlemek için store'dan anlık değer okunur.
+            const guncelFtListe = useAppStore.getState().ftBaslikListesi;
+            const eslesen = guncelFtListe.find(
+              (f) => f.evrakTipi === resetEvrak.evrakTipiAdi && f.alimSatim.trim() === resetEvrak.alimSatimAdi
+            );
+            setSeciliFisTipi(eslesen ?? null);
             setSepetKalemleri([]);
             setAramaMetni('');
             setStokListesi([]);

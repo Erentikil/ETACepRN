@@ -37,7 +37,7 @@ export default function Ayarlar({ navigation, route }: Props) {
   const Colors = useColors();
   const insets = useSafeAreaInsets();
   const { temaSecimi, setTemaSecimi } = useTheme();
-  const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi } = useAppStore();
+  const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi, versiyon } = useAppStore();
 
   const [apiUrl, setApiUrl] = useState('');
   const [apiUrl2, setApiUrl2] = useState('');
@@ -487,6 +487,17 @@ export default function Ayarlar({ navigation, route }: Props) {
           autoCorrect={false}
           onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
         />
+
+        {versiyon != null && (
+          <>
+            <Text style={[styles.label, { color: Colors.text }]}>Kalan Lisans Günü</Text>
+            <TextInput
+              style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.textSecondary }]}
+              value={`${(versiyon as any)?.kalanGunSayisi ?? versiyon} gün`}
+              editable={false}
+            />
+          </>
+        )}
       </View>
 
     </ScrollView>

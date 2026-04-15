@@ -15,7 +15,9 @@ import {
   Animated,
   Pressable,
   SafeAreaView,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -61,25 +63,7 @@ function uuidOlustur(): string {
   });
 }
 
-function bugunStr(): string {
-  const d = new Date();
-  const g = String(d.getDate()).padStart(2, '0');
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const y = d.getFullYear();
-  return `${g}.${m}.${y}`;
-}
-
-function strToDate(s: string): Date | null {
-  const parts = s.split('.');
-  if (parts.length !== 3) return null;
-  const [g, m, y] = parts.map(Number);
-  if (!g || !m || !y || y < 2000) return null;
-  return new Date(y, m - 1, g);
-}
-
-function dateToApi(s: string): string {
-  const d = strToDate(s);
-  if (!d) return s;
+function dateToApi(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const g = String(d.getDate()).padStart(2, '0');
@@ -121,7 +105,8 @@ export default function TahsilatEkrani() {
   // Ortak form alanları
   const [evrakNo, setEvrakNo] = useState('');
   const [aciklama, setAciklama] = useState('');
-  const [vadeTarihi, setVadeTarihi] = useState(bugunStr());
+  const [vadeTarihi, setVadeTarihi] = useState<Date>(new Date());
+  const [tarihPickerAcik, setTarihPickerAcik] = useState(false);
   const [tutar, setTutar] = useState('');
 
   // Çek/Senet form alanları
@@ -179,7 +164,7 @@ export default function TahsilatEkrani() {
       setBilgiKartAcik(false);
       setEvrakNo('');
       setAciklama('');
-      setVadeTarihi(bugunStr());
+      setVadeTarihi(new Date());
       setTutar('');
       setAsilBorclu('');
       setKendiCeki(false);
@@ -347,7 +332,7 @@ export default function TahsilatEkrani() {
   const temizle = useCallback(() => {
     setEvrakNo('');
     setAciklama('');
-    setVadeTarihi(bugunStr());
+    setVadeTarihi(new Date());
     setTutar('');
     setAsilBorclu('');
     setKendiCeki(false);
@@ -387,10 +372,6 @@ export default function TahsilatEkrani() {
       toast.error('Tutar 0 ve 0\'dan küçük olamaz.');
       return false;
     }
-    if (!strToDate(vadeTarihi)) {
-      toast.error('Geçerli bir vade tarihi giriniz (gg.aa.yyyy).');
-      return false;
-    }
     return true;
   };
 
@@ -411,7 +392,7 @@ export default function TahsilatEkrani() {
             islemTipi: parseInt(secilenIslem!.islemTipiKodu, 10),
             cariKodu: secilenCari!.cariKodu,
             cariUnvani: secilenCari!.cariUnvan,
-            tarih: dateToApi(bugunStr()),
+            tarih: dateToApi(new Date()),
             aciklama: secilenCari!.cariUnvan,
             aciklama1: aciklama,
             vadeTarihi: dateToApi(vadeTarihi),
@@ -458,7 +439,7 @@ export default function TahsilatEkrani() {
             cekNo: aktifTip === 'cek' ? cekNo : '',
             hesapNo: aktifTip === 'cek' ? hesapNo : '',
             kesideYeri: aktifTip === 'cek' ? kesideYeri : '',
-            tarih: dateToApi(bugunStr()),
+            tarih: dateToApi(new Date()),
             duzenlemeAdresi: aktifTip === 'senet' ? duzAdresi : '',
             duzenlemeIl: aktifTip === 'senet' ? duzIl : '',
             duzenlemeIlce: aktifTip === 'senet' ? duzIlce : '',
@@ -545,6 +526,26 @@ export default function TahsilatEkrani() {
     )
   );
 
+  const formatTarih = (d: Date): string =>
+    `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+
+  const onTarihDegis = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') setTarihPickerAcik(false);
+    if (selected) setVadeTarihi(selected);
+  };
+
+  const renderVadeTarihi = () => (
+    renderSatir('Vade Tar.',
+      <TouchableOpacity
+        style={styles.tarihBtn}
+        onPress={() => setTarihPickerAcik(true)}
+      >
+        <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
+        <Text style={[styles.tarihBtnText, { color: Colors.text }]}>{formatTarih(vadeTarihi)}</Text>
+      </TouchableOpacity>
+    )
+  );
+
   const renderIslemTipiPicker = () => (
     renderSatir('İşlem Tipi',
       <TouchableOpacity
@@ -587,7 +588,7 @@ export default function TahsilatEkrani() {
       {renderIslemTipiPicker()}
       {renderInput('Evrak No', evrakNo, setEvrakNo)}
       {renderInput('Açıklama', aciklama, setAciklama)}
-      {renderInput('Vade Tar.', vadeTarihi, setVadeTarihi, 'gg.aa.yyyy', { keyboardType: 'numeric', maxLength: 10 })}
+      {renderVadeTarihi()}
       {renderTutarInput()}
     </>
   );
@@ -609,7 +610,7 @@ export default function TahsilatEkrani() {
       {renderIslemTipiPicker()}
       {renderInput('Evrak No', evrakNo, setEvrakNo)}
       {renderInput('Açıklama', aciklama, setAciklama)}
-      {renderInput('Vade Tar.', vadeTarihi, setVadeTarihi, 'gg.aa.yyyy', { keyboardType: 'numeric', maxLength: 10 })}
+      {renderVadeTarihi()}
       {renderTutarInput()}
     </>
   );
@@ -627,7 +628,7 @@ export default function TahsilatEkrani() {
           thumbColor="#fff"
         />
       )}
-      {renderInput('Vade Tar.', vadeTarihi, setVadeTarihi, 'gg.aa.yyyy', { keyboardType: 'numeric', maxLength: 10 })}
+      {renderVadeTarihi()}
       {renderInput('Banka', banka, setBanka)}
       {renderInput('Şube', sube, setSube)}
       {renderInput('Çek No.', cekNo, setCekNo)}
@@ -653,7 +654,7 @@ export default function TahsilatEkrani() {
           thumbColor="#fff"
         />
       )}
-      {renderInput('Vade Tar.', vadeTarihi, setVadeTarihi, 'gg.aa.yyyy', { keyboardType: 'numeric', maxLength: 10 })}
+      {renderVadeTarihi()}
       {renderInput('Düz. Adresi', duzAdresi, setDuzAdresi)}
       {renderInput('Düz. İl', duzIl, setDuzIl)}
       {renderInput('Düz. İlçe', duzIlce, setDuzIlce)}
@@ -899,6 +900,28 @@ export default function TahsilatEkrani() {
           ) : null}
         </SafeAreaView>
       </Modal>
+
+      {/* ─── Vade Tarihi Picker ───────────────────────────────── */}
+      {tarihPickerAcik && (
+        <>
+          <DateTimePicker
+            value={vadeTarihi}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            locale="tr-TR"
+            onChange={onTarihDegis}
+            textColor={Colors.text}
+          />
+          {Platform.OS === 'ios' && (
+            <TouchableOpacity
+              style={[styles.pickerTamamBtn, { backgroundColor: Colors.primary }]}
+              onPress={() => setTarihPickerAcik(false)}
+            >
+              <Text style={styles.pickerTamamText}>Tamam</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      )}
 
       {/* ─── FAB ──────────────────────────────────────────────── */}
       {aktifTip && (
@@ -1181,4 +1204,29 @@ const styles = StyleSheet.create({
   },
   pdfBarBaslik: { fontSize: 16, fontWeight: '600' },
   pdfMerkez: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  // ── Tarih Picker ─────────────────────────────────────────────────────────
+  tarihBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  tarihBtnText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  pickerTamamBtn: {
+    marginHorizontal: 12,
+    marginTop: 6,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  pickerTamamText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ETACep",
-    "slug": "etacep",
+    "name": "ETA Mobil",
+    "slug": "etamobil",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon-1024.png",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.erentikil.etacep",
+      "bundleIdentifier": "com.horizonyazilim.etamobil",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -23,11 +23,12 @@
       }
     },
     "android": {
+      "icon": "./assets/play_store_icon_512_rounded.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-1024.png",
-        "backgroundColor": "#29358a"
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.companyname.etacep",
+      "package": "com.horizonyazilim.etamobil",
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
@@ -36,7 +37,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "a790f117-51a9-45d4-b79c-0eb98a5bb4ac"
+        "projectId": "993dc04a-2d7b-497e-aa1a-05fc20823d45"
       }
     },
     "plugins": [
@@ -49,6 +50,7 @@
           }
         }
       ]
-    ]
+    ],
+    "owner": "erentikik"
   }
 }

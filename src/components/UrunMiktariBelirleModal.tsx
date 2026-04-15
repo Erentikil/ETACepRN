@@ -642,23 +642,15 @@ export default function UrunMiktariBelirleModal({
       </KeyboardAvoidingView>
 
       {/* Son Satis Fiyatlari Modal */}
-      <Modal visible={sonFiyatModalAcik} animationType="slide" transparent onRequestClose={() => setSonFiyatModalAcik(false)}>
+      <Modal visible={sonFiyatModalAcik} animationType="fade" transparent onRequestClose={() => setSonFiyatModalAcik(false)}>
         <View style={styles.sonFiyatOverlay}>
           <View style={[styles.sonFiyatKart, { backgroundColor: Colors.card }]}>
-            <View style={[styles.sonFiyatBaslik, { backgroundColor: Colors.primary }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sonFiyatBaslikText}>Son Satis Fiyatlari</Text>
-                <Text style={styles.sonFiyatAltBaslik} numberOfLines={1}>{urun?.stokCinsi}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setSonFiyatModalAcik(false)}>
-                <Ionicons name="close" size={22} color="#fff" />
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.sonFiyatBaslikText, { color: Colors.text }]}>Son Satış Fiyatları</Text>
+            <Text style={[styles.sonFiyatAltBaslik, { color: Colors.textSecondary }]} numberOfLines={1}>{urun?.stokCinsi}</Text>
 
             {sonFiyatYukleniyor ? (
               <View style={styles.sonFiyatMerkez}>
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={[styles.sonFiyatMerkezText, { color: Colors.textSecondary }]}>Yukleniyor...</Text>
               </View>
             ) : sonFiyatHata ? (
               <View style={styles.sonFiyatMerkez}>
@@ -668,32 +660,42 @@ export default function UrunMiktariBelirleModal({
             ) : sonFiyatListesi.length === 0 ? (
               <View style={styles.sonFiyatMerkez}>
                 <Ionicons name="pricetags-outline" size={36} color={Colors.textSecondary} />
-                <Text style={[styles.sonFiyatMerkezText, { color: Colors.textSecondary }]}>Son satis fiyati bulunamadi.</Text>
+                <Text style={[styles.sonFiyatMerkezText, { color: Colors.textSecondary }]}>Son satış fiyatı bulunamadı.</Text>
               </View>
             ) : (
-              <ScrollView style={{ paddingHorizontal: 14, paddingTop: 10 }}>
-                {sonFiyatListesi.map((f, i) => (
-                  <View key={i} style={[styles.sonFiyatSatir, i < sonFiyatListesi.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}>
-                    <View style={styles.sonFiyatUst}>
-                      <Text style={[styles.sonFiyatTarih, { color: Colors.text }]}>{tarihFormat(f.tarih)}</Text>
+              <>
+                <View style={[styles.sonFiyatKolonBaslik, { borderBottomColor: Colors.border }]}>
+                  <Text style={[styles.sonFiyatKolonText, { color: Colors.primary }]}>Tarih</Text>
+                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatMerkezHizala, { color: Colors.primary }]}>Miktar</Text>
+                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatSagHizala, { color: Colors.primary }]}>Fiyat</Text>
+                </View>
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.sonFiyatScrollView}>
+                  {sonFiyatListesi.map((f, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.sonFiyatSatir, { borderBottomColor: Colors.border }]}
+                      activeOpacity={0.6}
+                      onPress={() => {
+                        setFiyat(String(parseFloat(f.fiyat.toFixed(2))));
+                        setSeciliFiyatNo(0);
+                        setSonFiyatModalAcik(false);
+                      }}
+                    >
+                      <Text style={[styles.sonFiyatTarih, { color: Colors.primary }]}>{tarihFormat(f.tarih)}</Text>
+                      <Text style={[styles.sonFiyatMiktar, { color: Colors.primary }]}>{miktarFormat(f.miktar)}</Text>
                       <Text style={[styles.sonFiyatDeger, { color: Colors.primary }]}>{paraFormat(f.fiyat)}</Text>
-                    </View>
-                    <View style={styles.sonFiyatAlt}>
-                      <Text style={[styles.sonFiyatDetay, { color: Colors.textSecondary }]}>Miktar: {miktarFormat(f.miktar)}</Text>
-                      {(f.indirimYuzde1 > 0 || f.indirimYuzde2 > 0 || f.indirimYuzde3 > 0) && (
-                        <Text style={[styles.sonFiyatDetay, { color: Colors.textSecondary }]}>
-                          Isk: %{f.indirimYuzde1}{f.indirimYuzde2 > 0 ? ` + %${f.indirimYuzde2}` : ''}{f.indirimYuzde3 > 0 ? ` + %${f.indirimYuzde3}` : ''}
-                        </Text>
-                      )}
-                      {f.dovizKodu ? (
-                        <Text style={[styles.sonFiyatDetay, { color: Colors.textSecondary }]}>{f.dovizKodu}: {paraFormat(f.dovizFiyat)}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-                <View style={{ height: 16 }} />
-              </ScrollView>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
             )}
+
+            <TouchableOpacity
+              style={[styles.sonFiyatVazgecBtn, { backgroundColor: Colors.primary }]}
+              onPress={() => setSonFiyatModalAcik(false)}
+            >
+              <Text style={styles.sonFiyatVazgecText}>Vazgeç</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -994,22 +996,37 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '70%',
     overflow: 'hidden',
-  },
-  sonFiyatBaslik: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
   sonFiyatBaslikText: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    marginBottom: 4,
   },
   sonFiyatAltBaslik: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  sonFiyatKolonBaslik: {
+    flexDirection: 'row',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    marginBottom: 2,
+  },
+  sonFiyatKolonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sonFiyatMerkezHizala: {
+    textAlign: 'center',
+  },
+  sonFiyatSagHizala: {
+    textAlign: 'right',
+  },
+  sonFiyatScrollView: {
+    maxHeight: 300,
   },
   sonFiyatMerkez: {
     alignItems: 'center',
@@ -1018,30 +1035,39 @@ const styles = StyleSheet.create({
   },
   sonFiyatMerkezText: {
     fontSize: 14,
+    textAlign: 'center',
   },
   sonFiyatSatir: {
-    paddingVertical: 10,
-  },
-  sonFiyatUst: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sonFiyatTarih: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '600',
   },
+  sonFiyatMiktar: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   sonFiyatDeger: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  sonFiyatVazgecBtn: {
+    marginTop: 16,
+    marginHorizontal: -20,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  sonFiyatVazgecText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-  },
-  sonFiyatAlt: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  sonFiyatDetay: {
-    fontSize: 12,
   },
 });

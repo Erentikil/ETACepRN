@@ -142,59 +142,51 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
       </View>
 
       {/* Son Satis Fiyatlari Modal */}
-      <Modal visible={fiyatModalAcik} animationType="slide" transparent onRequestClose={() => setFiyatModalAcik(false)}>
-        <View style={styles.overlay}>
-          <View style={[styles.kart, { backgroundColor: Colors.card }]}>
-            <View style={styles.baslik}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.stokCinsi, { color: Colors.primary }]}>Son Satis Fiyatlari</Text>
-                <Text style={[styles.depoKodu, { color: Colors.textSecondary }]}>{stokCinsi}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setFiyatModalAcik(false)} style={styles.kapatBtn}>
-                <Ionicons name="close" size={24} color={Colors.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal visible={fiyatModalAcik} animationType="fade" transparent onRequestClose={() => setFiyatModalAcik(false)}>
+        <View style={styles.fiyatOverlay}>
+          <View style={[styles.fiyatKart, { backgroundColor: Colors.card }]}>
+            <Text style={[styles.fiyatBaslikText, { color: Colors.text }]}>Son Satış Fiyatları</Text>
+            <Text style={[styles.fiyatAltBaslik, { color: Colors.textSecondary }]} numberOfLines={1}>{stokCinsi}</Text>
 
             {fiyatYukleniyor ? (
-              <View style={styles.merkezle}>
+              <View style={styles.fiyatMerkez}>
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Fiyatlar yukleniyor...</Text>
               </View>
             ) : fiyatHata ? (
-              <View style={styles.merkezle}>
+              <View style={styles.fiyatMerkez}>
                 <Ionicons name="alert-circle-outline" size={40} color={Colors.error} />
-                <Text style={[styles.hataText, { color: Colors.error }]}>{fiyatHata}</Text>
+                <Text style={[styles.fiyatMerkezText, { color: Colors.error }]}>{fiyatHata}</Text>
               </View>
             ) : fiyatListesi.length === 0 ? (
-              <View style={styles.merkezle}>
+              <View style={styles.fiyatMerkez}>
                 <Ionicons name="pricetags-outline" size={40} color={Colors.textSecondary} />
-                <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Son satis fiyati bulunamadi.</Text>
+                <Text style={[styles.fiyatMerkezText, { color: Colors.textSecondary }]}>Son satış fiyatı bulunamadı.</Text>
               </View>
             ) : (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {fiyatListesi.map((f, i) => (
-                  <View key={i} style={[styles.fiyatSatir, { backgroundColor: Colors.inputBackground }, i < fiyatListesi.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border }]}>
-                    <View style={styles.fiyatUst}>
-                      <Text style={[styles.fiyatTarih, { color: Colors.text }]}>{tarihFormat(f.tarih)}</Text>
+              <>
+                <View style={[styles.fiyatKolonBaslik, { borderBottomColor: Colors.border }]}>
+                  <Text style={[styles.fiyatKolonText, { color: Colors.primary }]}>Tarih</Text>
+                  <Text style={[styles.fiyatKolonText, styles.fiyatMerkezHizala, { color: Colors.primary }]}>Miktar</Text>
+                  <Text style={[styles.fiyatKolonText, styles.fiyatSagHizala, { color: Colors.primary }]}>Fiyat</Text>
+                </View>
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.fiyatScrollView}>
+                  {fiyatListesi.map((f, i) => (
+                    <View key={i} style={[styles.fiyatSatir, { borderBottomColor: Colors.border }]}>
+                      <Text style={[styles.fiyatTarih, { color: Colors.primary }]}>{tarihFormat(f.tarih)}</Text>
+                      <Text style={[styles.fiyatMiktar, { color: Colors.primary }]}>{miktarFormat(f.miktar)}</Text>
                       <Text style={[styles.fiyatDeger, { color: Colors.primary }]}>{paraFormat(f.fiyat)}</Text>
                     </View>
-                    <View style={styles.fiyatAlt}>
-                      <Text style={[styles.fiyatDetay, { color: Colors.textSecondary }]}>Miktar: {miktarFormat(f.miktar)}</Text>
-                      {(f.indirimYuzde1 > 0 || f.indirimYuzde2 > 0 || f.indirimYuzde3 > 0) && (
-                        <Text style={[styles.fiyatDetay, { color: Colors.textSecondary }]}>
-                          Isk: %{f.indirimYuzde1}{f.indirimYuzde2 > 0 ? ` + %${f.indirimYuzde2}` : ''}{f.indirimYuzde3 > 0 ? ` + %${f.indirimYuzde3}` : ''}
-                        </Text>
-                      )}
-                      {f.dovizKodu ? (
-                        <Text style={[styles.fiyatDetay, { color: Colors.textSecondary }]}>
-                          {f.dovizKodu}: {paraFormat(f.dovizFiyat)}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
+                  ))}
+                </ScrollView>
+              </>
             )}
+
+            <TouchableOpacity
+              style={[styles.fiyatVazgecBtn, { backgroundColor: Colors.primary }]}
+              onPress={() => setFiyatModalAcik(false)}
+            >
+              <Text style={styles.fiyatVazgecText}>Vazgeç</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -267,32 +259,90 @@ const styles = StyleSheet.create({
   etiket: { fontSize: 18 },
   depoKodu: { fontSize: 15, marginTop: 2 },
   deger: { fontSize: 18, fontWeight: '700' },
-  fiyatSatir: {
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 2,
-  },
-  fiyatUst: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  fiyatOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    padding: 24,
   },
-  fiyatTarih: {
-    fontSize: 16,
-    fontWeight: '600',
+  fiyatKart: {
+    borderRadius: 14,
+    width: '100%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
-  fiyatDeger: {
+  fiyatBaslikText: {
     fontSize: 18,
     fontWeight: '700',
+    marginBottom: 4,
   },
-  fiyatAlt: {
+  fiyatAltBaslik: {
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  fiyatKolonBaslik: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    marginBottom: 2,
   },
-  fiyatDetay: {
+  fiyatKolonText: {
+    flex: 1,
     fontSize: 14,
+    fontWeight: '700',
+  },
+  fiyatMerkezHizala: {
+    textAlign: 'center',
+  },
+  fiyatSagHizala: {
+    textAlign: 'right',
+  },
+  fiyatScrollView: {
+    maxHeight: 300,
+  },
+  fiyatMerkez: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 10,
+  },
+  fiyatMerkezText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  fiyatSatir: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  fiyatTarih: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fiyatMiktar: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  fiyatDeger: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  fiyatVazgecBtn: {
+    marginTop: 16,
+    marginHorizontal: -20,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  fiyatVazgecText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

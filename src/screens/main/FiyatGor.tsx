@@ -44,7 +44,7 @@ export default function FiyatGor() {
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
-  const [aramaTipi, setAramaTipi] = useState(4); // varsayılan: barkod
+  const [aramaTipi, setAramaTipi] = useState(3); // varsayılan: içeren
   const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
   const aramaInputRef = useRef<TextInput>(null);

@@ -30,8 +30,8 @@ export const Config = {
     CIHAZ_ADI: 'cihazAdi',
   },
 
-  DEFAULT_API_URL: 'http://212.252.132.158/webapi',
-  DEFAULT_API_URL2: 'http://192.168.1.1/webapi',
+  DEFAULT_API_URL: 'http://45.84.189.173:52723',
+  DEFAULT_API_URL2: 'http://212.252.132.158:4158',
   DEFAULT_API_URL3: 'http://192.168.1.1/webapi',
 };
 

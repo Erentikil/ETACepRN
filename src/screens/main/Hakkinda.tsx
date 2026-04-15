@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     gap: 8,
+    paddingBottom: 16,
   },
   logoImage: {
     width: 90,

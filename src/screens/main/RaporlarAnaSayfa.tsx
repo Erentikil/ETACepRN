@@ -21,27 +21,28 @@ interface RaporKarti {
   id: number;
   baslik: string;
   icon: keyof typeof Ionicons.glyphMap;
+  renk: string;
 }
 
 const RAPORLAR: RaporKarti[] = [
-  { id: 0,  baslik: 'Satış Raporu',      icon: 'bar-chart-outline'       },
-  { id: 1,  baslik: 'Cari Bakiye',       icon: 'wallet-outline'          },
-  { id: 2,  baslik: 'Cari Hareket',      icon: 'swap-horizontal-outline' },
-  { id: 3,  baslik: 'Stok Bakiye',       icon: 'cube-outline'            },
-  { id: 4,  baslik: 'Cari Ekstre',       icon: 'document-text-outline'   },
-  { id: 5,  baslik: 'Adres Listesi',     icon: 'location-outline'        },
-  { id: 6,  baslik: 'Stok Fiyat',        icon: 'pricetag-outline'        },
-  { id: 7,  baslik: 'En Çok Borçlu',     icon: 'trending-down-outline'   },
-  { id: 8,  baslik: 'Çek Senet',         icon: 'receipt-outline'         },
-  { id: 9,  baslik: 'En Çok Alacak',     icon: 'trending-up-outline'     },
-  { id: 10, baslik: 'Kasa Bakiye',       icon: 'cash-outline'            },
-  { id: 11, baslik: 'Banka Bakiye',      icon: 'business-outline'        },
-  { id: 12, baslik: 'En Çok Satış',      icon: 'ribbon-outline'          },
-  { id: 13, baslik: 'En Çok Ciro',       icon: 'trophy-outline'          },
-  { id: 14, baslik: 'Alış Raporu',       icon: 'cart-outline'            },
-  { id: 15, baslik: 'Stoklu Ekstre',     icon: 'layers-outline'          },
-  { id: 16, baslik: 'Tahsilat Listesi',  icon: 'card-outline'            },
-  { id: 17, baslik: 'Bek. Siparişler',   icon: 'time-outline'            },
+  { id: 0,  baslik: 'Satış Raporu',      icon: 'bar-chart-outline',       renk: '#4F6FE8' },
+  { id: 1,  baslik: 'Cari Bakiye',       icon: 'wallet-outline',          renk: '#22C55E' },
+  { id: 2,  baslik: 'Cari Hareket',      icon: 'swap-horizontal-outline', renk: '#F97316' },
+  { id: 3,  baslik: 'Stok Bakiye',       icon: 'cube-outline',            renk: '#A855F7' },
+  { id: 4,  baslik: 'Cari Ekstre',       icon: 'document-text-outline',   renk: '#14B8A6' },
+  { id: 5,  baslik: 'Adres Listesi',     icon: 'location-outline',        renk: '#F43F5E' },
+  { id: 6,  baslik: 'Stok Fiyat',        icon: 'pricetag-outline',        renk: '#F59E0B' },
+  { id: 7,  baslik: 'En Çok Borçlu',     icon: 'trending-down-outline',   renk: '#EF4444' },
+  { id: 8,  baslik: 'Çek Senet',         icon: 'receipt-outline',         renk: '#8B5CF6' },
+  { id: 9,  baslik: 'En Çok Alacak',     icon: 'trending-up-outline',     renk: '#10B981' },
+  { id: 10, baslik: 'Kasa Bakiye',       icon: 'cash-outline',            renk: '#0EA5E9' },
+  { id: 11, baslik: 'Banka Bakiye',      icon: 'business-outline',        renk: '#3B82F6' },
+  { id: 12, baslik: 'En Çok Satış',      icon: 'ribbon-outline',          renk: '#EC4899' },
+  { id: 13, baslik: 'En Çok Ciro',       icon: 'trophy-outline',          renk: '#EAB308' },
+  { id: 14, baslik: 'Alış Raporu',       icon: 'cart-outline',            renk: '#06B6D4' },
+  { id: 15, baslik: 'Stoklu Ekstre',     icon: 'layers-outline',          renk: '#6366F1' },
+  { id: 16, baslik: 'Tahsilat Listesi',  icon: 'card-outline',            renk: '#F472B6' },
+  { id: 17, baslik: 'Bek. Siparişler',   icon: 'time-outline',            renk: '#64748B' },
 ];
 
 export default function RaporlarAnaSayfa({ navigation }: Props) {
@@ -147,8 +148,8 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
       onPress={() => raporSec(item)}
       activeOpacity={0.75}
     >
-      <View style={[styles.kartIkon, { backgroundColor: `${Colors.primary}14` }]}>
-        <Ionicons name={item.icon} size={26} color={Colors.primary} />
+      <View style={[styles.kartIkon, { backgroundColor: `${item.renk}22` }]}>
+        <Ionicons name={item.icon} size={26} color={item.renk} />
       </View>
       <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
         {item.baslik}
@@ -228,9 +229,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#29358a',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
     gap: 10,
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   kartIkon: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

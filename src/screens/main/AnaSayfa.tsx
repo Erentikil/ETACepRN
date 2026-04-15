@@ -32,7 +32,7 @@ interface HizliErisimKarti {
 
 export default function AnaSayfa({ navigation }: Props) {
   const Colors = useColors();
-  const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, versiyon, onLineCalisma } =
+  const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, onLineCalisma } =
     useAppStore();
 
   useEffect(() => {
@@ -159,11 +159,6 @@ export default function AnaSayfa({ navigation }: Props) {
             {onLineCalisma ? 'Online' : 'Hibrit'}
           </Text>
         </View>
-        {versiyon && (
-          <Text style={[styles.durumVersiyon, { color: Colors.textSecondary }]}>
-            Kalan: {versiyon.kalanGunSayisi} gün
-          </Text>
-        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
