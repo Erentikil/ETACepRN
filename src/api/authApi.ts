@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { getApiInstance, buildUrl } from './axiosInstance';
 import { Config } from '../constants/Config';
 import * as Application from 'expo-application';
@@ -130,4 +131,26 @@ export async function fiyatTipleriniAl(
   const url = buildUrl('FiyatTipiAl', cihazKodu, veriTabaniAdi);
   const res = await api.get<Sonuc<FiyatTipiBilgileri[]>>(url);
   return res.data;
+}
+
+// ─── Cihaz Kayıt ─────────────────────────────────────────────────────────────
+export async function cihazKaydet(): Promise<void> {
+  const deviceIdentifier = await getCihazKodu();
+  const deviceName = Platform.OS === 'ios' ? 'iPhone' : 'Android';
+  const platform = Platform.OS === 'ios' ? 'iOS' : 'Android';
+
+  const res = await axios.post<{ success: boolean; message?: string }>(
+    'http://localhost:5063/api/test-proxy/register-device',
+    {
+      apiKey: 'test-key-123',
+      licenseKey: 'E7093-E2370-4C37B-16E5B',
+      deviceIdentifier,
+      deviceName,
+      platform,
+    }
+  );
+
+  if (!res.data.success) {
+    throw new Error(res.data.message || 'Cihaz kaydı başarısız.');
+  }
 }

@@ -10,12 +10,15 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
-  Keyboard,
   Switch,
   Animated,
   Pressable,
   SafeAreaView,
   Platform,
+  Keyboard,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  LayoutChangeEvent,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,6 +77,29 @@ function sayiFormatla(n: number): string {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function tutarYaz(metin: string): string {
+  let normalized = metin;
+  // "."'yu da decimal olarak kabul et (en-US klavye vb.) — sadece virgül yoksa ve sondaki nokta sonrası 0-2 basamak varsa
+  if (!normalized.includes(',')) {
+    const m = normalized.match(/^(.*)\.(\d{0,2})$/);
+    if (m) normalized = `${m[1]},${m[2]}`;
+  }
+  const [intRaw = '', decRaw] = normalized.split(',');
+  const intDigits = intRaw.replace(/\D/g, '');
+  const decDigits = decRaw !== undefined ? decRaw.replace(/\D/g, '').slice(0, 2) : null;
+  let intClean = intDigits.replace(/^0+/, '');
+  if (!intClean && intDigits) intClean = '0';
+  const intFmt = intClean ? intClean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+  if (decDigits !== null) {
+    return `${intFmt || '0'},${decDigits}`;
+  }
+  return intFmt;
+}
+
+function tutarSayisi(t: string): number {
+  return parseFloat(t.replace(/\./g, '').replace(',', '.'));
+}
+
 export default function TahsilatEkrani() {
   const Colors = useColors();
   const insets = useSafeAreaInsets();
@@ -126,10 +152,14 @@ export default function TahsilatEkrani() {
   const [duzIlce, setDuzIlce] = useState('');
 
   const scrollRef = useRef<ScrollView>(null);
-  const tutarFocused = useRef(false);
+  const scrollYRef = useRef(0);
+  const scrollHeightRef = useRef(0);
+  const kbHeightRef = useRef(0);
+  const satirYRef = useRef<Map<string, { y: number; h: number }>>(new Map());
+  const odakEtiketRef = useRef<string | null>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const subSayfayaGidildi = useRef(false);
   const [kaydediliyor, setKaydediliyor] = useState(false);
-  const [klavyeYuksekligi, setKlavyeYuksekligi] = useState(0);
 
   // FAB & PDF
   const [yuzerMenuAcik, setYuzerMenuAcik] = useState(false);
@@ -198,20 +228,56 @@ export default function TahsilatEkrani() {
   }, [route.params?.secilenCari, route.params?.tahsilatTipi]);
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKlavyeYuksekligi(e.endCoordinates.height);
-      if (tutarFocused.current) {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKlavyeYuksekligi(0));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
-
-  useEffect(() => {
     islemTipleriYukle();
     kasaListesiYukle();
   }, []);
+
+  const odakliInputaKaydir = () => {
+    const etiket = odakEtiketRef.current;
+    if (!etiket || !scrollRef.current) return;
+    const pos = satirYRef.current.get(etiket);
+    if (!pos) return;
+    scrollRef.current.scrollTo({
+      y: Math.max(pos.y - 8, 0),
+      animated: true,
+    });
+  };
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbHeightRef.current = e.endCoordinates.height;
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      kbHeightRef.current = 0;
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
+
+  const inputFocusScroll = (etiket: string) => {
+    odakEtiketRef.current = etiket;
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    const gecikme = kbHeightRef.current > 0 ? 60 : (Platform.OS === 'ios' ? 320 : 180);
+    scrollTimerRef.current = setTimeout(odakliInputaKaydir, gecikme);
+  };
+
+  const onScrollDegisti = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollYRef.current = e.nativeEvent.contentOffset.y;
+  };
+
+  const onScrollLayout = (e: LayoutChangeEvent) => {
+    scrollHeightRef.current = e.nativeEvent.layout.height;
+  };
+
+  const onSatirLayout = (etiket: string) => (e: LayoutChangeEvent) => {
+    satirYRef.current.set(etiket, {
+      y: e.nativeEvent.layout.y,
+      h: e.nativeEvent.layout.height,
+    });
+  };
 
   // Header'ı güncelle
   useEffect(() => {
@@ -367,7 +433,7 @@ export default function TahsilatEkrani() {
       toast.error('Lütfen işlem tipi seçiniz.');
       return false;
     }
-    const tutarSayi = parseFloat(tutar.replace(',', '.'));
+    const tutarSayi = tutarSayisi(tutar);
     if (!tutar || isNaN(tutarSayi) || tutarSayi <= 0) {
       toast.error('Tutar 0 ve 0\'dan küçük olamaz.');
       return false;
@@ -377,7 +443,7 @@ export default function TahsilatEkrani() {
 
   const kaydet = async () => {
     if (!dogrula()) return;
-    const tutarSayi = parseFloat(tutar.replace(',', '.'));
+    const tutarSayi = tutarSayisi(tutar);
 
     setKaydediliyor(true);
     try {
@@ -507,7 +573,10 @@ export default function TahsilatEkrani() {
   // ─── Render helpers ────────────────────────────────────────────────────────
 
   const renderSatir = (etiket: string, children: React.ReactNode) => (
-    <View style={[styles.satirContainer, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
+    <View
+      style={[styles.satirContainer, { backgroundColor: Colors.card, borderColor: Colors.border }]}
+      onLayout={onSatirLayout(etiket)}
+    >
       <Text style={[styles.etiket, { color: Colors.text }]}>{etiket}</Text>
       {children}
     </View>
@@ -521,6 +590,7 @@ export default function TahsilatEkrani() {
         onChangeText={onChange}
         placeholder={placeholder}
         placeholderTextColor={Colors.textSecondary}
+        onFocus={() => inputFocusScroll(etiket)}
         {...extra}
       />
     )
@@ -572,12 +642,11 @@ export default function TahsilatEkrani() {
       <TextInput
         style={[styles.giris, styles.tutarGiris, { color: Colors.error }]}
         value={tutar}
-        onChangeText={setTutar}
+        onChangeText={(t) => setTutar(tutarYaz(t))}
         placeholder="0,00"
         placeholderTextColor={Colors.textSecondary}
         keyboardType="decimal-pad"
-        onFocus={() => { tutarFocused.current = true; }}
-        onBlur={() => { tutarFocused.current = false; }}
+        onFocus={() => inputFocusScroll('Tutar')}
       />
     )
   );
@@ -840,8 +909,11 @@ export default function TahsilatEkrani() {
         <ScrollView
           ref={scrollRef}
           style={styles.form}
-          contentContainerStyle={{ paddingBottom: klavyeYuksekligi + 90 }}
+          contentContainerStyle={{ paddingBottom: 420 }}
           keyboardShouldPersistTaps="handled"
+          onScroll={onScrollDegisti}
+          scrollEventThrottle={16}
+          onLayout={onScrollLayout}
         >
           {renderAktifForm()}
         </ScrollView>
@@ -902,25 +974,52 @@ export default function TahsilatEkrani() {
       </Modal>
 
       {/* ─── Vade Tarihi Picker ───────────────────────────────── */}
-      {tarihPickerAcik && (
-        <>
-          <DateTimePicker
-            value={vadeTarihi}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            locale="tr-TR"
-            onChange={onTarihDegis}
-            textColor={Colors.text}
-          />
-          {Platform.OS === 'ios' && (
+      {Platform.OS === 'android' && tarihPickerAcik && (
+        <DateTimePicker
+          value={vadeTarihi}
+          mode="date"
+          display="default"
+          locale="tr-TR"
+          onChange={onTarihDegis}
+        />
+      )}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={tarihPickerAcik}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setTarihPickerAcik(false)}
+        >
+          <TouchableOpacity
+            style={styles.tarihModalOverlay}
+            activeOpacity={1}
+            onPress={() => setTarihPickerAcik(false)}
+          >
             <TouchableOpacity
-              style={[styles.pickerTamamBtn, { backgroundColor: Colors.primary }]}
-              onPress={() => setTarihPickerAcik(false)}
+              activeOpacity={1}
+              style={[styles.tarihModalKutu, { backgroundColor: Colors.card }]}
             >
-              <Text style={styles.pickerTamamText}>Tamam</Text>
+              <View style={[styles.tarihModalBar, { borderBottomColor: Colors.border }]}>
+                <TouchableOpacity onPress={() => setTarihPickerAcik(false)}>
+                  <Text style={[styles.tarihModalVazgec, { color: Colors.textSecondary }]}>Vazgeç</Text>
+                </TouchableOpacity>
+                <Text style={[styles.tarihModalBaslik, { color: Colors.text }]}>Vade Tarihi</Text>
+                <TouchableOpacity onPress={() => setTarihPickerAcik(false)}>
+                  <Text style={[styles.tarihModalTamam, { color: Colors.primary }]}>Tamam</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={vadeTarihi}
+                mode="date"
+                display="spinner"
+                locale="tr-TR"
+                onChange={onTarihDegis}
+                textColor={Colors.text}
+                style={styles.tarihSpinner}
+              />
             </TouchableOpacity>
-          )}
-        </>
+          </TouchableOpacity>
+        </Modal>
       )}
 
       {/* ─── FAB ──────────────────────────────────────────────── */}
@@ -1217,16 +1316,36 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  pickerTamamBtn: {
-    marginHorizontal: 12,
-    marginTop: 6,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
+  tarihModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  pickerTamamText: {
-    color: '#fff',
+  tarihModalKutu: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 12,
+  },
+  tarihModalBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tarihModalBaslik: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  tarihModalVazgec: {
+    fontSize: 15,
+  },
+  tarihModalTamam: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  tarihSpinner: {
+    alignSelf: 'stretch',
   },
 });

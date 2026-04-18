@@ -30,6 +30,7 @@ import {
   kdvKisimBilgileriniAl,
   fisTipleriniAl,
   fiyatTipleriniAl,
+  cihazKaydet,
 } from '../../api/authApi';
 import LoadingIndicator from '../../components/LoadingIndicator';
 import ThemedButton from '../../components/ThemedButton';
@@ -213,6 +214,8 @@ export default function LoginSayfasi({ navigation }: Props) {
       } else {
         await AsyncStorage.removeItem(Config.STORAGE_KEYS.SIFRE);
       }
+
+      
 
       // Ana sayfaya yönlendir
       navigation.replace('Drawer');

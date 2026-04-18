@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -45,6 +46,12 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
       setTaramaAktif(!manuelOkuma);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (visible && permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [visible, permission?.status]);
 
   const showZoomIndicator = () => {
     setZoomGoster(true);
@@ -97,12 +104,14 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
         ) : !permission.granted ? (
           <View style={[styles.merkezle, { backgroundColor: Colors.card }]}>
             <Ionicons name="camera-outline" size={64} color={Colors.textSecondary} />
-            <Text style={[styles.mesaj, { color: Colors.text }]}>Barkod okumak icin kamera iznine ihtiyac var.</Text>
-            <TouchableOpacity style={[styles.izinBtn, { backgroundColor: Colors.primary }]} onPress={requestPermission}>
-              <Text style={styles.izinBtnText}>Izin Ver</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.kapat} onPress={onClose}>
-              <Text style={[styles.kapatText, { color: Colors.textSecondary }]}>Vazgec</Text>
+            <Text style={[styles.mesaj, { color: Colors.text }]}>
+              Barkod okumak için kamera izni gerekli. Ayarlar'dan izin verebilirsiniz.
+            </Text>
+            <TouchableOpacity
+              style={[styles.izinBtn, { backgroundColor: Colors.primary }]}
+              onPress={() => Linking.openSettings()}
+            >
+              <Text style={styles.izinBtnText}>Ayarlara Git</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -328,6 +337,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   izinBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  kapat: { marginTop: 8, padding: 8 },
-  kapatText: { fontSize: 14 },
 });
