@@ -1,7 +1,7 @@
 export const Config = {
   VERSIYON: '1-0-23',
   BEKLENEN_SUNUCU_VERSIYONU: '2.00.000',
-  IS_PRO: false,
+  IS_PRO: true,
   TELEFON_CIHAZ_KODU: '12345',
   TELEFON_CIHAZ_ADI: 'ReactNative',
   API_TIMEOUT: 30000,
