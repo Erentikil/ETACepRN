@@ -103,8 +103,10 @@ function SortableItem({
     .onUpdate((e) => {
       translateX.value = startX.value + e.translationX;
       translateY.value = startY.value + e.translationY;
-    })
-    .onEnd(() => {
+
+      // Live swap: sürüklenirken hedef slot değiştikçe anında swap
+      const myIdx = positions.value[id];
+      if (myIdx === undefined) return;
       const hedefIdx = slotFromPos(
         translateX.value,
         translateY.value,
@@ -112,10 +114,7 @@ function SortableItem({
         itemHeight,
         totalCount,
       );
-      const myIdx = positions.value[id];
-
-      // Swap: me <-> hedefteki kart (diğerleri dokunulmaz)
-      if (myIdx !== undefined && hedefIdx !== myIdx) {
+      if (hedefIdx !== myIdx) {
         const yeni: Record<string, number> = { ...positions.value };
         const keys = Object.keys(yeni);
         for (let i = 0; i < keys.length; i++) {
@@ -128,7 +127,8 @@ function SortableItem({
         yeni[id] = hedefIdx;
         positions.value = yeni;
       }
-
+    })
+    .onEnd(() => {
       const yeniIdx = positions.value[id];
       if (yeniIdx !== undefined) {
         const yeniPos = slotPos(yeniIdx, itemWidth, itemHeight);
