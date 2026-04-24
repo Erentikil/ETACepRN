@@ -77,8 +77,8 @@ function SortableItem({
       translateY.value = pos.y;
       positioned.value = true;
     } else {
-      translateX.value = withTiming(pos.x, { duration: 160 });
-      translateY.value = withTiming(pos.y, { duration: 160 });
+      translateX.value = withTiming(pos.x, { duration: 260 });
+      translateY.value = withTiming(pos.y, { duration: 260 });
     }
   });
 
@@ -94,7 +94,7 @@ function SortableItem({
       }
       zIndex.value = 999;
       wobbleProgress.value = withRepeat(
-        withTiming(1, { duration: 160 }),
+        withTiming(1, { duration: 260 }),
         -1,
         true,
       );
@@ -131,8 +131,8 @@ function SortableItem({
       const yeniIdx = positions.value[id];
       if (yeniIdx !== undefined) {
         const yeniPos = slotPos(yeniIdx, itemWidth, itemHeight);
-        translateX.value = withTiming(yeniPos.x, { duration: 160 });
-        translateY.value = withTiming(yeniPos.y, { duration: 160 });
+        translateX.value = withTiming(yeniPos.x, { duration: 260 });
+        translateY.value = withTiming(yeniPos.y, { duration: 260 });
       }
       zIndex.value = 0;
       isDragging.value = false;
