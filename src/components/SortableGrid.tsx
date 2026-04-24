@@ -4,13 +4,16 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withRepeat,
+  withTiming,
   runOnJS,
   useDerivedValue,
   SharedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Config } from '../constants/Config';
 
-const NUM_COLUMNS = 2;
+const NUM_COLUMNS = Config.IS_PRO ? 3 : 2;
 const GAP = 12;
 const PADDING = 16;
 const LONG_PRESS_MS = 400;
@@ -62,6 +65,7 @@ function SortableItem({
   const positioned = useSharedValue(false);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
+  const wobbleProgress = useSharedValue(0);
 
   // Slot pozisyonuna senkron (ilk atama anlık, sonrası spring)
   useDerivedValue(() => {
@@ -90,6 +94,11 @@ function SortableItem({
         startY.value = start.y;
       }
       zIndex.value = 999;
+      wobbleProgress.value = withRepeat(
+        withTiming(1, { duration: 160 }),
+        -1,
+        true,
+      );
     })
     .onUpdate((e) => {
       translateX.value = startX.value + e.translationX;
@@ -128,21 +137,27 @@ function SortableItem({
       }
       zIndex.value = 0;
       isDragging.value = false;
+      wobbleProgress.value = withTiming(0, { duration: 120 });
       runOnJS(onSwapEnd)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: itemWidth,
-    height: itemHeight,
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-    ],
-    zIndex: zIndex.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    // Yalnız sürüklenen kart titresin, başlangıçta ve bitişte rotate 0
+    const rotate = Math.sin(wobbleProgress.value * Math.PI * 2) * 1.5;
+    return {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: itemWidth,
+      height: itemHeight,
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { rotate: `${rotate}deg` },
+      ],
+      zIndex: zIndex.value,
+    };
+  });
 
   return (
     <GestureDetector gesture={pan}>
@@ -168,7 +183,7 @@ export default function SortableGrid<T>({
 }: Props<T>) {
   const { width: windowWidth } = useWindowDimensions();
   const itemWidth = useMemo(
-    () => (windowWidth - 2 * PADDING - GAP) / NUM_COLUMNS,
+    () => (windowWidth - 2 * PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS,
     [windowWidth],
   );
 
