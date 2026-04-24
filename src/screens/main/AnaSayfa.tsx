@@ -163,7 +163,7 @@ export default function AnaSayfa({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Karşılama */}
-        <View style={[styles.karsilamaKarti, { backgroundColor: Colors.card, borderLeftColor: Colors.accent }]}>
+        <View style={[styles.karsilamaKarti, { backgroundColor: Colors.card }]}>
           <View style={styles.karsilamaIkon}>
             <Ionicons name="person-circle-outline" size={48} color={Colors.primary} />
           </View>
@@ -194,7 +194,7 @@ export default function AnaSayfa({ navigation }: Props) {
               {hizliErisimler.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={[styles.kart, { backgroundColor: Colors.card, borderLeftColor: item.renk, shadowColor: Colors.primary }]}
+                  style={[styles.kart, { backgroundColor: Colors.card, shadowColor: Colors.primary }]}
                   onPress={() => navigation.navigate(item.ekran)}
                   activeOpacity={0.8}
                 >
@@ -265,7 +265,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
-    borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
@@ -308,7 +307,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',
-    borderLeftWidth: 3,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,

@@ -271,7 +271,6 @@ export default function LoginSayfasi({ navigation }: Props) {
             <Text style={[styles.titleETA, { color: Colors.primary }]}>ETA </Text>
             <Text style={[styles.titleMobil, { color: Colors.accent }]}>Mobil</Text>
           </View>
-          <View style={[styles.titleAyirici, { backgroundColor: Colors.accent }]} />
           {/* <Text style={[styles.subtitle, { color: Colors.textSecondary }]}>Horizon</Text> */}
 
           {/* Kullanıcı Kodu */}
@@ -405,14 +404,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-  },
-  titleAyirici: {
-    width: 48,
-    height: 1,
-    alignSelf: 'center',
-    marginTop: -30,
-    marginBottom: 38,
-    opacity: 0.7,
   },
   subtitle: {
     fontSize: 11,

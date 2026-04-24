@@ -198,12 +198,7 @@ export default function DrawerMenu({ navigation, state }: DrawerContentComponent
               key={item.id}
               style={[
                 styles.menuItem,
-                aktif && {
-                  borderLeftWidth: 3,
-                  borderLeftColor: Colors.accent,
-                  backgroundColor: Colors.drawerActiveBackground,
-                  paddingLeft: 17,
-                },
+                aktif && { backgroundColor: Colors.drawerActiveBackground },
               ]}
               onPress={() => {
                 navigation.closeDrawer();
