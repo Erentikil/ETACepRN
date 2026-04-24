@@ -73,9 +73,10 @@ export default function DrawerNavigator() {
             colors={[colors.headerBackground, colors.headerGradientEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, borderBottomWidth: 1, borderBottomColor: colors.accent }}
           />
         ),
+        headerStyle: { elevation: 0, shadowOpacity: 0 },
         headerRight: route.name === 'AnaSayfa' ? undefined : () => (
           <TouchableOpacity
             onPress={() => navigation.navigate('AnaSayfa')}

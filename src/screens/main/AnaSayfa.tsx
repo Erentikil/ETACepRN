@@ -55,7 +55,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Alış/Satış',
       icon: 'flash-outline',
       ekran: 'HizliIslemlerV2',
-      renk: '#2a6e4a',
+      renk: '#1a5d3f',
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
@@ -63,7 +63,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Cari İletişim',
       icon: 'location-outline',
       ekran: 'CariIletisim',
-      renk: '#2f6e74',
+      renk: '#1e3a6b',
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
@@ -71,7 +71,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Fiyat Gör',
       icon: 'pricetag-outline',
       ekran: 'FiyatGor',
-      renk: '#2a3a8a',
+      renk: '#c9a227',
       yetki: menuYetkiBilgileri?.fiyatGor ?? false,
     },
     {
@@ -79,7 +79,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Sipariş Kapama',
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
-      renk: '#5a2e7c',
+      renk: '#4a2c6e',
       yetki: menuYetkiBilgileri?.siparisKapama ?? false,
     },
     {
@@ -87,7 +87,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'CRM Teklif',
       icon: 'people-outline',
       ekran: 'ZiyaretIslemleri',
-      renk: '#3d6e54',
+      renk: '#1d5e5f',
       yetki: menuYetkiBilgileri?.crm ?? false,
     },
     {
@@ -95,7 +95,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
-      renk: '#2e4d85',
+      renk: '#172a4e',
       yetki: menuYetkiBilgileri?.evrakDuzenle ?? false,
     },
     {
@@ -103,7 +103,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Tahsilat',
       icon: 'cash-outline',
       ekran: 'Tahsilatlar',
-      renk: '#8f6b30',
+      renk: '#8a5a2b',
       yetki: menuYetkiBilgileri?.tahsilatlar ?? false,
     },
     {
@@ -111,7 +111,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Raporlar',
       icon: 'bar-chart-outline',
       ekran: 'Raporlar',
-      renk: '#9e2e3a',
+      renk: '#6b1e25',
       yetki: menuYetkiBilgileri?.raporlar ?? false,
     },
     {
@@ -119,7 +119,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Barkod Ekleme',
       icon: 'barcode-outline',
       ekran: 'BarkodEkleme',
-      renk: '#8a4530',
+      renk: '#8a4520',
       yetki: menuYetkiBilgileri?.barkodEkle ?? false,
     },
     {
@@ -127,7 +127,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Bekleyen Evraklar',
       icon: 'document-text-outline',
       ekran: 'BekleyenEvraklar',
-      renk: '#4a4a63',
+      renk: '#2a2a2a',
       yetki: menuYetkiBilgileri?.bekleyenEvraklar ?? false,
     },
     {
@@ -135,7 +135,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Renk-Beden',
       icon: 'color-palette-outline',
       ekran: 'RenkBedenIslemleri',
-      renk: '#8e3547',
+      renk: '#9e5a52',
       yetki: menuYetkiBilgileri?.renkBedenIslemleri ?? false,
     },
     {
@@ -143,7 +143,7 @@ export default function AnaSayfa({ navigation }: Props) {
       baslik: 'Onay İşlemleri',
       icon: 'shield-checkmark-outline',
       ekran: 'OnayIslemleri',
-      renk: '#63503e',
+      renk: '#6b553a',
       yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
     },
   ];
