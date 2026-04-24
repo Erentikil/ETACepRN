@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,17 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import DraggableFlatList, {
+  ScaleDecorator,
+  RenderItemParams,
+} from 'react-native-draggable-flatlist';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
 import { useColors } from '../../contexts/ThemeContext';
+import { Config } from '../../constants/Config';
+import { hafifTitresim } from '../../utils/haptics';
 import type { DrawerParamList } from '../../navigation/types';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 
@@ -34,6 +41,10 @@ export default function AnaSayfa({ navigation }: Props) {
   const Colors = useColors();
   const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, onLineCalisma } =
     useAppStore();
+
+  const [duzenlemeModu, setDuzenlemeModu] = useState(false);
+  const [kartSirasi, setKartSirasi] = useState<string[]>([]);
+  const [sirayiYukledi, setSirayiYukledi] = useState(false);
 
   useEffect(() => {
     if (!calisilanSirket || sonKontrolEdilenSirket === calisilanSirket) return;
@@ -147,7 +158,126 @@ export default function AnaSayfa({ navigation }: Props) {
       yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
     },
   ];
-  const hizliErisimler = tumHizliErisimler.filter((k) => k.yetki);
+
+  const varsayilanIdSirasi = tumHizliErisimler.map((k) => k.id);
+
+  // İlk mount'ta AsyncStorage'dan sıra oku; eski kayıtta olmayan yeni id'ler sona eklenir
+  useEffect(() => {
+    AsyncStorage.getItem(Config.STORAGE_KEYS.ANA_SAYFA_KART_SIRASI).then((json) => {
+      let kayitli: string[] = [];
+      if (json) {
+        try {
+          kayitli = JSON.parse(json);
+        } catch {
+          kayitli = [];
+        }
+      }
+      const mevcutIdler = new Set(varsayilanIdSirasi);
+      const temiz = kayitli.filter((id) => mevcutIdler.has(id));
+      const temizSet = new Set(temiz);
+      const yeniler = varsayilanIdSirasi.filter((id) => !temizSet.has(id));
+      setKartSirasi([...temiz, ...yeniler]);
+      setSirayiYukledi(true);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Kart id'lerinden sıralı kart objelerini türet; yetki filtresi en sonda
+  const siraliKartlar: HizliErisimKarti[] = kartSirasi
+    .map((id) => tumHizliErisimler.find((k) => k.id === id))
+    .filter((k): k is HizliErisimKarti => Boolean(k));
+  const gorunurKartlar = siraliKartlar.filter((k) => k.yetki);
+
+  const siraKaydet = useCallback((yeniSira: string[]) => {
+    setKartSirasi(yeniSira);
+    AsyncStorage.setItem(
+      Config.STORAGE_KEYS.ANA_SAYFA_KART_SIRASI,
+      JSON.stringify(yeniSira),
+    );
+  }, []);
+
+  const handleDragEnd = ({ data }: { data: HizliErisimKarti[] }) => {
+    const yeniGorunur = data.map((k) => k.id);
+    const yeniGorunurSet = new Set(yeniGorunur);
+    const digerleri = kartSirasi.filter((id) => !yeniGorunurSet.has(id));
+    siraKaydet([...yeniGorunur, ...digerleri]);
+  };
+
+  const varsayilanaSifirla = () => {
+    hafifTitresim();
+    siraKaydet(varsayilanIdSirasi);
+  };
+
+  const duzenlemeModunuAc = () => {
+    if (!Config.IS_PRO) return;
+    hafifTitresim();
+    setDuzenlemeModu(true);
+  };
+
+  const renderDuzenlemeKarti = ({
+    item,
+    drag,
+    isActive,
+  }: RenderItemParams<HizliErisimKarti>) => (
+    <ScaleDecorator>
+      <TouchableOpacity
+        activeOpacity={1}
+        onLongPress={drag}
+        disabled={isActive}
+        style={[
+          styles.duzenlemeKart,
+          {
+            backgroundColor: Colors.card,
+            shadowColor: Colors.primary,
+            opacity: isActive ? 0.85 : 1,
+          },
+        ]}
+      >
+        <View style={[styles.duzenlemeIkon, { backgroundColor: item.renk }]}>
+          <Ionicons name={item.icon} size={22} color="#fff" />
+        </View>
+        <Text style={[styles.duzenlemeBaslik, { color: Colors.text }]} numberOfLines={1}>
+          {item.baslik}
+        </Text>
+        <Ionicons name="reorder-three" size={26} color={Colors.textSecondary} />
+      </TouchableOpacity>
+    </ScaleDecorator>
+  );
+
+  if (duzenlemeModu) {
+    return (
+      <View style={[styles.container, { backgroundColor: Colors.background }]}>
+        <View style={[styles.duzenlemeBaslikBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+          <TouchableOpacity onPress={varsayilanaSifirla} style={styles.duzenlemeBtn}>
+            <Ionicons name="refresh-outline" size={18} color={Colors.textSecondary} />
+            <Text style={[styles.duzenlemeBtnText, { color: Colors.textSecondary }]}>Varsayılan</Text>
+          </TouchableOpacity>
+          <Text style={[styles.duzenlemeBaslikText, { color: Colors.text }]}>
+            Ana Sayfayı Düzenle
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              hafifTitresim();
+              setDuzenlemeModu(false);
+            }}
+            style={styles.duzenlemeBtn}
+          >
+            <Text style={[styles.duzenlemeBtnText, { color: Colors.accent, fontWeight: '700' }]}>Tamam</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.duzenlemeIpucu, { color: Colors.textSecondary }]}>
+          Sıralamak için kartı uzun basılı tutup sürükleyin
+        </Text>
+        <DraggableFlatList
+          data={gorunurKartlar}
+          keyExtractor={(item) => item.id}
+          onDragEnd={handleDragEnd}
+          renderItem={renderDuzenlemeKarti}
+          contentContainerStyle={styles.duzenlemeListe}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.background }]}>
@@ -187,15 +317,17 @@ export default function AnaSayfa({ navigation }: Props) {
         </View>
 
         {/* Hızlı Erişim Kartları */}
-        {hizliErisimler.length > 0 ? (
+        {sirayiYukledi && gorunurKartlar.length > 0 ? (
           <>
             <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Hızlı Erişim</Text>
             <View style={styles.kartGrid}>
-              {hizliErisimler.map((item) => (
+              {gorunurKartlar.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={[styles.kart, { backgroundColor: Colors.card, shadowColor: Colors.primary }]}
                   onPress={() => navigation.navigate(item.ekran)}
+                  onLongPress={duzenlemeModunuAc}
+                  delayLongPress={450}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.kartIkon, { backgroundColor: item.renk }]}>
@@ -208,14 +340,14 @@ export default function AnaSayfa({ navigation }: Props) {
               ))}
             </View>
           </>
-        ) : (
+        ) : sirayiYukledi ? (
           <View style={styles.bosMesaj}>
             <Ionicons name="information-circle-outline" size={48} color={Colors.gray} />
             <Text style={[styles.bosMesajText, { color: Colors.textSecondary }]}>
               Erişim izniniz olan modül bulunmuyor.{'\n'}Yöneticinizle iletişime geçin.
             </Text>
           </View>
-        )}
+        ) : null}
 
         {/* Horizon Software */}
         <View style={styles.adminBtn}>
@@ -349,5 +481,64 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  duzenlemeBaslikBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  duzenlemeBaslikText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  duzenlemeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    minWidth: 90,
+  },
+  duzenlemeBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  duzenlemeIpucu: {
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  duzenlemeListe: {
+    padding: 16,
+    paddingTop: 4,
+    gap: 10,
+  },
+  duzenlemeKart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  duzenlemeIkon: {
+    width: 42,
+    height: 42,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  duzenlemeBaslik: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

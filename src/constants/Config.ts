@@ -30,6 +30,7 @@ export const Config = {
     TEMA_SECIMI: 'temaSecimi',
     CIHAZ_ID: 'cihazId',
     CIHAZ_ADI: 'cihazAdi',
+    ANA_SAYFA_KART_SIRASI: 'anaSayfaKartSirasi',
   },
 
   DEFAULT_API_URL: 'http://45.84.189.173:52723',
