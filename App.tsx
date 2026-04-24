@@ -11,7 +11,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.container}>
-        <StatusBar style="light" backgroundColor="#051f22" />
+        <StatusBar style="light" backgroundColor="#0a0a0a" />
         <AppNavigator />
         <ToastProvider />
       </GestureHandlerRootView>
