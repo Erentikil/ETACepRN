@@ -30,8 +30,6 @@ function AppStack() {
     },
   }), [isDark, colors]);
 
-  const gradientEnd = isDark ? '#0d0d1a' : '#1a1f5e';
-
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
@@ -42,7 +40,7 @@ function AppStack() {
           headerTitleStyle: { fontWeight: 'bold' },
           headerBackground: () => (
             <LinearGradient
-              colors={[colors.headerBackground, gradientEnd]}
+              colors={[colors.headerBackground, colors.headerGradientEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}

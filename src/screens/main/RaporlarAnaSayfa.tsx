@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
-    shadowColor: '#29358a',
+    shadowColor: '#1a237e',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,

@@ -11,7 +11,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.container}>
-        <StatusBar style="light" backgroundColor="#29358a" /> //TODO: Change to dark when dark mode is implemented
+        <StatusBar style="light" backgroundColor="#0f1638" />
         <AppNavigator />
         <ToastProvider />
       </GestureHandlerRootView>

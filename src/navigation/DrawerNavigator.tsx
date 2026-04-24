@@ -60,7 +60,6 @@ function RaporGeriButonu({ navigation, kaynakEkran }: { navigation: DrawerNaviga
 
 export default function DrawerNavigator() {
   const colors = useColors();
-  const gradientEnd = colors.headerBackground === '#1a1a2e' ? '#0d0d1a' : '#1a1f5e';
 
   return (
     <Drawer.Navigator
@@ -71,7 +70,7 @@ export default function DrawerNavigator() {
         headerTitleStyle: { fontWeight: 'bold' },
         headerBackground: () => (
           <LinearGradient
-            colors={[colors.headerBackground, gradientEnd]}
+            colors={[colors.headerBackground, colors.headerGradientEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ flex: 1 }}

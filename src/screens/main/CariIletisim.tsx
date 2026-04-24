@@ -195,7 +195,7 @@ export default function CariIletisim() {
                 onPress={() => dialNumber(tel)}
                 style={({ pressed }) => [
                   styles.iletisimIkon,
-                  { backgroundColor: '#1e3a6b' },
+                  { backgroundColor: Colors.primary },
                   pressed && { opacity: 0.6 },
                 ]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -206,7 +206,7 @@ export default function CariIletisim() {
                 onPress={() => openWhatsApp(tel)}
                 style={({ pressed }) => [
                   styles.iletisimIkon,
-                  { backgroundColor: '#1f7a53' },
+                  { backgroundColor: Colors.success },
                   pressed && { opacity: 0.6 },
                 ]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -237,7 +237,7 @@ export default function CariIletisim() {
                 onPress={() => haritaAc(tamAdres)}
                 style={({ pressed }) => [
                   styles.iletisimIkon,
-                  { backgroundColor: '#a14040' },
+                  { backgroundColor: Colors.error },
                   pressed && { opacity: 0.6 },
                 ]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
