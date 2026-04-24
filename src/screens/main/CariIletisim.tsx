@@ -77,12 +77,7 @@ export default function CariIletisim() {
     setAdresYukleniyor(true);
     adresBilgileriniAl(secilenCari.cariKodu, calisilanSirket)
       .then((sonuc) => {
-        if (sonuc.sonuc) {
-          setAdresListesi(sonuc.data);
-        } else {
-          setAdresListesi([]);
-          toast.error(sonuc.mesaj || 'Adres bilgileri alınamadı.');
-        }
+        setAdresListesi(sonuc.sonuc ? sonuc.data : []);
       })
       .catch(() => {
         setAdresListesi([]);
