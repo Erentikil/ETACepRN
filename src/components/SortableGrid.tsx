@@ -64,15 +64,24 @@ function SortableItem({
   const zIndex = useSharedValue(0);
   const isDragging = useSharedValue(false);
   const wobbleProgress = useSharedValue(0);
+  const positioned = useSharedValue(false);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
-  // Slot pozisyonuna senkron olmak (swap sonrası kart kendi slot'una animate)
+  // Slot pozisyonuna senkron olmak (ilk atama anlık, sonrası spring)
   useDerivedValue(() => {
     if (isDragging.value) return;
     const idx = positions.value[id];
     if (idx === undefined) return;
     const pos = slotPos(idx, itemWidth, itemHeight);
-    translateX.value = withSpring(pos.x, { damping: 20, stiffness: 220 });
-    translateY.value = withSpring(pos.y, { damping: 20, stiffness: 220 });
+    if (!positioned.value) {
+      translateX.value = pos.x;
+      translateY.value = pos.y;
+      positioned.value = true;
+    } else {
+      translateX.value = withSpring(pos.x, { damping: 20, stiffness: 220 });
+      translateY.value = withSpring(pos.y, { damping: 20, stiffness: 220 });
+    }
   });
 
   // iPhone-tarzı hafif titreşim
@@ -93,23 +102,30 @@ function SortableItem({
     .enabled(wobble)
     .onStart(() => {
       isDragging.value = true;
+      const myIdx = positions.value[id];
+      if (myIdx !== undefined) {
+        const start = slotPos(myIdx, itemWidth, itemHeight);
+        startX.value = start.x;
+        startY.value = start.y;
+      }
       scale.value = withSpring(1.1, { damping: 15 });
       zIndex.value = 999;
     })
     .onUpdate((e) => {
+      translateX.value = startX.value + e.translationX;
+      translateY.value = startY.value + e.translationY;
+
+      // Live reorder: sürükleme sırasında hedef slot'u hesapla, swap yap
       const myIdx = positions.value[id];
       if (myIdx === undefined) return;
-      const start = slotPos(myIdx, itemWidth, itemHeight);
-      translateX.value = start.x + e.translationX;
-      translateY.value = start.y + e.translationY;
-    })
-    .onEnd(() => {
-      const finalX = translateX.value;
-      const finalY = translateY.value;
-      const hedefIdx = slotFromPos(finalX, finalY, itemWidth, itemHeight, totalCount);
-      const myIdx = positions.value[id];
-
-      if (myIdx !== undefined && hedefIdx !== myIdx) {
+      const hedefIdx = slotFromPos(
+        translateX.value,
+        translateY.value,
+        itemWidth,
+        itemHeight,
+        totalCount,
+      );
+      if (hedefIdx !== myIdx) {
         const yeni: Record<string, number> = { ...positions.value };
         const keys = Object.keys(yeni);
         for (let i = 0; i < keys.length; i++) {
@@ -124,7 +140,8 @@ function SortableItem({
         }
         positions.value = yeni;
       }
-
+    })
+    .onEnd(() => {
       const yeniIdx = positions.value[id];
       if (yeniIdx !== undefined) {
         const yeniPos = slotPos(yeniIdx, itemWidth, itemHeight);
@@ -138,7 +155,8 @@ function SortableItem({
     });
 
   const animatedStyle = useAnimatedStyle(() => {
-    const rotate = (wobbleProgress.value - 0.5) * 2.4; // -1.2deg..+1.2deg
+    // wobbleProgress 0..1 → sin(0..2π) = 0..+1..0..-1..0 — başta/bitişte rotate 0
+    const rotate = Math.sin(wobbleProgress.value * Math.PI * 2) * 1.2;
     return {
       position: 'absolute',
       left: 0,
@@ -208,24 +226,26 @@ export default function SortableGrid<T>({
   };
 
   return (
-    <View style={{ height: containerHeight, paddingHorizontal: PADDING }}>
-      {data.map((item) => {
-        const id = keyExtractor(item);
-        return (
-          <SortableItem
-            key={id}
-            id={id}
-            itemWidth={itemWidth}
-            itemHeight={itemHeight}
-            totalCount={data.length}
-            positions={positions}
-            onSwapEnd={notifyOrderChange}
-            wobble={editing}
-          >
-            {renderItem(item)}
-          </SortableItem>
-        );
-      })}
+    <View style={{ paddingHorizontal: PADDING }}>
+      <View style={{ height: containerHeight, position: 'relative' }}>
+        {data.map((item) => {
+          const id = keyExtractor(item);
+          return (
+            <SortableItem
+              key={id}
+              id={id}
+              itemWidth={itemWidth}
+              itemHeight={itemHeight}
+              totalCount={data.length}
+              positions={positions}
+              onSwapEnd={notifyOrderChange}
+              wobble={editing}
+            >
+              {renderItem(item)}
+            </SortableItem>
+          );
+        })}
+      </View>
     </View>
   );
 }

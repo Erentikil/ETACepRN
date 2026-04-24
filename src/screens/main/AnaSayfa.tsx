@@ -34,7 +34,7 @@ interface HizliErisimKarti {
   yetki: boolean;
 }
 
-const KART_YUKSEKLIGI = 132;
+const KART_YUKSEKLIGI = 118;
 
 export default function AnaSayfa({ navigation }: Props) {
   const Colors = useColors();
@@ -241,17 +241,15 @@ export default function AnaSayfa({ navigation }: Props) {
       {/* Üst Durum Çubuğu / Düzenleme Bar */}
       {duzenlemeModu ? (
         <View style={[styles.duzenlemeBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
-          <TouchableOpacity onPress={varsayilanaSifirla} style={styles.duzenlemeBtn}>
+          <TouchableOpacity onPress={varsayilanaSifirla} style={styles.duzenlemeBtnSol} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="refresh-outline" size={18} color={Colors.textSecondary} />
             <Text style={[styles.duzenlemeBtnText, { color: Colors.textSecondary }]}>Varsayılan</Text>
           </TouchableOpacity>
           <Text style={[styles.duzenlemeBaslikText, { color: Colors.text }]}>
             Düzenle
           </Text>
-          <TouchableOpacity onPress={duzenlemeModunuKapat} style={styles.duzenlemeBtn}>
-            <Text style={[styles.duzenlemeBtnText, { color: Colors.accent, fontWeight: '700' }]}>
-              Tamam
-            </Text>
+          <TouchableOpacity onPress={duzenlemeModunuKapat} style={styles.duzenlemeBtnSag} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={24} color={Colors.accent} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -374,13 +372,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  duzenlemeBtn: {
+  duzenlemeBtnSol: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    minWidth: 90,
+  },
+  duzenlemeBtnSag: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
   duzenlemeBtnText: {
     fontSize: 14,
