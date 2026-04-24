@@ -120,16 +120,25 @@ export default function LoginSayfasi({ navigation }: Props) {
       const kayitliSirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
       const dbAdi = kayitliSirket || veriTabaniAdi;
 
-       const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
+      const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
+      const versiyonBilgi = versiyonSonuc.data;
+
+      if (versiyonBilgi?.versiyonTipi !== Config.BEKLENEN_SUNUCU_VERSIYONU) {
+        setHata(
+          `Sunucu versiyonu uyumsuz. Beklenen: ${Config.BEKLENEN_SUNUCU_VERSIYONU}, dönen: ${versiyonBilgi?.versiyonTipi ?? 'yok'}.`,
+        );
+        return;
+      }
+
+      setVersiyon(versiyonBilgi);
+
       if (!versiyonSonuc.sonuc) {
-        setVersiyon(versiyonSonuc.data);
-        console.log(versiyonSonuc.data);
-        if (versiyonSonuc.data <= 0) {
+        if (versiyonBilgi.kalanGunSayisi <= 0) {
           toast.error('Lisansınızın süresi dolmuştur. Lütfen yenileyin.');
-         return; 
+          return;
         }
-        if (versiyonSonuc.data <= 10) {
-          toast.warning(`Lisansınızın bitmesine ${versiyonSonuc.data} gün kaldı.`);
+        if (versiyonBilgi.kalanGunSayisi <= 10) {
+          toast.warning(`Lisansınızın bitmesine ${versiyonBilgi.kalanGunSayisi} gün kaldı.`);
         }
       }
 
@@ -215,6 +224,7 @@ export default function LoginSayfasi({ navigation }: Props) {
         await AsyncStorage.removeItem(Config.STORAGE_KEYS.SIFRE);
       }
 
+      
       
 
       // Ana sayfaya yönlendir

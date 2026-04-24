@@ -153,7 +153,6 @@ export async function onayKaydet(
     telefonCihazKodu: cihazKodu,
   };
 
-  console.log('OnayKaydet body:', JSON.stringify(body, null, 2));
   const res = await api.post<Sonuc<unknown>>('OnayKaydet', body);
   return res.data;
 }

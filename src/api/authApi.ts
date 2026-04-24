@@ -31,11 +31,11 @@ const cihazAdi = Config.TELEFON_CIHAZ_ADI;
 // ─── Versiyon Kontrolü ────────────────────────────────────────────────────────
 export async function versiyonBilgileriniOku(
   versiyon: string
-): Promise<Sonuc<number>> {
+): Promise<Sonuc<VersiyonBilgileri>> {
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('VersiyonKontrol', versiyon, cihazKodu, cihazAdi);
-  const res = await api.get<Sonuc<number>>(url);
+  const res = await api.get<Sonuc<VersiyonBilgileri>>(url);
   return res.data;
 }
 

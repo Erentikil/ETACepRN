@@ -1,4 +1,5 @@
 import type { SepetBaslik, SepetKalem, SepetRBKalem, CariKartBilgileri, OnayListesiBilgileri, BekleyenEvrakKaydi } from '../models';
+import type { SepetAyarlari } from '../utils/sepetHesap';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -10,9 +11,12 @@ export type RootStackParamList = {
     sepet: SepetBaslik;
     genelIndirimYuzde?: number;
     genelIndirimTutar?: number;
+    kdvDurum?: number;
+    secilenKdvOrani?: number;
     aciklama1?: string;
     aciklama2?: string;
     onKalemlerGuncellendi?: (kalemler: SepetKalem[]) => void;
+    onAyarlarGuncellendi?: (ayarlar: SepetAyarlari) => void;
     rbKalemler?: SepetRBKalem[];
     onRBKalemlerGuncellendi?: (kalemler: SepetRBKalem[]) => void;
     crmModu?: boolean;
@@ -62,6 +66,7 @@ export type DrawerParamList = {
   CariBakiye: undefined;
   FiyatGor: undefined;
   BarkodEkleme: undefined;
+  CariIletisim: undefined;
   Hakkinda: undefined;
   StokRapor: { mod: 'bakiye' | 'fiyat' } | undefined;
   CariSecimliRapor: {

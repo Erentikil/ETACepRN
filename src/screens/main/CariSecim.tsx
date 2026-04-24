@@ -191,7 +191,6 @@ export default function CariSecim() {
 
   const cariIslemSec = (secenek: CariIslemSecenegi) => {
     if (!islemModalCari) return;
-    hafifTitresim();
     const cari = islemModalCari;
     setIslemModalCari(null);
     if (!secenek.aktif) {

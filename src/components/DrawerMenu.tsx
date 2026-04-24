@@ -48,6 +48,13 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
+      id: 'cariIletisim',
+      baslik: 'Cari İletişim',
+      icon: 'location-outline',
+      ekran: 'CariIletisim',
+      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+    },
+    {
       id: 'alimSatim',
       baslik: 'Evrak Oluştur',
       icon: 'swap-horizontal-outline',

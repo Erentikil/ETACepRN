@@ -45,6 +45,8 @@ import { WebView } from 'react-native-webview';
 import PdfViewer from '../../components/PdfViewer';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { sepetToplamlariniHesapla } from '../../utils/sepetHesap';
+import { useSepetAyarlariStore } from '../../store/sepetAyarlariStore';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<RootStackParamList, 'SepetListesi'>;
@@ -68,40 +70,19 @@ function evrakTipiAdi(tipi: EvrakTipi, alSat: AlimSatim): string {
 
 // ─── Hesaplamalar ────────────────────────────────────────────────────────────
 
-function hesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndirimYuzde: number, genelIndirimTutarDeger: number = 0) {
-  let malToplam = 0;
-  let kalemIndirimlerToplam = 0;
-  let kdvToplam = 0;
-
-  const kalemSonrasiNet = () => malToplam - kalemIndirimlerToplam;
-  const indirimYuzdeOrani = genelIndirimTutarDeger > 0 ? 0 : genelIndirimYuzde;
-
-  for (const k of kalemler) {
-    const ham = k.miktar * k.birimFiyat;
-    malToplam += ham;
-
-    const netKalem =
-      ham *
-      (1 - k.kalemIndirim1 / 100) *
-      (1 - k.kalemIndirim2 / 100) *
-      (1 - k.kalemIndirim3 / 100);
-    kalemIndirimlerToplam += ham - netKalem;
-
-    const netAfterGenel = netKalem * (1 - indirimYuzdeOrani / 100);
-    kdvToplam += netAfterGenel * (Math.max(0, k.kdvOrani) / 100);
-  }
-
-  const genelIndirimTutar = genelIndirimTutarDeger > 0
-    ? genelIndirimTutarDeger
-    : kalemSonrasiNet() * genelIndirimYuzde / 100;
-  const genelToplam =
-    kdvDurum === 1
-      ? malToplam - kalemIndirimlerToplam - genelIndirimTutar
-      : malToplam - kalemIndirimlerToplam - genelIndirimTutar + kdvToplam;
-
-  const toplamMiktar = kalemler.reduce((t, k) => t + k.miktar, 0);
-
-  return { malToplam, kalemIndirimlerToplam, genelIndirimTutar, kdvToplam, genelToplam, toplamMiktar };
+function hesapla(
+  kalemler: SepetKalem[],
+  kdvDurum: number,
+  genelIndirimYuzde: number,
+  genelIndirimTutarDeger: number = 0,
+  secilenKdvOrani: number = 0,
+) {
+  return sepetToplamlariniHesapla(kalemler, {
+    genelIndirimYuzde,
+    genelIndirimTutar: genelIndirimTutarDeger,
+    kdvDurum,
+    secilenKdvOrani,
+  });
 }
 
 // ─── RB ↔ Normal dönüşüm yardımcıları ───────────────────────────────────────
@@ -185,10 +166,14 @@ export default function SepetListesi() {
 
   const isOnayliReadOnly = route.params.onayDurumu === 1;
 
-  // Evrak Fiş Bilgileri state
+  // Evrak Fiş Bilgileri state — initial değerler store'dan gelir (tek kaynak)
   const [fisAcik, setFisAcik] = useState(false);
-  const [genelIndirimYuzde, setGenelIndirimYuzde] = useState(route.params.genelIndirimYuzde ?? 0);
-  const [genelIndirimTutar, setGenelIndirimTutar] = useState(route.params.genelIndirimTutar ?? 0);
+  const [genelIndirimYuzde, setGenelIndirimYuzde] = useState(
+    () => route.params.genelIndirimYuzde ?? useSepetAyarlariStore.getState().ayarlar.genelIndirimYuzde,
+  );
+  const [genelIndirimTutar, setGenelIndirimTutar] = useState(() =>
+    route.params.genelIndirimTutar ?? useSepetAyarlariStore.getState().ayarlar.genelIndirimTutar
+  );
   const aciklama1Ref = useRef(route.params.aciklama1 ?? '');
   const aciklama2Ref = useRef(route.params.aciklama2 ?? '');
   const [belgeTipiDeger, setBelgeTipiDeger] = useState(() => {
@@ -204,7 +189,9 @@ export default function SepetListesi() {
   const [adresler, setAdresler] = useState<AdresBilgileri[]>([]);
   const [secilenAdresNo, setSecilenAdresNo] = useState(0);
 
-  const [kdvDurum, setKdvDurum] = useState(yetkiBilgileri?.kdvDurum ?? 0);
+  const [kdvDurum, setKdvDurum] = useState(() =>
+    route.params.kdvDurum ?? useSepetAyarlariStore.getState().ayarlar.kdvDurum ?? yetkiBilgileri?.kdvDurum ?? 0
+  );
 
   // Kur bilgileri state
   const [kurListesi, setKurListesi] = useState<KurBilgileri[]>([]);
@@ -229,6 +216,13 @@ export default function SepetListesi() {
 
   // Evrak tipine göre varsayılan KDV kısım no
   const varsayilanKdvKisim = (() => {
+    // Store'daki secilenKdvOrani'ya karşılık gelen kdvKisimNo varsa onu kullan
+    const storeKdvOrani = useSepetAyarlariStore.getState().ayarlar.secilenKdvOrani;
+    const aranacakOran = route.params.secilenKdvOrani ?? storeKdvOrani;
+    if (aranacakOran !== undefined && aranacakOran > 0) {
+      const eslesen = kdvKisimListesi.find((k) => k.kdvKisimOran === aranacakOran);
+      if (eslesen) return eslesen.kdvKisimNo;
+    }
     let kdv: KDVKisimTablosu | null | undefined = null;
     if (sepet.evrakTipi === EvrakTipi.Fatura) kdv = kdvBilgileri?.faturaKDV;
     else if (sepet.evrakTipi === EvrakTipi.Irsaliye) kdv = kdvBilgileri?.irsaliyeKDV;
@@ -242,13 +236,24 @@ export default function SepetListesi() {
   // Seçilen KDV kısımının oranı
   const secilenKdvOrani = kdvKisimListesi.find((k) => k.kdvKisimNo === secilenKdvKisimNo)?.kdvKisimOran ?? 0;
 
-  // Kalemlere seçilen KDV oranını uygula (kdvOrani -1 olanlar için; API'den 0 gelenler sabit kalır)
-  const efektifKalemler = sepet.kalemler.map((k) =>
-    k.kdvOrani === -1 ? { ...k, kdvOrani: secilenKdvOrani } : k
-  );
+  // Ayar değişikliklerini global store'a yaz — parent aynı store'dan okur, senkron olur.
+  // İlk mount'u atla: store'da parent'ın set ettiği değerler var, bunları override etmeyelim.
+  const sepetAyarIlkMountRef = useRef(true);
+  useEffect(() => {
+    if (sepetAyarIlkMountRef.current) {
+      sepetAyarIlkMountRef.current = false;
+      return;
+    }
+    useSepetAyarlariStore.getState().updateAyarlar({
+      genelIndirimYuzde,
+      genelIndirimTutar,
+      kdvDurum,
+      secilenKdvOrani,
+    });
+  }, [genelIndirimYuzde, genelIndirimTutar, kdvDurum, secilenKdvOrani]);
 
-  // Toplamlar
-  const t = hesapla(efektifKalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar);
+  // Toplamlar (kdvOrani === -1 olan kalemler için secilenKdvOrani utility içinde uygulanır)
+  const t = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar, secilenKdvOrani);
 
   // Adres yükle
   useEffect(() => {
@@ -414,7 +419,7 @@ export default function SepetListesi() {
       let sonuc;
       if (isCRMMode) {
         // CRM Teklif kaydet
-        const h = hesapla(sepet.kalemler, yetkiBilgileri?.kdvDurum ?? 0, genelIndirimYuzde, genelIndirimTutar);
+        const h = hesapla(sepet.kalemler, yetkiBilgileri?.kdvDurum ?? 0, genelIndirimYuzde, genelIndirimTutar, secilenKdvOrani);
         const teklifFisId = route.params.crmTeklifFisId ?? 0;
         const teklifFis: CRMTeklifFisBilgileri = {
           id: teklifFisId,
@@ -502,7 +507,7 @@ export default function SepetListesi() {
         const belgeTipi = belgeTipiDeger as 'eevrak' | 'normal' | 'diger';
         const belgeTipiIndex = belgeTipi === 'eevrak' ? 0 : belgeTipi === 'normal' ? 1 : 2;
 
-        const h = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar);
+        const h = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar, secilenKdvOrani);
 
         const onayFlagAktif =
           (sepet.evrakTipi === EvrakTipi.Fatura && (yetkiBilgileri?.faturaOnaySatis ?? false)) ||
@@ -1282,60 +1287,67 @@ export default function SepetListesi() {
       />
 
       {/* Düzenle modal */}
-      <UrunMiktariBelirleModal
-        urun={duzenleUrunu?.stok ?? null}
-        kdvDurum={kdvDurum}
-        fiyatDegistirmeYetkisi={yetkiBilgileri?.fiyatDegistirmeYetkisi ?? false}
-        kalemIndirimYetkisi={yetkiBilgileri?.kalemIndirimYapmaYetkisi ?? false}
-        fiyatTipListesi={fiyatTipListesi}
-        veriTabaniAdi={calisilanSirket}
-        cariKodu={route.params.sepet.cariKodu}
-        mode="duzenle"
-        initialMiktar={duzenleUrunu?.miktar}
-        initialAciklama={duzenleUrunu?.aciklama}
-        onConfirm={handleDuzenleConfirm}
-        onClose={() => setDuzenleUrunu(null)}
-      />
+      {duzenleUrunu && (
+        <UrunMiktariBelirleModal
+          key={`duzenle-${duzenleUrunu.stok.stokKodu}-${duzenleIndex ?? ''}`}
+          urun={duzenleUrunu.stok}
+          kdvDurum={kdvDurum}
+          fiyatDegistirmeYetkisi={yetkiBilgileri?.fiyatDegistirmeYetkisi ?? false}
+          kalemIndirimYetkisi={yetkiBilgileri?.kalemIndirimYapmaYetkisi ?? false}
+          fiyatTipListesi={fiyatTipListesi}
+          veriTabaniAdi={calisilanSirket}
+          cariKodu={route.params.sepet.cariKodu}
+          mode="duzenle"
+          initialMiktar={duzenleUrunu.miktar}
+          initialAciklama={duzenleUrunu.aciklama}
+          onConfirm={handleDuzenleConfirm}
+          onClose={() => setDuzenleUrunu(null)}
+        />
+      )}
 
-      {/* İndirim modal */}
-      <Modal visible={indirimModalAcik} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.modalBaslik, { color: Colors.text }]}>Genel İskonto</Text>
-            <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Yüzde</Text>
-            <TextInput
-              style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
-              value={indirimInput}
-              onChangeText={(val) => {
-                setIndirimInput(val);
-                if (val.trim()) setIndirimTutarInput('');
-              }}
-              keyboardType="decimal-pad"
-              placeholder="% 0"
-              autoFocus
-            />
-            <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Tutar</Text>
-            <TextInput
-              style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
-              value={indirimTutarInput}
-              onChangeText={(val) => {
-                setIndirimTutarInput(val);
-                if (val.trim()) setIndirimInput('');
-              }}
-              keyboardType="decimal-pad"
-              placeholder="0.00"
-            />
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity onPress={() => setIndirimModalAcik(false)}>
-                <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>İptal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={indirimOnayla}>
-                <Text style={[styles.modalTamam, { color: Colors.primary }]}>Tamam</Text>
-              </TouchableOpacity>
+      {/* İndirim modal — conditional mount: her açılışta fresh input state */}
+      {indirimModalAcik && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setIndirimModalAcik(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
+              <Text style={[styles.modalBaslik, { color: Colors.text }]}>Genel İskonto</Text>
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Yüzde</Text>
+              <TextInput
+                style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
+                value={indirimInput}
+                onChangeText={(val) => {
+                  setIndirimInput(val);
+                  if (val.trim()) setIndirimTutarInput('');
+                }}
+                keyboardType="decimal-pad"
+                placeholder="% 0"
+                autoFocus
+                selectTextOnFocus
+              />
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Tutar</Text>
+              <TextInput
+                style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
+                value={indirimTutarInput}
+                onChangeText={(val) => {
+                  setIndirimTutarInput(val);
+                  if (val.trim()) setIndirimInput('');
+                }}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                selectTextOnFocus
+              />
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity onPress={() => setIndirimModalAcik(false)}>
+                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>İptal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={indirimOnayla}>
+                  <Text style={[styles.modalTamam, { color: Colors.primary }]}>Tamam</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
 
       {/* Döviz seçim modal */}
       <Modal visible={dovizModalAcik} transparent animationType="fade">

@@ -134,7 +134,6 @@ export default function OnayIslemleri() {
         return;
       }
       const evrak = sonuc.data;
-      console.log(evrak);
       const sbb = evrak.sbb;
       const kalemler: SepetKalem[] = (evrak.snbListe ?? []).map(snbToSepetKalem);
       const taslak: BekleyenEvrakKaydi = {

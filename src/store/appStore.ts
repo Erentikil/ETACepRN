@@ -28,7 +28,7 @@ interface AppState {
 
   // Şirket & versiyon
   sirketBilgileri: SirketBilgileri | null;
-  versiyon: number | null;
+  versiyon: VersiyonBilgileri | null;
   calisilanSirket: string;
 
   // Uygulama verileri
@@ -54,7 +54,7 @@ interface AppState {
   setMenuYetkiBilgileri: (val: MenuYetkiBilgileri) => void;
   setKameraYetkiBilgileri: (val: KameraYetkiBilgileri) => void;
   setSirketBilgileri: (val: SirketBilgileri) => void;
-  setVersiyon: (val: number) => void;
+  setVersiyon: (val: VersiyonBilgileri) => void;
   setCalisilanSirket: (val: string) => void;
   setKdvBilgileri: (val: KDVBilgileri) => void;
   setFtBaslikListesi: (val: FisTipiBaslik[]) => void;

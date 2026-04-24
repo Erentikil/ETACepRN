@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
+import { sepetToplamlariniHesapla, type SepetAyarlari } from '../../utils/sepetHesap';
+import { useSepetAyarlariStore } from '../../store/sepetAyarlariStore';
 import { useAppStore } from '../../store/appStore';
 import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl } from '../../api/hizliIslemlerApi';
 import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
@@ -86,18 +88,8 @@ function defaultEvrakSecenek(defaultEvrakTipi: string): EvrakSecenegi {
   }
 }
 
-function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndirimYuzde = 0): number {
-  const kalemToplam = kalemler.reduce((toplam, k) => {
-    const kdvHaric =
-      k.miktar *
-      k.birimFiyat *
-      (1 - k.kalemIndirim1 / 100) *
-      (1 - k.kalemIndirim2 / 100) *
-      (1 - k.kalemIndirim3 / 100);
-    const kdv = kdvHaric * (Math.max(0, k.kdvOrani) / 100);
-    return toplam + (kdvDurum === 1 ? kdvHaric : kdvHaric + kdv);
-  }, 0);
-  return genelIndirimYuzde > 0 ? kalemToplam * (1 - genelIndirimYuzde / 100) : kalemToplam;
+function sepetToplamHesapla(kalemler: SepetKalem[], ayarlar: SepetAyarlari): number {
+  return sepetToplamlariniHesapla(kalemler, ayarlar).genelToplam;
 }
 
 export default function AlisSatisIslemleri() {
@@ -601,7 +593,31 @@ export default function AlisSatisIslemleri() {
     if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100);
   };
 
-  const sepetToplam = sepetToplamHesapla(sepetKalemleri, yetkiBilgileri?.kdvDurum ?? 0, secilenCari?.indirimYuzde ?? 0);
+  const cariIndirimYuzde = secilenCari?.indirimYuzde ?? 0;
+
+  // Sepet ayarları global store'dan okunur — sepet içi ve sepet butonu tek kaynak kullansın
+  const sepetAyarlari = useSepetAyarlariStore((s) => s.ayarlar);
+  const updateSepetAyarlari = useSepetAyarlariStore((s) => s.updateAyarlar);
+
+  // Cari KODU değiştiğinde default'u store'a uygula — ilk mount'ta store'a dokunma
+  const oncekiCariKoduRef = useRef<string | undefined | null>(null);
+  useEffect(() => {
+    const yeniKod = secilenCari?.cariKodu;
+    if (oncekiCariKoduRef.current === null) {
+      oncekiCariKoduRef.current = yeniKod;
+      return;
+    }
+    if (oncekiCariKoduRef.current !== yeniKod) {
+      oncekiCariKoduRef.current = yeniKod;
+      updateSepetAyarlari({ genelIndirimYuzde: cariIndirimYuzde, genelIndirimTutar: 0 });
+    }
+  }, [secilenCari?.cariKodu, cariIndirimYuzde, updateSepetAyarlari]);
+
+  useEffect(() => {
+    updateSepetAyarlari({ kdvDurum: yetkiBilgileri?.kdvDurum ?? 0 });
+  }, [yetkiBilgileri?.kdvDurum, updateSepetAyarlari]);
+
+  const sepetToplam = sepetToplamHesapla(sepetKalemleri, sepetAyarlari);
 
   const sepeteGit = () => {
     const sepet: SepetBaslik = {
@@ -617,7 +633,10 @@ export default function AlisSatisIslemleri() {
     };
     navigation.navigate('SepetListesi', {
       sepet,
-      genelIndirimYuzde: secilenCari?.indirimYuzde ?? 0,
+      genelIndirimYuzde: sepetAyarlari.genelIndirimYuzde,
+      genelIndirimTutar: sepetAyarlari.genelIndirimTutar,
+      kdvDurum: sepetAyarlari.kdvDurum,
+      secilenKdvOrani: sepetAyarlari.secilenKdvOrani,
       evrakEkrani: 'ALSAT',
       onKalemlerGuncellendi: (kalemler) => {
         if (kalemler.length === 0) {
@@ -715,7 +734,33 @@ export default function AlisSatisIslemleri() {
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
           {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
         </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+        {secilenCari ? (
+          <TouchableOpacity
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => {
+              const temizle = () => {
+                setSecilenCari(null);
+                setSepetKalemleri([]);
+              };
+              if (sepetKalemlerRef.current.length > 0) {
+                Alert.alert(
+                  'Cari seçimini iptal et',
+                  'Sepetteki ürünler silinecek. Devam edilsin mi?',
+                  [
+                    { text: 'Vazgeç', style: 'cancel' },
+                    { text: 'Evet, İptal Et', style: 'destructive', onPress: temizle },
+                  ]
+                );
+              } else {
+                temizle();
+              }
+            }}
+          >
+            <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        ) : (
+          <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+        )}
       </TouchableOpacity>
 
       {/* Arama satırı — tip seçici + input + ara butonu */}

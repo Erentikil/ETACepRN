@@ -493,7 +493,7 @@ export default function Ayarlar({ navigation, route }: Props) {
             <Text style={[styles.label, { color: Colors.text }]}>Kalan Lisans Günü</Text>
             <TextInput
               style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.textSecondary }]}
-              value={`${(versiyon as any)?.kalanGunSayisi ?? versiyon} gün`}
+              value={`${versiyon?.kalanGunSayisi ?? 0} gün`}
               editable={false}
             />
           </>

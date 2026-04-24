@@ -10,7 +10,9 @@ import {
   SafeAreaView,
   TextInput,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -37,16 +39,15 @@ function tarihFormatla(d: Date): string {
   return `${y}${m}${g}`;
 }
 
-function ayBaslangic(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
+function yilBaslangic(d: Date): Date {
+  return new Date(d.getFullYear(), 0, 1);
 }
 
-function ayBitis(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-}
-
-function ayBasligiFormatla(d: Date): string {
-  return d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+function tarihKisaFormatla(d: Date): string {
+  const g = String(d.getDate()).padStart(2, '0');
+  const a = String(d.getMonth() + 1).padStart(2, '0');
+  const y = d.getFullYear();
+  return `${g}.${a}.${y}`;
 }
 
 function tarihGoster(iso: string): string {
@@ -72,10 +73,14 @@ export default function StokluCariEkstreListesi() {
   const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
 
   const [secilenCari, setSecilenCari] = useState<CariKartBilgileri | null>(null);
-  const [secilenAy, setSecilenAy] = useState(new Date());
+  const [baslangicTarihi, setBaslangicTarihi] = useState<Date>(() => yilBaslangic(new Date()));
+  const [bitisTarihi, setBitisTarihi] = useState<Date>(() => new Date());
+  const [tarihModalAcik, setTarihModalAcik] = useState(false);
+  const [tarihPickerHedef, setTarihPickerHedef] = useState<'bas' | 'bit' | null>(null);
   const [liste, setListe] = useState<StokluCariEkstreBilgileri[]>([]);
   const [filtrelenmis, setFiltrelenmis] = useState<StokluCariEkstreBilgileri[]>([]);
   const [aramaMetni, setAramaMetni] = useState('');
+  const [ilkYuklemeYapildi, setIlkYuklemeYapildi] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [pdfYukleniyor, setPdfYukleniyor] = useState(false);
   const [pdfUri, setPdfUri] = useState<string | null>(null);
@@ -84,6 +89,7 @@ export default function StokluCariEkstreListesi() {
   useEffect(() => {
     if (route.params?.secilenCari) {
       setSecilenCari(route.params.secilenCari);
+      setTarihModalAcik(true);
     }
   }, [route.params?.secilenCari]);
 
@@ -93,9 +99,27 @@ export default function StokluCariEkstreListesi() {
       if (pendingCari?.target === 'StokluCariEkstreListesi') {
         setSecilenCari(pendingCari.cari);
         clearPendingCari();
+        setTarihModalAcik(true);
       }
     }, [pendingCari])
   );
+
+  // Sayfa blur olunca state'i ve route.params'ı temizle ki tekrar girişte eski veri görünmesin
+  useEffect(() => {
+    const unsub = navigation.addListener('blur', () => {
+      setSecilenCari(null);
+      setListe([]);
+      setFiltrelenmis([]);
+      setAramaMetni('');
+      setIlkYuklemeYapildi(false);
+      setBaslangicTarihi(yilBaslangic(new Date()));
+      setBitisTarihi(new Date());
+      setTarihModalAcik(false);
+      setTarihPickerHedef(null);
+      navigation.setParams({ secilenCari: undefined, kaynakEkran: undefined } as any);
+    });
+    return unsub;
+  }, [navigation]);
 
   useEffect(() => {
     if (!aramaMetni) {
@@ -113,12 +137,12 @@ export default function StokluCariEkstreListesi() {
   }, [aramaMetni, liste]);
 
   const ekstreYukle = useCallback(
-    async (cari: CariKartBilgileri, ay: Date) => {
+    async (cari: CariKartBilgileri, bas: Date, bit: Date) => {
       setYukleniyor(true);
       setAramaMetni('');
       try {
-        const ilk = tarihFormatla(ayBaslangic(ay));
-        const son = tarihFormatla(ayBitis(ay));
+        const ilk = tarihFormatla(bas);
+        const son = tarihFormatla(bit);
         const sonuc = await stokluCariEkstreBilgileriAl(cari.cariKodu, ilk, son, calisilanSirket);
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
@@ -132,27 +156,31 @@ export default function StokluCariEkstreListesi() {
         toast.error(mesaj);
       } finally {
         setYukleniyor(false);
+        setIlkYuklemeYapildi(true);
       }
     },
     [calisilanSirket]
   );
 
   useEffect(() => {
-    if (secilenCari) {
-      ekstreYukle(secilenCari, secilenAy);
+    if (secilenCari && !tarihModalAcik) {
+      ekstreYukle(secilenCari, baslangicTarihi, bitisTarihi);
     }
-  }, [secilenCari, secilenAy]);
+  }, [secilenCari, baslangicTarihi, bitisTarihi, tarihModalAcik]);
 
-  const ayDegistir = (yon: -1 | 1) => {
-    setSecilenAy((prev) => new Date(prev.getFullYear(), prev.getMonth() + yon, 1));
+  const onTarihPickerDegis = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') setTarihPickerHedef(null);
+    if (!selected) return;
+    if (tarihPickerHedef === 'bas') setBaslangicTarihi(selected);
+    else if (tarihPickerHedef === 'bit') setBitisTarihi(selected);
   };
 
   const pdfAc = async () => {
     if (!secilenCari) return;
     setPdfYukleniyor(true);
     try {
-      const ilk = tarihFormatla(ayBaslangic(secilenAy));
-      const son = tarihFormatla(ayBitis(secilenAy));
+      const ilk = tarihFormatla(baslangicTarihi);
+      const son = tarihFormatla(bitisTarihi);
       const base64 = await raporPdfAl({
         dizaynAdi: 'Mobil_StokluEkstreDizayn.repx',
         evrakTipi: 'StokluCariEkstre',
@@ -234,7 +262,7 @@ export default function StokluCariEkstreListesi() {
         <SafeAreaView style={[styles.pdfModal, { backgroundColor: Colors.card }]}>
           <View style={[styles.pdfBaslik, { borderBottomColor: Colors.border }]}>
             <Text style={[styles.pdfBaslikMetin, { color: Colors.text }]} numberOfLines={1}>
-              {secilenCari?.cariUnvan} — {ayBasligiFormatla(secilenAy)}
+              {secilenCari?.cariUnvan} — {tarihKisaFormatla(baslangicTarihi)} / {tarihKisaFormatla(bitisTarihi)}
             </Text>
             <TouchableOpacity onPress={pdfPaylas} style={styles.pdfBtn}>
               <Ionicons name="share-outline" size={22} color={Colors.primary} />
@@ -249,20 +277,46 @@ export default function StokluCariEkstreListesi() {
         </SafeAreaView>
       </Modal>
 
-      {/* Cari seçim butonu */}
-      {route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' && <TouchableOpacity
-        style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
-        onPress={() => navigation.navigate('CariSecim', { returnScreen: 'StokluCariEkstreListesi' })}
-      >
-        <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.textSecondary} />
-        <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]} numberOfLines={1}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
-        </Text>
-        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-      </TouchableOpacity>}
+      {/* Cari seçim butonu — yalnızca cari yokken göster */}
+      {!secilenCari && route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' && (
+        <TouchableOpacity
+          style={[styles.cariBtn, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}
+          onPress={() => navigation.navigate('CariSecim', { returnScreen: 'StokluCariEkstreListesi' })}
+        >
+          <Ionicons name="person-outline" size={18} color={Colors.textSecondary} />
+          <Text style={[styles.cariText, { color: Colors.textSecondary }]} numberOfLines={1}>
+            Lütfen cari seçiniz...
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      )}
 
-      {/* Ay seçici + PDF */}
+      {/* Tarih aralığı şeridi — cari seçildikten sonra readonly + geri butonu */}
       <View style={[styles.aramaBar, { backgroundColor: Colors.primary }]}>
+        {secilenCari && route.params?.kaynakEkran !== 'CariSecim' && route.params?.kaynakEkran !== 'Tahsilatlar' ? (
+          <TouchableOpacity
+            style={styles.ayBtn}
+            onPress={() => {
+              setSecilenCari(null);
+              setListe([]);
+              setFiltrelenmis([]);
+              setAramaMetni('');
+              setIlkYuklemeYapildi(false);
+              setTarihModalAcik(false);
+              setTarihPickerHedef(null);
+            }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.ayBtnPlaceholder} />
+        )}
+        <View style={styles.ayNavGrup}>
+          <Ionicons name="calendar-outline" size={18} color="#fff" />
+          <Text style={styles.ayBaslik}>
+            {tarihKisaFormatla(baslangicTarihi)} — {tarihKisaFormatla(bitisTarihi)}
+          </Text>
+        </View>
         <TouchableOpacity
           style={[styles.ayBtn, !secilenCari && styles.ayBtnDisabled]}
           onPress={pdfAc}
@@ -273,17 +327,99 @@ export default function StokluCariEkstreListesi() {
             : <Ionicons name="document-outline" size={20} color="#fff" />
           }
         </TouchableOpacity>
-        <View style={styles.ayNavGrup}>
-          <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(-1)}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.ayBaslik}>{ayBasligiFormatla(secilenAy)}</Text>
-          <TouchableOpacity style={styles.ayBtn} onPress={() => ayDegistir(1)}>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.ayBtnPlaceholder} />
       </View>
+
+      {/* Tarih aralığı modal */}
+      <Modal
+        visible={tarihModalAcik}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTarihModalAcik(false)}
+      >
+        <View style={styles.tarihModalOverlay}>
+          <View style={[styles.tarihModalKutu, { backgroundColor: Colors.card }]}>
+            <Text style={[styles.tarihModalBaslik, { color: Colors.text }]}>
+              Tarih Aralığı Seçiniz
+            </Text>
+            <View style={styles.tarihSatir}>
+              <View style={styles.tarihAlan}>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Başlangıç</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.tarihBtn,
+                    { backgroundColor: Colors.background, borderColor: tarihPickerHedef === 'bas' ? Colors.primary : Colors.border },
+                  ]}
+                  onPress={() => setTarihPickerHedef(tarihPickerHedef === 'bas' ? null : 'bas')}
+                >
+                  <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+                  <Text style={[styles.tarihBtnText, { color: Colors.text }]}>
+                    {tarihKisaFormatla(baslangicTarihi)}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.tarihAlan}>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Bitiş</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.tarihBtn,
+                    { backgroundColor: Colors.background, borderColor: tarihPickerHedef === 'bit' ? Colors.primary : Colors.border },
+                  ]}
+                  onPress={() => setTarihPickerHedef(tarihPickerHedef === 'bit' ? null : 'bit')}
+                >
+                  <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+                  <Text style={[styles.tarihBtnText, { color: Colors.text }]}>
+                    {tarihKisaFormatla(bitisTarihi)}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {tarihPickerHedef && Platform.OS === 'ios' && (
+              <DateTimePicker
+                value={tarihPickerHedef === 'bas' ? baslangicTarihi : bitisTarihi}
+                mode="date"
+                display="spinner"
+                locale="tr-TR"
+                onChange={onTarihPickerDegis}
+                textColor={Colors.text}
+                themeVariant="light"
+                style={{ alignSelf: 'stretch' }}
+              />
+            )}
+            {tarihPickerHedef && Platform.OS === 'android' && (
+              <DateTimePicker
+                value={tarihPickerHedef === 'bas' ? baslangicTarihi : bitisTarihi}
+                mode="date"
+                display="default"
+                locale="tr-TR"
+                onChange={onTarihPickerDegis}
+              />
+            )}
+
+            <View style={styles.tarihModalButonlar}>
+              <TouchableOpacity
+                style={[styles.tarihModalBtn, { borderColor: Colors.border }]}
+                onPress={() => {
+                  setTarihPickerHedef(null);
+                  setTarihModalAcik(false);
+                  setSecilenCari(null);
+                  setListe([]);
+                  setFiltrelenmis([]);
+                  setAramaMetni('');
+                }}
+              >
+                <Text style={[styles.tarihModalBtnText, { color: Colors.textSecondary }]}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tarihModalBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                onPress={() => { setTarihPickerHedef(null); setTarihModalAcik(false); }}
+              >
+                <Text style={[styles.tarihModalBtnText, { color: '#fff', fontWeight: '700' }]}>Tamam</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Arama */}
       {liste.length > 0 && (
@@ -324,13 +460,15 @@ export default function StokluCariEkstreListesi() {
           refreshControl={
             <RefreshControl
               refreshing={yukleniyor}
-              onRefresh={() => { if (secilenCari) ekstreYukle(secilenCari, secilenAy); }}
+              onRefresh={() => { if (secilenCari) ekstreYukle(secilenCari, baslangicTarihi, bitisTarihi); }}
               colors={[Colors.primary]}
             />
           }
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
-            <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
+            ilkYuklemeYapildi
+              ? <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
+              : null
           }
         />
       )}
@@ -433,4 +571,63 @@ const styles = StyleSheet.create({
   },
   pdfBaslikMetin: { flex: 1, fontSize: 14, fontWeight: '600' },
   pdfBtn: { padding: 6 },
+  tarihModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  tarihModalKutu: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: 12,
+    padding: 16,
+    gap: 14,
+  },
+  tarihModalBaslik: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  tarihSatir: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tarihAlan: {
+    flex: 1,
+    gap: 4,
+  },
+  tarihEtiket: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tarihBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  tarihBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  tarihModalButonlar: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  tarihModalBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  tarihModalBtnText: {
+    fontSize: 14,
+  },
 });

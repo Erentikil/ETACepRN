@@ -2,7 +2,7 @@
   "expo": {
     "name": "ETA Mobil",
     "slug": "etamobil",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "automatic",
@@ -19,7 +19,17 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "NSCameraUsageDescription": "Barkod okumak için kamera gereklidir."
+        "NSCameraUsageDescription": "Barkod okumak için kamera gereklidir.",
+        "LSApplicationQueriesSchemes": [
+          "tel",
+          "telprompt",
+          "whatsapp",
+          "sms",
+          "mailto",
+          "maps",
+          "comgooglemaps",
+          "yandexmaps"
+        ]
       }
     },
     "android": {
