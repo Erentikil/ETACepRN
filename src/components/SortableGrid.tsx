@@ -3,7 +3,6 @@ import { View, useWindowDimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withRepeat,
   withTiming,
   runOnJS,
@@ -78,8 +77,8 @@ function SortableItem({
       translateY.value = pos.y;
       positioned.value = true;
     } else {
-      translateX.value = withSpring(pos.x, { damping: 28, stiffness: 300 });
-      translateY.value = withSpring(pos.y, { damping: 28, stiffness: 300 });
+      translateX.value = withTiming(pos.x, { duration: 160 });
+      translateY.value = withTiming(pos.y, { duration: 160 });
     }
   });
 
@@ -132,8 +131,8 @@ function SortableItem({
       const yeniIdx = positions.value[id];
       if (yeniIdx !== undefined) {
         const yeniPos = slotPos(yeniIdx, itemWidth, itemHeight);
-        translateX.value = withSpring(yeniPos.x, { damping: 28, stiffness: 300 });
-        translateY.value = withSpring(yeniPos.y, { damping: 28, stiffness: 300 });
+        translateX.value = withTiming(yeniPos.x, { duration: 160 });
+        translateY.value = withTiming(yeniPos.y, { duration: 160 });
       }
       zIndex.value = 0;
       isDragging.value = false;
