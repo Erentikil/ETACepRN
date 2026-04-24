@@ -13,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
 import { useColors } from '../../contexts/ThemeContext';
 import { Config } from '../../constants/Config';
-import { hafifTitresim } from '../../utils/haptics';
 import type { DrawerParamList } from '../../navigation/types';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 import SortableGrid from '../../components/SortableGrid';
@@ -41,7 +40,6 @@ export default function AnaSayfa({ navigation }: Props) {
   const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, onLineCalisma } =
     useAppStore();
 
-  const [duzenlemeModu, setDuzenlemeModu] = useState(false);
   const [kartSirasi, setKartSirasi] = useState<string[]>([]);
   const [sirayiYukledi, setSirayiYukledi] = useState(false);
 
@@ -200,32 +198,11 @@ export default function AnaSayfa({ navigation }: Props) {
     siraKaydet([...yeniGorunurIds, ...digerleri]);
   };
 
-  const varsayilanaSifirla = () => {
-    hafifTitresim();
-    siraKaydet(varsayilanIdSirasi);
-  };
-
-  const duzenlemeModunuAc = () => {
-    if (!Config.IS_PRO) return;
-    hafifTitresim();
-    setDuzenlemeModu(true);
-  };
-
-  const duzenlemeModunuKapat = () => {
-    hafifTitresim();
-    setDuzenlemeModu(false);
-  };
-
   const renderKart = (item: HizliErisimKarti) => (
     <TouchableOpacity
       style={[styles.kart, { backgroundColor: Colors.card, shadowColor: Colors.primary }]}
-      onPress={() => {
-        if (duzenlemeModu) return;
-        navigation.navigate(item.ekran);
-      }}
-      onLongPress={duzenlemeModu ? undefined : duzenlemeModunuAc}
-      delayLongPress={450}
-      activeOpacity={duzenlemeModu ? 1 : 0.8}
+      onPress={() => navigation.navigate(item.ekran)}
+      activeOpacity={0.8}
     >
       <View style={[styles.kartIkon, { backgroundColor: item.renk }]}>
         <Ionicons name={item.icon} size={26} color="#fff" />
@@ -238,68 +215,45 @@ export default function AnaSayfa({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.background }]}>
-      {/* Üst Durum Çubuğu / Düzenleme Bar */}
-      {duzenlemeModu ? (
-        <View style={[styles.duzenlemeBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
-          <TouchableOpacity onPress={varsayilanaSifirla} style={styles.duzenlemeBtnSol} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="refresh-outline" size={18} color={Colors.textSecondary} />
-            <Text style={[styles.duzenlemeBtnText, { color: Colors.textSecondary }]}>Varsayılan</Text>
-          </TouchableOpacity>
-          <Text style={[styles.duzenlemeBaslikText, { color: Colors.text }]}>
-            Düzenle
+      {/* Üst Durum Çubuğu */}
+      <View style={[styles.durumCubugu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+        <View style={styles.durumSol}>
+          <View style={[styles.durumNokta, { backgroundColor: onLineCalisma ? '#4caf50' : Colors.accent }]} />
+          <Text style={[styles.durumText, { color: Colors.text }]}>
+            {onLineCalisma ? 'Online' : 'Hibrit'}
           </Text>
-          <TouchableOpacity onPress={duzenlemeModunuKapat} style={styles.duzenlemeBtnSag} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="close" size={24} color={Colors.accent} />
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Karşılama */}
+        <View style={[styles.karsilamaKarti, { backgroundColor: Colors.card }]}>
+          <View style={styles.karsilamaIkon}>
+            <Ionicons name="person-circle-outline" size={48} color={Colors.primary} />
+          </View>
+          <View style={styles.karsilamaMetin}>
+            <Text style={[styles.hosgeldin, { color: Colors.textSecondary }]}>Hoş geldiniz</Text>
+            <Text style={[styles.kullaniciAdi, { color: Colors.primary }]}>
+              {yetkiBilgileri?.kullaniciKodu ?? 'Kullanıcı'}
+            </Text>
+            {calisilanSirket ? (
+              <Text style={[styles.sirketAdi, { color: Colors.text }]} numberOfLines={1}>
+                {calisilanSirket}
+              </Text>
+            ) : null}
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation.openDrawer()}
+            style={styles.menuBtn}
+          >
+            <Ionicons name="menu-outline" size={26} color={Colors.primary} />
           </TouchableOpacity>
         </View>
-      ) : (
-        <View style={[styles.durumCubugu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
-          <View style={styles.durumSol}>
-            <View style={[styles.durumNokta, { backgroundColor: onLineCalisma ? '#4caf50' : Colors.accent }]} />
-            <Text style={[styles.durumText, { color: Colors.text }]}>
-              {onLineCalisma ? 'Online' : 'Hibrit'}
-            </Text>
-          </View>
-        </View>
-      )}
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={!duzenlemeModu}
-      >
-        {/* Karşılama */}
-        {!duzenlemeModu && (
-          <View style={[styles.karsilamaKarti, { backgroundColor: Colors.card }]}>
-            <View style={styles.karsilamaIkon}>
-              <Ionicons name="person-circle-outline" size={48} color={Colors.primary} />
-            </View>
-            <View style={styles.karsilamaMetin}>
-              <Text style={[styles.hosgeldin, { color: Colors.textSecondary }]}>Hoş geldiniz</Text>
-              <Text style={[styles.kullaniciAdi, { color: Colors.primary }]}>
-                {yetkiBilgileri?.kullaniciKodu ?? 'Kullanıcı'}
-              </Text>
-              {calisilanSirket ? (
-                <Text style={[styles.sirketAdi, { color: Colors.text }]} numberOfLines={1}>
-                  {calisilanSirket}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity
-              onPress={() => navigation.openDrawer()}
-              style={styles.menuBtn}
-            >
-              <Ionicons name="menu-outline" size={26} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Hızlı Erişim Kartları */}
         {sirayiYukledi && gorunurKartlar.length > 0 ? (
           <>
-            {!duzenlemeModu && (
-              <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Hızlı Erişim</Text>
-            )}
+            <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Hızlı Erişim</Text>
             <View style={styles.gridWrap}>
               <SortableGrid
                 data={gorunurKartlar}
@@ -307,7 +261,6 @@ export default function AnaSayfa({ navigation }: Props) {
                 renderItem={renderKart}
                 itemHeight={KART_YUKSEKLIGI}
                 onOrderChange={handleOrderChange}
-                editing={duzenlemeModu}
               />
             </View>
           </>
@@ -321,11 +274,9 @@ export default function AnaSayfa({ navigation }: Props) {
         ) : null}
 
         {/* Horizon Software */}
-        {!duzenlemeModu && (
-          <View style={styles.adminBtn}>
-            <Text style={styles.adminBtnText}>Horizon Software</Text>
-          </View>
-        )}
+        <View style={styles.adminBtn}>
+          <Text style={styles.adminBtnText}>Horizon Software</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -359,33 +310,6 @@ const styles = StyleSheet.create({
   },
   durumVersiyon: {
     fontSize: 11,
-  },
-  duzenlemeBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  duzenlemeBaslikText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  duzenlemeBtnSol: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  duzenlemeBtnSag: {
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  duzenlemeBtnText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   scroll: {
     paddingVertical: 16,

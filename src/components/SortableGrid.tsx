@@ -4,8 +4,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withRepeat,
-  withTiming,
   runOnJS,
   useDerivedValue,
   SharedValue,
@@ -15,6 +13,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 const NUM_COLUMNS = 2;
 const GAP = 12;
 const PADDING = 16;
+const LONG_PRESS_MS = 400;
 
 function slotPos(idx: number, itemW: number, itemH: number) {
   'worklet';
@@ -44,7 +43,6 @@ type SortableItemProps = {
   totalCount: number;
   positions: SharedValue<Record<string, number>>;
   onSwapEnd: () => void;
-  wobble: boolean;
   children: React.ReactNode;
 };
 
@@ -55,20 +53,17 @@ function SortableItem({
   totalCount,
   positions,
   onSwapEnd,
-  wobble,
   children,
 }: SortableItemProps) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
   const zIndex = useSharedValue(0);
   const isDragging = useSharedValue(false);
-  const wobbleProgress = useSharedValue(0);
   const positioned = useSharedValue(false);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
 
-  // Slot pozisyonuna senkron olmak (ilk atama anlık, sonrası spring)
+  // Slot pozisyonuna senkron (ilk atama anlık, sonrası spring)
   useDerivedValue(() => {
     if (isDragging.value) return;
     const idx = positions.value[id];
@@ -84,22 +79,8 @@ function SortableItem({
     }
   });
 
-  // iPhone-tarzı hafif titreşim
-  useEffect(() => {
-    if (wobble) {
-      const delay = Math.random() * 80;
-      wobbleProgress.value = withRepeat(
-        withTiming(1, { duration: 140 + delay }),
-        -1,
-        true,
-      );
-    } else {
-      wobbleProgress.value = withTiming(0, { duration: 120 });
-    }
-  }, [wobble, wobbleProgress]);
-
   const pan = Gesture.Pan()
-    .enabled(wobble)
+    .activateAfterLongPress(LONG_PRESS_MS)
     .onStart(() => {
       isDragging.value = true;
       const myIdx = positions.value[id];
@@ -108,16 +89,13 @@ function SortableItem({
         startX.value = start.x;
         startY.value = start.y;
       }
-      scale.value = withSpring(1.1, { damping: 15 });
       zIndex.value = 999;
     })
     .onUpdate((e) => {
       translateX.value = startX.value + e.translationX;
       translateY.value = startY.value + e.translationY;
-
-      // Live reorder: sürükleme sırasında hedef slot'u hesapla, swap yap
-      const myIdx = positions.value[id];
-      if (myIdx === undefined) return;
+    })
+    .onEnd(() => {
       const hedefIdx = slotFromPos(
         translateX.value,
         translateY.value,
@@ -125,53 +103,46 @@ function SortableItem({
         itemHeight,
         totalCount,
       );
-      if (hedefIdx !== myIdx) {
+      const myIdx = positions.value[id];
+
+      // Swap: me <-> hedefteki kart (diğerleri dokunulmaz)
+      if (myIdx !== undefined && hedefIdx !== myIdx) {
         const yeni: Record<string, number> = { ...positions.value };
         const keys = Object.keys(yeni);
         for (let i = 0; i < keys.length; i++) {
           const k = keys[i];
-          if (k === id) {
-            yeni[k] = hedefIdx;
-          } else if (myIdx < hedefIdx) {
-            if (yeni[k] > myIdx && yeni[k] <= hedefIdx) yeni[k] -= 1;
-          } else {
-            if (yeni[k] >= hedefIdx && yeni[k] < myIdx) yeni[k] += 1;
+          if (yeni[k] === hedefIdx && k !== id) {
+            yeni[k] = myIdx;
+            break;
           }
         }
+        yeni[id] = hedefIdx;
         positions.value = yeni;
       }
-    })
-    .onEnd(() => {
+
       const yeniIdx = positions.value[id];
       if (yeniIdx !== undefined) {
         const yeniPos = slotPos(yeniIdx, itemWidth, itemHeight);
         translateX.value = withSpring(yeniPos.x, { damping: 18, stiffness: 220 });
         translateY.value = withSpring(yeniPos.y, { damping: 18, stiffness: 220 });
       }
-      scale.value = withSpring(1);
       zIndex.value = 0;
       isDragging.value = false;
       runOnJS(onSwapEnd)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => {
-    // wobbleProgress 0..1 → sin(0..2π) = 0..+1..0..-1..0 — başta/bitişte rotate 0
-    const rotate = Math.sin(wobbleProgress.value * Math.PI * 2) * 1.2;
-    return {
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      width: itemWidth,
-      height: itemHeight,
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { scale: scale.value },
-        { rotate: `${rotate}deg` },
-      ],
-      zIndex: zIndex.value,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: itemWidth,
+    height: itemHeight,
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+    zIndex: zIndex.value,
+  }));
 
   return (
     <GestureDetector gesture={pan}>
@@ -186,7 +157,6 @@ type Props<T> = {
   renderItem: (item: T) => React.ReactNode;
   itemHeight: number;
   onOrderChange: (newData: T[]) => void;
-  editing: boolean;
 };
 
 export default function SortableGrid<T>({
@@ -195,7 +165,6 @@ export default function SortableGrid<T>({
   renderItem,
   itemHeight,
   onOrderChange,
-  editing,
 }: Props<T>) {
   const { width: windowWidth } = useWindowDimensions();
   const itemWidth = useMemo(
@@ -239,7 +208,6 @@ export default function SortableGrid<T>({
               totalCount={data.length}
               positions={positions}
               onSwapEnd={notifyOrderChange}
-              wobble={editing}
             >
               {renderItem(item)}
             </SortableItem>
