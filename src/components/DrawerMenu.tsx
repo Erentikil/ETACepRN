@@ -26,8 +26,9 @@ interface MenuItem {
   yetki: boolean;
 }
 
-export default function DrawerMenu({ navigation }: DrawerContentComponentProps) {
+export default function DrawerMenu({ navigation, state }: DrawerContentComponentProps) {
   const Colors = useColors();
+  const aktifRoute = state.routes[state.index]?.name;
   const insets = useSafeAreaInsets();
   const { menuYetkiBilgileri, yetkiBilgileri, calisilanSirket, cikisYap } =
     useAppStore();
@@ -190,26 +191,37 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
 
       {/* Menü Öğeleri */}
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {menuOgeleri.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.menuItem}
-            onPress={() => {
-              navigation.closeDrawer();
-              if (item.ekran === 'Ayarlar') {
-                navigation
-                  .getParent<StackNavigationProp<RootStackParamList>>()
-                  ?.navigate('Ayarlar');
-              } else {
-                navigation.navigate(item.ekran as never);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name={item.icon} size={22} color={Colors.drawerText} />
-            <Text style={[styles.menuText, { color: Colors.drawerText }]}>{item.baslik}</Text>
-          </TouchableOpacity>
-        ))}
+        {menuOgeleri.map((item) => {
+          const aktif = item.ekran === aktifRoute;
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                aktif && {
+                  borderLeftWidth: 3,
+                  borderLeftColor: Colors.accent,
+                  backgroundColor: Colors.drawerActiveBackground,
+                  paddingLeft: 17,
+                },
+              ]}
+              onPress={() => {
+                navigation.closeDrawer();
+                if (item.ekran === 'Ayarlar') {
+                  navigation
+                    .getParent<StackNavigationProp<RootStackParamList>>()
+                    ?.navigate('Ayarlar');
+                } else {
+                  navigation.navigate(item.ekran as never);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={item.icon} size={22} color={aktif ? Colors.accent : Colors.drawerText} />
+              <Text style={[styles.menuText, { color: aktif ? Colors.accent : Colors.drawerText, fontWeight: aktif ? '700' : '500' }]}>{item.baslik}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Çıkış */}
@@ -230,7 +242,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
+    borderBottomColor: 'rgba(201,162,39,0.35)',
     gap: 6,
   },
   drawerLogo: {
@@ -268,7 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 14,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
+    borderTopColor: 'rgba(201,162,39,0.35)',
     marginBottom: 20,
   },
 });
