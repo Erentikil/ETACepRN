@@ -872,7 +872,9 @@ export default function SepetListesi() {
       ham *
       (1 - k.kalemIndirim1 / 100) *
       (1 - k.kalemIndirim2 / 100) *
-      (1 - k.kalemIndirim3 / 100);
+      (1 - k.kalemIndirim3 / 100) *
+      (1 - (k.kalemIndirim4 ?? 0) / 100) *
+      (1 - (k.kalemIndirim5 ?? 0) / 100);
     const netAfterGenel = netKalem * (1 - genelIndirimYuzde / 100);
     const kdv = netAfterGenel * (efektifKdv / 100);
     return kdvDurum === 1 ? netAfterGenel : netAfterGenel + kdv;
@@ -1166,7 +1168,9 @@ export default function SepetListesi() {
       ham *
       (1 - item.kalemIndirim1 / 100) *
       (1 - item.kalemIndirim2 / 100) *
-      (1 - item.kalemIndirim3 / 100);
+      (1 - item.kalemIndirim3 / 100) *
+      (1 - (item.kalemIndirim4 ?? 0) / 100) *
+      (1 - (item.kalemIndirim5 ?? 0) / 100);
     const netAfterGenel = netKalem * (1 - genelIndirimYuzde / 100);
     const kdvTutari = netAfterGenel * (efektifKdv / 100);
     const toplam = kdvDurum === 1 ? netAfterGenel : netAfterGenel + kdvTutari;

@@ -95,7 +95,9 @@ function sepetToplamHesapla(kalemler: SepetKalem[], kdvDurum: number, genelIndir
       k.birimFiyat *
       (1 - k.kalemIndirim1 / 100) *
       (1 - k.kalemIndirim2 / 100) *
-      (1 - k.kalemIndirim3 / 100);
+      (1 - k.kalemIndirim3 / 100) *
+      (1 - (k.kalemIndirim4 ?? 0) / 100) *
+      (1 - (k.kalemIndirim5 ?? 0) / 100);
     const kdv = kdvHaric * (Math.max(0, k.kdvOrani) / 100);
     return toplam + (kdvDurum === 1 ? kdvHaric : kdvHaric + kdv);
   }, 0);
