@@ -17,7 +17,6 @@ import { useColors } from '../contexts/ThemeContext';
 import { toast } from './Toast';
 import { paraTL, paraFormat, miktarFormat } from '../utils/format';
 import { tekStokFiyatBilgisiniAl, kurBilgileriniAl, sonSatisFiyatlariniAl } from '../api/hizliIslemlerApi';
-import { Config } from '../constants/Config';
 
 interface Props {
   urun: StokListesiBilgileri | null;
@@ -63,8 +62,6 @@ export default function UrunMiktariBelirleModal({
   const [ind1, setInd1] = useState('0');
   const [ind2, setInd2] = useState('0');
   const [ind3, setInd3] = useState('0');
-  const [ind4, setInd4] = useState('0');
-  const [ind5, setInd5] = useState('0');
 
   // Birim combobox
   const [birimSecenekleri, setBirimSecenekleri] = useState<BirimSecenek[]>([]);
@@ -115,8 +112,6 @@ export default function UrunMiktariBelirleModal({
     setInd1(String(urun.kalemIndirim1));
     setInd2(String(urun.kalemIndirim2));
     setInd3(String(urun.kalemIndirim3));
-    setInd4(String(urun.kalemIndirim4 ?? 0));
-    setInd5(String(urun.kalemIndirim5 ?? 0));
 
     setAciklama(initialAciklama ?? '');
     setStokFiyatlari([]);
@@ -183,8 +178,6 @@ export default function UrunMiktariBelirleModal({
     setInd1(String(bulunan.kalemIndirim1));
     setInd2(String(bulunan.kalemIndirim2));
     setInd3(String(bulunan.kalemIndirim3));
-    setInd4(String(bulunan.kalemIndirim4 ?? 0));
-    setInd5(String(bulunan.kalemIndirim5 ?? 0));
   }, [stokFiyatlari, kurListesi]);
 
   // cariFiyatListesi: en yuksek oncelik -- zorlaFiyatNo dahil her seyi ezer
@@ -209,8 +202,6 @@ export default function UrunMiktariBelirleModal({
           setInd1(String(cariFiyat.kalemIndirim1));
           setInd2(String(cariFiyat.kalemIndirim2));
           setInd3(String(cariFiyat.kalemIndirim3));
-          setInd4(String(cariFiyat.kalemIndirim4 ?? 0));
-          setInd5(String(cariFiyat.kalemIndirim5 ?? 0));
           return;
         }
         // Dovizli ise kur yuklenene kadar bekle
@@ -232,8 +223,6 @@ export default function UrunMiktariBelirleModal({
         setInd1(String(cariFiyat.kalemIndirim1 || bulunan.kalemIndirim1));
         setInd2(String(cariFiyat.kalemIndirim2 || bulunan.kalemIndirim2));
         setInd3(String(cariFiyat.kalemIndirim3 || bulunan.kalemIndirim3));
-        setInd4(String((cariFiyat.kalemIndirim4 ?? 0) || (bulunan.kalemIndirim4 ?? 0)));
-        setInd5(String((cariFiyat.kalemIndirim5 ?? 0) || (bulunan.kalemIndirim5 ?? 0)));
       }
       // stokFiyatlari henuz yuklenmemisse, yuklenince tekrar denenecek
     } else if (cariFiyat.tutar > 0) {
@@ -245,8 +234,6 @@ export default function UrunMiktariBelirleModal({
       setInd1(String(cariFiyat.kalemIndirim1));
       setInd2(String(cariFiyat.kalemIndirim2));
       setInd3(String(cariFiyat.kalemIndirim3));
-      setInd4(String(cariFiyat.kalemIndirim4 ?? 0));
-      setInd5(String(cariFiyat.kalemIndirim5 ?? 0));
     }
   }, [stokFiyatlari, kurListesi, cariFiyatListesi]);
 
@@ -300,8 +287,6 @@ export default function UrunMiktariBelirleModal({
       setInd1(String(bulunan.kalemIndirim1));
       setInd2(String(bulunan.kalemIndirim2));
       setInd3(String(bulunan.kalemIndirim3));
-      setInd4(String(bulunan.kalemIndirim4 ?? 0));
-      setInd5(String(bulunan.kalemIndirim5 ?? 0));
     }
   };
 
@@ -351,17 +336,13 @@ export default function UrunMiktariBelirleModal({
   const ind1Sayi = parseFloat(ind1) || 0;
   const ind2Sayi = parseFloat(ind2) || 0;
   const ind3Sayi = parseFloat(ind3) || 0;
-  const ind4Sayi = parseFloat(ind4) || 0;
-  const ind5Sayi = parseFloat(ind5) || 0;
 
   const kdvHaricTutar =
     miktarSayi *
     fiyatSayi *
     (1 - ind1Sayi / 100) *
     (1 - ind2Sayi / 100) *
-    (1 - ind3Sayi / 100) *
-    (Config.IS_PRO ? (1 - ind4Sayi / 100) : 1) *
-    (Config.IS_PRO ? (1 - ind5Sayi / 100) : 1);
+    (1 - ind3Sayi / 100);
   const kdvTutar = kdvHaricTutar * (Math.max(0, urun.kdvOrani) / 100);
   const toplamTutar = kdvDurum === 1 ? kdvHaricTutar : kdvHaricTutar + kdvTutar;
 
@@ -403,8 +384,6 @@ export default function UrunMiktariBelirleModal({
       kalemIndirim1: ind1Sayi,
       kalemIndirim2: ind2Sayi,
       kalemIndirim3: ind3Sayi,
-      kalemIndirim4: Config.IS_PRO ? ind4Sayi : 0,
-      kalemIndirim5: Config.IS_PRO ? ind5Sayi : 0,
       aciklama: aciklama.trim() || undefined,
       birim2: urun.birim2,
       carpan: urun.carpan,
@@ -537,24 +516,6 @@ export default function UrunMiktariBelirleModal({
                     keyboardType="decimal-pad"
                     selectTextOnFocus
                   />
-                  {Config.IS_PRO && (
-                    <>
-                      <TextInput
-                        style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                        value={ind4}
-                        onChangeText={setInd4}
-                        keyboardType="decimal-pad"
-                        selectTextOnFocus
-                      />
-                      <TextInput
-                        style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                        value={ind5}
-                        onChangeText={setInd5}
-                        keyboardType="decimal-pad"
-                        selectTextOnFocus
-                      />
-                    </>
-                  )}
                 </View>
               </View>
             )}
@@ -643,7 +604,7 @@ export default function UrunMiktariBelirleModal({
                 </Text>
                 <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(miktarSayi * fiyatSayi)}</Text>
               </View>
-              {(ind1Sayi > 0 || ind2Sayi > 0 || ind3Sayi > 0 || (Config.IS_PRO && (ind4Sayi > 0 || ind5Sayi > 0))) && (
+              {(ind1Sayi > 0 || ind2Sayi > 0 || ind3Sayi > 0) && (
                 <View style={styles.toplamSatir}>
                   <Text style={[styles.toplamEtiket, { color: Colors.text }]}>İndirimli</Text>
                   <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(kdvHaricTutar)}</Text>

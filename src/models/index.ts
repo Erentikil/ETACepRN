@@ -199,8 +199,6 @@ export interface StokFiyatBilgileri {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
 }
 
 // ─── Cari Fiyat Bilgileri (Cari Fiyat Listesi) ──────────────────────────────
@@ -215,8 +213,6 @@ export interface CariFiyatBilgileri {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
 }
 
 // ─── Fiyat Tipi ──────────────────────────────────────────────────────────────
@@ -252,8 +248,6 @@ export interface StokListesiBilgileri {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
   birim2: string;
   carpan2: string;
   renkKodu: number;
@@ -395,8 +389,6 @@ export interface SepetKalem {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
   aciklama?: string;
   // Modal'da birim/fiyat tipi seçimi korumak için
   birim2?: string;
@@ -637,8 +629,6 @@ export interface SepetNormalBilgileri {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
   kdvOrani: number;
   aciklama?: string;
   digerBirimler?: string[];
@@ -663,8 +653,6 @@ export interface SepetRBBilgileri {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
   kdvOrani: number;
   renkKodu: number;
   bedenKodu: number;
@@ -736,8 +724,6 @@ export interface SepetRBKalem {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
-  kalemIndirim4?: number;
-  kalemIndirim5?: number;
   renkKodu: number;
   bedenKodu: number;
   renk: string;
