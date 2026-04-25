@@ -64,6 +64,8 @@ function snbToSepetKalem(snb: SepetNormalBilgileri): SepetKalem {
     kalemIndirim1: snb.kalemIndirim1,
     kalemIndirim2: snb.kalemIndirim2,
     kalemIndirim3: snb.kalemIndirim3,
+    kalemIndirim4: snb.kalemIndirim4,
+    kalemIndirim5: snb.kalemIndirim5,
     seciliFiyatNo: snb.fiyatNo,
     aciklama: snb.aciklama,
   };

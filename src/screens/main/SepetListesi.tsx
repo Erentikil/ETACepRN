@@ -99,6 +99,8 @@ function rbToSepetKalem(rbk: SepetRBKalem): SepetKalem {
     kalemIndirim1: rbk.kalemIndirim1,
     kalemIndirim2: rbk.kalemIndirim2,
     kalemIndirim3: rbk.kalemIndirim3,
+    kalemIndirim4: rbk.kalemIndirim4,
+    kalemIndirim5: rbk.kalemIndirim5,
   };
 }
 

@@ -23,6 +23,8 @@ type MinKalem = {
   kalemIndirim1: number;
   kalemIndirim2: number;
   kalemIndirim3: number;
+  kalemIndirim4?: number;
+  kalemIndirim5?: number;
 };
 
 function rbToMin(k: SepetRBKalem): MinKalem {
@@ -33,6 +35,8 @@ function rbToMin(k: SepetRBKalem): MinKalem {
     kalemIndirim1: k.kalemIndirim1,
     kalemIndirim2: k.kalemIndirim2,
     kalemIndirim3: k.kalemIndirim3,
+    kalemIndirim4: k.kalemIndirim4,
+    kalemIndirim5: k.kalemIndirim5,
   };
 }
 
@@ -56,7 +60,9 @@ export function sepetToplamlariniHesapla(
       ham *
       (1 - k.kalemIndirim1 / 100) *
       (1 - k.kalemIndirim2 / 100) *
-      (1 - k.kalemIndirim3 / 100);
+      (1 - k.kalemIndirim3 / 100) *
+      (1 - (k.kalemIndirim4 ?? 0) / 100) *
+      (1 - (k.kalemIndirim5 ?? 0) / 100);
     kalemIndirimlerToplam += ham - netKalem;
 
     const efektifKdvOrani = k.kdvOrani === -1 ? secilenKdvOrani : Math.max(0, k.kdvOrani);
