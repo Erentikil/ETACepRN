@@ -11,12 +11,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors, useTheme } from '../../contexts/ThemeContext';
 import { Config } from '../../constants/Config';
+import { useAppStore } from '../../store/appStore';
 
 export default function Hakkinda() {
   const Colors = useColors();
   const { isDark } = useTheme();
+  const { versiyon: versiyonBilgi } = useAppStore();
 
-  const versiyon = Config.VERSIYON.replace(/-/g, '.');
+  const versiyon = versiyonBilgi?.versiyonTipi ?? Config.VERSIYON.replace(/-/g, '.');
 
   const handleLink = (url: string) => {
     Linking.openURL(url);
