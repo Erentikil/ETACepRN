@@ -260,7 +260,7 @@ export default function LoginSayfasi({ navigation }: Props) {
             <Image
               source={isDark
                 ? require('../../../assets/eta-logo-white-red.png')
-                : require('../../../assets/eta-logo-blue.png')}
+                : require('../../../assets/eta-logo-black.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
