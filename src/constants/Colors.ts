@@ -70,7 +70,7 @@ export const DarkColors: ThemeColors = {
   headerText: '#ffc857',
   priceColor: '#ffc857',
   background: '#050505',
-  card: '#0f0f10',
+  card: '#1c1c22',
   text: '#e8e3d5',
   textSecondary: '#a09a8a',
 };
