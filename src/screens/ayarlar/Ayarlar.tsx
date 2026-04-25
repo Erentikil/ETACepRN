@@ -19,6 +19,8 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { useColors, useTheme, type TemaSecimi } from '../../contexts/ThemeContext';
+import { PALETLER, type PaletKey } from '../../constants/Colors';
+import { FONT_BOYUTU_ETIKETLERI, type FontBoyutu } from '../../utils/fontOlcek';
 import { toast } from '../../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Config } from '../../constants/Config';
@@ -36,7 +38,7 @@ type Props = {
 export default function Ayarlar({ navigation, route }: Props) {
   const Colors = useColors();
   const insets = useSafeAreaInsets();
-  const { temaSecimi, setTemaSecimi } = useTheme();
+  const { temaSecimi, setTemaSecimi, paletKey, setPaletKey, isDark, fontBoyutu, setFontBoyutu } = useTheme();
   const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi, versiyon } = useAppStore();
 
   const [apiUrl, setApiUrl] = useState('');
@@ -394,6 +396,91 @@ export default function Ayarlar({ navigation, route }: Props) {
           ))}
         </View>
 
+        {Config.IS_PRO && (
+          <>
+            <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
+              <Ionicons name="color-palette-outline" size={14} /> Renk Paleti (Pro)
+            </Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
+              Uygulama renklerini değiştirin. Seçim cihazınızda saklanır.
+            </Text>
+            <View style={styles.paletGrid}>
+              {(Object.keys(PALETLER) as PaletKey[]).map((key) => {
+                const palet = PALETLER[key];
+                const onizleme = isDark ? palet.dark : palet.light;
+                const secili = paletKey === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.paletKart,
+                      { borderColor: Colors.border, backgroundColor: Colors.inputBackground },
+                      secili && { borderColor: Colors.primary, backgroundColor: Colors.primary + '12' },
+                    ]}
+                    onPress={() => setPaletKey(key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.paletSwatchRow}>
+                      <View style={[styles.paletSwatch, { backgroundColor: onizleme.primary }]} />
+                      <View style={[styles.paletSwatch, { backgroundColor: onizleme.accent }]} />
+                      <View style={[styles.paletSwatch, { backgroundColor: onizleme.priceColor }]} />
+                      <View style={[styles.paletSwatch, { backgroundColor: onizleme.background, borderWidth: 1, borderColor: Colors.border }]} />
+                    </View>
+                    <View style={styles.paletBilgi}>
+                      <Text style={[styles.paletIsim, { color: secili ? Colors.primary : Colors.text }]}>
+                        {palet.isim}
+                      </Text>
+                      <Text style={[styles.paletAciklama, { color: Colors.textSecondary }]} numberOfLines={1}>
+                        {palet.aciklama}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={secili ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={20}
+                      color={secili ? Colors.primary : Colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
+              <Ionicons name="text-outline" size={14} /> Yazı Boyutu (Pro)
+            </Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
+              Uygulama genelinde yazı boyutunu büyütür.
+            </Text>
+            <View style={styles.apiSecimRow}>
+              {(['varsayilan', 'orta', 'buyuk'] as FontBoyutu[]).map((val) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.apiSecimBtn,
+                    { borderColor: Colors.border, backgroundColor: Colors.inputBackground },
+                    fontBoyutu === val && { borderColor: Colors.primary, backgroundColor: Colors.primary + '15' },
+                  ]}
+                  onPress={() => setFontBoyutu(val)}
+                >
+                  <Ionicons
+                    name={fontBoyutu === val ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={fontBoyutu === val ? Colors.primary : Colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.apiSecimText,
+                      { color: Colors.textSecondary },
+                      fontBoyutu === val && { color: Colors.primary },
+                    ]}
+                  >
+                    {FONT_BOYUTU_ETIKETLERI[val]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
         <View style={styles.taramaModRow}>
           <View style={styles.taramaModBilgi}>
             <Text style={[styles.label, { color: Colors.text }]}>Miktarlı Giriş Varsayılan</Text>
@@ -429,7 +516,7 @@ export default function Ayarlar({ navigation, route }: Props) {
         </View>
 
         <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Fiyat Gör - Varsayılan Fiyat No</Text>
-        <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
+        <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
           Fiyat Gör sayfasında stoklara girildiğinde öncelikli gösterilecek fiyat tipi
         </Text>
         {fiyatTipListesi.length > 0 ? (
@@ -446,7 +533,7 @@ export default function Ayarlar({ navigation, route }: Props) {
         )}
 
         <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Varsayılan Arama Tipi</Text>
-        <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
+        <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
           Alış/Satış işlemlerinde stok ararken varsayılan arama kriteri
         </Text>
         <DropdownSecim
@@ -614,5 +701,38 @@ const styles = StyleSheet.create({
     margin: 16,
     marginTop: 8,
     marginBottom: 16,
+  },
+  paletGrid: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  paletKart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  paletSwatchRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  paletSwatch: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+  },
+  paletBilgi: {
+    flex: 1,
+  },
+  paletIsim: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  paletAciklama: {
+    fontSize: 11,
+    marginTop: 2,
   },
 });

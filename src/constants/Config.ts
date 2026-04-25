@@ -28,6 +28,8 @@ export const Config = {
     VARSAYILAN_FIYAT_NO: 'varsayilanFiyatNo',
     AKTIF_API: 'aktifApi',
     TEMA_SECIMI: 'temaSecimi',
+    RENK_PALETI: 'renkPaleti',
+    FONT_BOYUTU: 'fontBoyutu',
     CIHAZ_ID: 'cihazId',
     CIHAZ_ADI: 'cihazAdi',
     ANA_SAYFA_KART_SIRASI: 'anaSayfaKartSirasi',
