@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "ETA Mobil",
-    "slug": "etamobil",
-    "version": "1.0.1",
+    "name": "ETA Mobil Pro",
+    "slug": "etamobilpro",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "automatic",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.horizonyazilim.etamobil",
+      "bundleIdentifier": "com.horizonyazilim.etamobilpro",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
@@ -36,9 +36,9 @@
       "icon": "./assets/play_store_icon_512_rounded.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#0a0a0a"
       },
-      "package": "com.horizonyazilim.etamobil",
+      "package": "com.horizonyazilim.etamobilpro",
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
@@ -46,9 +46,7 @@
       ]
     },
     "extra": {
-      "eas": {
-        "projectId": "993dc04a-2d7b-497e-aa1a-05fc20823d45"
-      }
+      "eas": {}
     },
     "plugins": [
       "@react-native-community/datetimepicker",
