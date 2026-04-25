@@ -1300,6 +1300,7 @@ export default function SepetListesi() {
           mode="duzenle"
           initialMiktar={duzenleUrunu.miktar}
           initialAciklama={duzenleUrunu.aciklama}
+          maksimumIndirimSayisi={isCRMMode ? 2 : undefined}
           onConfirm={handleDuzenleConfirm}
           onClose={() => setDuzenleUrunu(null)}
         />

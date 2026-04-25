@@ -408,7 +408,8 @@ export default function TeklifTab({
           </View>
           <View style={styles.stokSag}>
             <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
           </View>
         </TouchableOpacity>
       </ReanimatedSwipeable>
@@ -659,6 +660,7 @@ export default function TeklifTab({
         cariKodu={secilenCari?.cariKodu}
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
+        maksimumIndirimSayisi={2}
         onConfirm={kalemEkle}
         onClose={() => { setModalUrunu(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />

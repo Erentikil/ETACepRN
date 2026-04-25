@@ -33,6 +33,8 @@ interface Props {
   mode?: 'ekle' | 'duzenle';
   initialMiktar?: number;
   initialAciklama?: string;
+  // İlk N kalem indirim alanı gösterilir (1..N). Verilmezse 3.
+  maksimumIndirimSayisi?: number;
 }
 
 interface BirimSecenek {
@@ -55,8 +57,11 @@ export default function UrunMiktariBelirleModal({
   mode = 'ekle',
   initialMiktar,
   initialAciklama,
+  maksimumIndirimSayisi,
 }: Props) {
   const Colors = useColors();
+  const maxInd = maksimumIndirimSayisi ?? 3;
+  const ind3Goster = maxInd >= 3;
   const [miktar, setMiktar] = useState('1');
   const [fiyat, setFiyat] = useState('0');
   const [ind1, setInd1] = useState('0');
@@ -342,7 +347,7 @@ export default function UrunMiktariBelirleModal({
     fiyatSayi *
     (1 - ind1Sayi / 100) *
     (1 - ind2Sayi / 100) *
-    (1 - ind3Sayi / 100);
+    (ind3Goster ? (1 - ind3Sayi / 100) : 1);
   const kdvTutar = kdvHaricTutar * (Math.max(0, urun.kdvOrani) / 100);
   const toplamTutar = kdvDurum === 1 ? kdvHaricTutar : kdvHaricTutar + kdvTutar;
 
@@ -383,7 +388,7 @@ export default function UrunMiktariBelirleModal({
       kdvOrani: urun.kdvOrani,
       kalemIndirim1: ind1Sayi,
       kalemIndirim2: ind2Sayi,
-      kalemIndirim3: ind3Sayi,
+      kalemIndirim3: ind3Goster ? ind3Sayi : 0,
       aciklama: aciklama.trim() || undefined,
       birim2: urun.birim2,
       carpan: urun.carpan,
@@ -509,13 +514,15 @@ export default function UrunMiktariBelirleModal({
                     keyboardType="decimal-pad"
                     selectTextOnFocus
                   />
-                  <TextInput
-                    style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                    value={ind3}
-                    onChangeText={setInd3}
-                    keyboardType="decimal-pad"
-                    selectTextOnFocus
-                  />
+                  {ind3Goster && (
+                    <TextInput
+                      style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
+                      value={ind3}
+                      onChangeText={setInd3}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                  )}
                 </View>
               </View>
             )}
@@ -604,7 +611,7 @@ export default function UrunMiktariBelirleModal({
                 </Text>
                 <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(miktarSayi * fiyatSayi)}</Text>
               </View>
-              {(ind1Sayi > 0 || ind2Sayi > 0 || ind3Sayi > 0) && (
+              {(ind1Sayi > 0 || ind2Sayi > 0 || (ind3Goster && ind3Sayi > 0)) && (
                 <View style={styles.toplamSatir}>
                   <Text style={[styles.toplamEtiket, { color: Colors.text }]}>İndirimli</Text>
                   <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(kdvHaricTutar)}</Text>
