@@ -441,6 +441,7 @@ export default function UrunMiktariBelirleModal({
                     onChangeText={setStokCinsiInput}
                     placeholder={urun.stokCinsi}
                     placeholderTextColor={Colors.textSecondary}
+                    selectTextOnFocus
                   />
                 </View>
               </View>
