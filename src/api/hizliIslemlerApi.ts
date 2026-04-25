@@ -298,6 +298,8 @@ export async function evrakKaydet(
     kalemIndirim1: k.kalemIndirim1,
     kalemIndirim2: k.kalemIndirim2,
     kalemIndirim3: k.kalemIndirim3,
+    kalemIndirim4: k.kalemIndirim4 ?? 0,
+    kalemIndirim5: k.kalemIndirim5 ?? 0,
     kdvOrani: Math.max(0, k.kdvOrani),
     dovizKodu: '',
     dovizTuru: '',
