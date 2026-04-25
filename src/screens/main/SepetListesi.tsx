@@ -343,6 +343,8 @@ export default function SepetListesi() {
       kalemIndirim1: item.kalemIndirim1,
       kalemIndirim2: item.kalemIndirim2,
       kalemIndirim3: item.kalemIndirim3,
+      kalemIndirim4: item.kalemIndirim4,
+      kalemIndirim5: item.kalemIndirim5,
       carpan: item.carpan || 1,
       miktar: item.miktar,
       birim2: item.birim2 || '',
@@ -372,6 +374,8 @@ export default function SepetListesi() {
             kalemIndirim1: kalem.kalemIndirim1,
             kalemIndirim2: kalem.kalemIndirim2,
             kalemIndirim3: kalem.kalemIndirim3,
+            kalemIndirim4: kalem.kalemIndirim4,
+            kalemIndirim5: kalem.kalemIndirim5,
           };
         });
         route.params.onRBKalemlerGuncellendi?.(guncellenmis);
