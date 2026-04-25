@@ -65,6 +65,7 @@ export default function UrunMiktariBelirleModal({
   const [ind3, setInd3] = useState('0');
   const [ind4, setInd4] = useState('0');
   const [ind5, setInd5] = useState('0');
+  const [stokCinsiInput, setStokCinsiInput] = useState('');
 
   // Birim combobox
   const [birimSecenekleri, setBirimSecenekleri] = useState<BirimSecenek[]>([]);
@@ -117,6 +118,7 @@ export default function UrunMiktariBelirleModal({
     setInd3(String(urun.kalemIndirim3));
     setInd4(String(urun.kalemIndirim4 ?? 0));
     setInd5(String(urun.kalemIndirim5 ?? 0));
+    setStokCinsiInput(urun.stokCinsi ?? '');
 
     setAciklama(initialAciklama ?? '');
     setStokFiyatlari([]);
@@ -394,7 +396,7 @@ export default function UrunMiktariBelirleModal({
 
     const kalem: SepetKalem = {
       stokKodu: urun.stokKodu,
-      stokCinsi: urun.stokCinsi,
+      stokCinsi: Config.IS_PRO ? (stokCinsiInput.trim() || urun.stokCinsi) : urun.stokCinsi,
       barkod: urun.barkod,
       birim: ilkBirim.birim,
       miktar: cevriliMiktar,
@@ -428,6 +430,22 @@ export default function UrunMiktariBelirleModal({
           </View>
 
           <ScrollView keyboardShouldPersistTaps="handled" style={styles.formScroll}>
+            {/* Stok Cinsi (PRO) — düzenlenebilir */}
+            {Config.IS_PRO && (
+              <View style={styles.formSatir}>
+                <Text style={[styles.formEtiket, { color: Colors.text }]}>Stok Cinsi:</Text>
+                <View style={styles.formSag}>
+                  <TextInput
+                    style={[styles.formInput, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
+                    value={stokCinsiInput}
+                    onChangeText={setStokCinsiInput}
+                    placeholder={urun.stokCinsi}
+                    placeholderTextColor={Colors.textSecondary}
+                  />
+                </View>
+              </View>
+            )}
+
             {/* Bakiye satiri */}
             <View style={styles.formSatir}>
               <Text style={[styles.formEtiket, { color: Colors.text }]}>Bakiye:</Text>
