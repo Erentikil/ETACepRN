@@ -137,7 +137,8 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
         </View>
         <View style={styles.stokSag}>
           <Text style={[styles.stokFiyat, { color: colors.primary }]}>{paraTL(item.fiyat)}</Text>
-          <Text style={[styles.stokBakiye, { color: colors.textSecondary }]}>{miktarFormat(item.bakiye)} {item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+          <Text style={[styles.stokBakiye, { color: colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
+          <Text style={[styles.stokBakiye, { color: colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
         </View>
       </TouchableOpacity>
     </ReanimatedSwipeable>

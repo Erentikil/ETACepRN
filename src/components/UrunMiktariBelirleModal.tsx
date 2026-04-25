@@ -34,6 +34,8 @@ interface Props {
   mode?: 'ekle' | 'duzenle';
   initialMiktar?: number;
   initialAciklama?: string;
+  // İlk N kalem indirim alanı gösterilir (1..N). Verilmezse Pro=5 / non-Pro=3.
+  maksimumIndirimSayisi?: number;
 }
 
 interface BirimSecenek {
@@ -56,8 +58,13 @@ export default function UrunMiktariBelirleModal({
   mode = 'ekle',
   initialMiktar,
   initialAciklama,
+  maksimumIndirimSayisi,
 }: Props) {
   const Colors = useColors();
+  const maxInd = maksimumIndirimSayisi ?? (Config.IS_PRO ? 5 : 3);
+  const ind3Goster = maxInd >= 3;
+  const ind4Goster = Config.IS_PRO && maxInd >= 4;
+  const ind5Goster = Config.IS_PRO && maxInd >= 5;
   const [miktar, setMiktar] = useState('1');
   const [fiyat, setFiyat] = useState('0');
   const [ind1, setInd1] = useState('0');
@@ -361,9 +368,9 @@ export default function UrunMiktariBelirleModal({
     fiyatSayi *
     (1 - ind1Sayi / 100) *
     (1 - ind2Sayi / 100) *
-    (1 - ind3Sayi / 100) *
-    (Config.IS_PRO ? (1 - ind4Sayi / 100) : 1) *
-    (Config.IS_PRO ? (1 - ind5Sayi / 100) : 1);
+    (ind3Goster ? (1 - ind3Sayi / 100) : 1) *
+    (ind4Goster ? (1 - ind4Sayi / 100) : 1) *
+    (ind5Goster ? (1 - ind5Sayi / 100) : 1);
   const kdvTutar = kdvHaricTutar * (Math.max(0, urun.kdvOrani) / 100);
   const toplamTutar = kdvDurum === 1 ? kdvHaricTutar : kdvHaricTutar + kdvTutar;
 
@@ -404,9 +411,9 @@ export default function UrunMiktariBelirleModal({
       kdvOrani: urun.kdvOrani,
       kalemIndirim1: ind1Sayi,
       kalemIndirim2: ind2Sayi,
-      kalemIndirim3: ind3Sayi,
-      kalemIndirim4: Config.IS_PRO ? ind4Sayi : 0,
-      kalemIndirim5: Config.IS_PRO ? ind5Sayi : 0,
+      kalemIndirim3: ind3Goster ? ind3Sayi : 0,
+      kalemIndirim4: ind4Goster ? ind4Sayi : 0,
+      kalemIndirim5: ind5Goster ? ind5Sayi : 0,
       aciklama: aciklama.trim() || undefined,
       birim2: urun.birim2,
       carpan: urun.carpan,
@@ -549,30 +556,32 @@ export default function UrunMiktariBelirleModal({
                     keyboardType="decimal-pad"
                     selectTextOnFocus
                   />
-                  <TextInput
-                    style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                    value={ind3}
-                    onChangeText={setInd3}
-                    keyboardType="decimal-pad"
-                    selectTextOnFocus
-                  />
-                  {Config.IS_PRO && (
-                    <>
-                      <TextInput
-                        style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                        value={ind4}
-                        onChangeText={setInd4}
-                        keyboardType="decimal-pad"
-                        selectTextOnFocus
-                      />
-                      <TextInput
-                        style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                        value={ind5}
-                        onChangeText={setInd5}
-                        keyboardType="decimal-pad"
-                        selectTextOnFocus
-                      />
-                    </>
+                  {ind3Goster && (
+                    <TextInput
+                      style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
+                      value={ind3}
+                      onChangeText={setInd3}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                  )}
+                  {ind4Goster && (
+                    <TextInput
+                      style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
+                      value={ind4}
+                      onChangeText={setInd4}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                  )}
+                  {ind5Goster && (
+                    <TextInput
+                      style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
+                      value={ind5}
+                      onChangeText={setInd5}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
                   )}
                 </View>
               </View>
@@ -662,7 +671,7 @@ export default function UrunMiktariBelirleModal({
                 </Text>
                 <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(miktarSayi * fiyatSayi)}</Text>
               </View>
-              {(ind1Sayi > 0 || ind2Sayi > 0 || ind3Sayi > 0 || (Config.IS_PRO && (ind4Sayi > 0 || ind5Sayi > 0))) && (
+              {(ind1Sayi > 0 || ind2Sayi > 0 || (ind3Goster && ind3Sayi > 0) || (ind4Goster && ind4Sayi > 0) || (ind5Goster && ind5Sayi > 0)) && (
                 <View style={styles.toplamSatir}>
                   <Text style={[styles.toplamEtiket, { color: Colors.text }]}>İndirimli</Text>
                   <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(kdvHaricTutar)}</Text>
