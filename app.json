@@ -4,7 +4,7 @@
     "slug": "etamobilpro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon-1024-pro_3.png",
+    "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
@@ -33,7 +33,7 @@
       }
     },
     "android": {
-      "icon": "./assets/play_store_icon_512_pro_1.png",
+      "icon": "./assets/play_store_icon_512_rounded.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
         "backgroundColor": "#0a0a0a"
@@ -46,9 +46,7 @@
       ]
     },
     "extra": {
-      "eas": {
-        "projectId": "105eb735-4ba2-4592-a9af-c4f613b2087e"
-      }
+      "eas": {}
     },
     "plugins": [
       "@react-native-community/datetimepicker",
