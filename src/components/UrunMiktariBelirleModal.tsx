@@ -493,7 +493,7 @@ export default function UrunMiktariBelirleModal({
             {/* Kalem Indirim satiri */}
             {kalemIndirimYetkisi && (
               <View style={styles.formSatir}>
-                <Text style={[styles.formEtiket, { color: Colors.text }]}>Indirim:</Text>
+                <Text style={[styles.formEtiket, { color: Colors.text }]}>İndirim:</Text>
                 <View style={styles.formSag}>
                   <TextInput
                     style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
@@ -582,11 +582,11 @@ export default function UrunMiktariBelirleModal({
 
             {/* Aciklama */}
             <View style={styles.formSatir}>
-              <Text style={[styles.formEtiket, { color: Colors.text }]}>Aciklama</Text>
+              <Text style={[styles.formEtiket, { color: Colors.text }]}>Açıklama</Text>
               <View style={styles.formSag}>
                 <TextInput
                   style={[styles.formInput, { textAlignVertical: 'top', minHeight: 40, borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                  placeholder="Kalem aciklamasi..."
+                  placeholder="Kalem açıklaması..."
                   placeholderTextColor={Colors.textSecondary}
                   value={aciklama}
                   onChangeText={setAciklama}
@@ -606,7 +606,7 @@ export default function UrunMiktariBelirleModal({
               </View>
               {(ind1Sayi > 0 || ind2Sayi > 0 || ind3Sayi > 0) && (
                 <View style={styles.toplamSatir}>
-                  <Text style={[styles.toplamEtiket, { color: Colors.text }]}>Indirimli</Text>
+                  <Text style={[styles.toplamEtiket, { color: Colors.text }]}>İndirimli</Text>
                   <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(kdvHaricTutar)}</Text>
                 </View>
               )}
@@ -631,11 +631,11 @@ export default function UrunMiktariBelirleModal({
               disabled={miktarSayi <= 0 || kurGecersiz}
             >
               <Text style={styles.butonText}>
-                {mode === 'duzenle' ? 'Guncelle' : 'Tamam'}
+                {mode === 'duzenle' ? 'Güncelle' : 'Tamam'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.buton, styles.vazgecBtn, { backgroundColor: Colors.primary }]} onPress={onClose}>
-              <Text style={styles.butonText}>Vazgec</Text>
+              <Text style={styles.butonText}>Vazgeç</Text>
             </TouchableOpacity>
           </View>
         </View>
