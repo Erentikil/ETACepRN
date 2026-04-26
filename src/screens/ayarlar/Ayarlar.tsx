@@ -39,7 +39,12 @@ export default function Ayarlar({ navigation, route }: Props) {
   const Colors = useColors();
   const insets = useSafeAreaInsets();
   const { temaSecimi, setTemaSecimi, paletKey, setPaletKey, isDark, fontBoyutu, setFontBoyutu } = useTheme();
-  const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi, versiyon } = useAppStore();
+  const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi, versiyon, uyumluluk, setUyumluluk } = useAppStore();
+
+  const handleUyumlulukDegistir = (val: 'V8' | 'SQL') => {
+    setUyumluluk(val);
+    AsyncStorage.setItem(Config.STORAGE_KEYS.UYUMLULUK, val);
+  };
 
   const [apiUrl, setApiUrl] = useState('');
   const [apiUrl2, setApiUrl2] = useState('');
@@ -474,6 +479,41 @@ export default function Ayarlar({ navigation, route }: Props) {
                     ]}
                   >
                     {FONT_BOYUTU_ETIKETLERI[val]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
+              <Ionicons name="git-branch-outline" size={14} /> Uyumluluk (Pro)
+            </Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
+              V8: 3 kalem indirim alanı. SQL: 5 kalem indirim alanı.
+            </Text>
+            <View style={styles.apiSecimRow}>
+              {(['V8', 'SQL'] as const).map((val) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.apiSecimBtn,
+                    { borderColor: Colors.border, backgroundColor: Colors.inputBackground },
+                    uyumluluk === val && { borderColor: Colors.primary, backgroundColor: Colors.primary + '15' },
+                  ]}
+                  onPress={() => handleUyumlulukDegistir(val)}
+                >
+                  <Ionicons
+                    name={uyumluluk === val ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={uyumluluk === val ? Colors.primary : Colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.apiSecimText,
+                      { color: Colors.textSecondary },
+                      uyumluluk === val && { color: Colors.primary },
+                    ]}
+                  >
+                    {val}
                   </Text>
                 </TouchableOpacity>
               ))}

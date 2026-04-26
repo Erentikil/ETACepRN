@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from './types';
 import LoginSayfasi from '../screens/auth/LoginSayfasi';
 import Ayarlar from '../screens/ayarlar/Ayarlar';
@@ -12,11 +13,20 @@ import SepetListesi from '../screens/main/SepetListesi';
 import OnayDuzenleme from '../screens/main/OnayDuzenleme';
 import KontrolPaneliDetay from '../screens/main/KontrolPaneliDetay';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { useAppStore } from '../store/appStore';
+import { Config } from '../constants/Config';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 function AppStack() {
   const { colors, isDark } = useTheme();
+  const setUyumluluk = useAppStore((s) => s.setUyumluluk);
+
+  useEffect(() => {
+    AsyncStorage.getItem(Config.STORAGE_KEYS.UYUMLULUK).then((val) => {
+      if (val === 'V8' || val === 'SQL') setUyumluluk(val);
+    });
+  }, []);
 
   const navigationTheme = useMemo(() => ({
     ...(isDark ? DarkTheme : DefaultTheme),

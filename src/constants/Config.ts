@@ -30,6 +30,7 @@ export const Config = {
     TEMA_SECIMI: 'temaSecimi',
     RENK_PALETI: 'renkPaleti',
     FONT_BOYUTU: 'fontBoyutu',
+    UYUMLULUK: 'uyumluluk',
     CIHAZ_ID: 'cihazId',
     CIHAZ_ADI: 'cihazAdi',
     ANA_SAYFA_KART_SIRASI: 'anaSayfaKartSirasi',

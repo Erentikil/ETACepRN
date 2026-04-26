@@ -18,6 +18,7 @@ import { toast } from './Toast';
 import { paraTL, paraFormat, miktarFormat } from '../utils/format';
 import { tekStokFiyatBilgisiniAl, kurBilgileriniAl, sonSatisFiyatlariniAl } from '../api/hizliIslemlerApi';
 import { Config } from '../constants/Config';
+import { useAppStore } from '../store/appStore';
 
 interface Props {
   urun: StokListesiBilgileri | null;
@@ -61,7 +62,9 @@ export default function UrunMiktariBelirleModal({
   maksimumIndirimSayisi,
 }: Props) {
   const Colors = useColors();
-  const maxInd = maksimumIndirimSayisi ?? (Config.IS_PRO ? 5 : 3);
+  const uyumluluk = useAppStore((s) => s.uyumluluk);
+  const proVarsayilanMax = uyumluluk === 'V8' ? 3 : 5;
+  const maxInd = maksimumIndirimSayisi ?? (Config.IS_PRO ? proVarsayilanMax : 3);
   const ind3Goster = maxInd >= 3;
   const ind4Goster = Config.IS_PRO && maxInd >= 4;
   const ind5Goster = Config.IS_PRO && maxInd >= 5;

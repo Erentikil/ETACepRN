@@ -48,6 +48,9 @@ interface AppState {
   // Cari seçim (ekranlar arası iletişim)
   pendingCari: { cari: CariKartBilgileri; target: string } | null;
 
+  // Uyumluluk modu (Pro'ya özel) — V8: 3 kalem indirim, SQL: 5 kalem indirim
+  uyumluluk: 'V8' | 'SQL';
+
   // Actions
   setOnLineCalisma: (val: boolean) => void;
   setYetkiBilgileri: (val: YetkiBilgileri) => void;
@@ -63,6 +66,7 @@ interface AppState {
   setStokListesiCache: (data: StokListesiBilgileri[], sirket: string) => void;
   setPendingCari: (cari: CariKartBilgileri, target: string) => void;
   clearPendingCari: () => void;
+  setUyumluluk: (val: 'V8' | 'SQL') => void;
   cikisYap: () => void;
 }
 
@@ -91,6 +95,9 @@ export const useAppStore = create<AppState>()((set) => ({
   pendingCari: null,
   setPendingCari: (cari, target) => set({ pendingCari: { cari, target } }),
   clearPendingCari: () => set({ pendingCari: null }),
+
+  uyumluluk: 'SQL',
+  setUyumluluk: (val) => set({ uyumluluk: val }),
 
   setOnLineCalisma: (val) => set({ onLineCalisma: val }),
   setYetkiBilgileri: (val) => set({ yetkiBilgileri: val }),
