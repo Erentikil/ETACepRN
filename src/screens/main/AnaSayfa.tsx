@@ -135,12 +135,10 @@ export default function AnaSayfa({ navigation }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: Colors.background }]}>
       {/* Üst Durum Çubuğu */}
-      <View style={[styles.durumCubugu, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
+      <View style={[styles.durumCubugu, { backgroundColor: Colors.card, borderBottomColor: Colors.border, justifyContent: 'flex-end' }]}>
         <View style={styles.durumSol}>
           <View style={[styles.durumNokta, { backgroundColor: onLineCalisma ? '#4caf50' : Colors.accent }]} />
-          <Text style={[styles.durumText, { color: Colors.text }]}>
-            {onLineCalisma ? t('anaSayfa.online') : t('anaSayfa.hibrit')}
-          </Text>
+          <Text style={[styles.durumText, { color: Colors.primary }]}>ETA Mobil Pro</Text>
         </View>
       </View>
 

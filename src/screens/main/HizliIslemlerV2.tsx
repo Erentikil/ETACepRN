@@ -84,13 +84,6 @@ function defaultEvrakSecenek(defaultEvrakTipi: string): EvrakSecenegi {
   }
 }
 
-// Bileşen remount edilse bile evrak/fiş tipi seçimini korumak için module-level değişkenler
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
 
 
 // Sepet butonu toplamı — SepetListesi içindeki hesaplama ile aynı formülü kullanır
@@ -108,9 +101,10 @@ type StokSatiriProps = {
   onInfo: (item: import('../../models').StokListesiBilgileri) => void;
   colors: ReturnType<typeof import('../../contexts/ThemeContext').useColors>;
   yuklemeTamamlandi: boolean;
+  bilgiLabel: string;
 };
 
-const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colors, yuklemeTamamlandi }: StokSatiriProps) => {
+const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colors, yuklemeTamamlandi, bilgiLabel }: StokSatiriProps) => {
   const icerik = (
     <ReanimatedSwipeable
       renderRightActions={() => (
@@ -119,7 +113,7 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
           onPress={() => onInfo(item)}
         >
           <Ionicons name="information-circle-outline" size={24} color="#fff" />
-          <Text style={styles.infoBtnText}>{t('stok.bilgiButon')}</Text>
+          <Text style={styles.infoBtnText}>{bilgiLabel}</Text>
         </TouchableOpacity>
       )}
     >
@@ -156,12 +150,19 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
   prev.onLongPress === next.onLongPress &&
   prev.onInfo === next.onInfo &&
   prev.colors === next.colors &&
-  prev.yuklemeTamamlandi === next.yuklemeTamamlandi
+  prev.yuklemeTamamlandi === next.yuklemeTamamlandi &&
+  prev.bilgiLabel === next.bilgiLabel
 );
 
 export default function HizliIslemlerV2() {
   const Colors = useColors();
   const t = useT();
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -747,6 +748,7 @@ export default function HizliIslemlerV2() {
 
   const yuklemeTamamlandi = stokYuklemeDurumu === 'tamamlandi';
 
+  const bilgiLabel = t('stok.bilgiButon');
   const renderStokSatiri = useCallback(({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <StokSatiri
       item={item}
@@ -756,8 +758,9 @@ export default function HizliIslemlerV2() {
       onInfo={onStokInfo}
       colors={Colors}
       yuklemeTamamlandi={yuklemeTamamlandi}
+      bilgiLabel={bilgiLabel}
     />
-  ), [onStokPress, onStokLongPress, onStokInfo, Colors, yuklemeTamamlandi]);
+  ), [onStokPress, onStokLongPress, onStokInfo, Colors, yuklemeTamamlandi, bilgiLabel]);
 
   return (
     <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
@@ -975,7 +978,7 @@ export default function HizliIslemlerV2() {
         >
           <Ionicons name="cart-outline" size={22} color="#fff" />
           <Text style={styles.sepetBtnText}>
-            SEPET ({paraTL(sepetToplam)})
+            {t('stok.sepet')} ({paraTL(sepetToplam)})
           </Text>
           {sepetKalemleri.length > 0 && (
             <Animated.View style={[styles.sepetBadge, { backgroundColor: Colors.accent }, badgeAnimStyle]}>

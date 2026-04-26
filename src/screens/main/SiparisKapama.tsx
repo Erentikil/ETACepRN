@@ -80,13 +80,6 @@ function formatTarih(tarih: string): string {
 
 type Adim = 'fisListesi' | 'hareketler';
 
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
-
 // CariSecim'e giderken fiş tipi seçimini korumak için module-level değişkenler
 let _savedGrup: FisTipiGrup | null = null;
 let _savedFisTipi: FisTipiItem | null = null;
@@ -94,6 +87,12 @@ let _savedFisTipi: FisTipiItem | null = null;
 export default function SiparisKapama() {
   const Colors = useColors();
   const t = useT();
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
 

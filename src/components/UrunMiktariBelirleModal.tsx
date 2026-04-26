@@ -658,7 +658,7 @@ export default function UrunMiktariBelirleModal({
               <View style={styles.formSag}>
                 <TextInput
                   style={[styles.formInput, { textAlignVertical: 'top', minHeight: 40, borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
-                  placeholder="Kalem açıklaması..."
+                  placeholder={t('modal.kalemAciklamasi')}
                   placeholderTextColor={Colors.textSecondary}
                   value={aciklama}
                   onChangeText={setAciklama}

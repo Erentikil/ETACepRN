@@ -31,16 +31,15 @@ import { hafifTitresim } from '../../utils/haptics';
 import { toast } from '../../components/Toast';
 
 
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
-
 export default function FiyatGor() {
   const Colors = useColors();
   const t = useT();
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
   const { yetkiBilgileri, fiyatTipListesi, calisilanSirket } = useAppStore();
 
 

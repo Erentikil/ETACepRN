@@ -73,13 +73,6 @@ const TUM_SECENEKLER: EvrakSecenegi[] = [
   { label: 'Sayım',          evrakTipi: EvrakTipi.Stok,     alimSatim: AlimSatim.Sayim,  evrakTipiAdi: 'Stok',     alimSatimAdi: 'Sayım' },
 ];
 
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
-
 function defaultEvrakSecenek(defaultEvrakTipi: string): EvrakSecenegi {
   switch (defaultEvrakTipi) {
     case 'Fatura':   return TUM_SECENEKLER[0];
@@ -108,6 +101,12 @@ let savedRBState: {
 export default function RenkBedenIslemleri() {
   const Colors = useColors();
   const t = useT();
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -459,7 +458,7 @@ export default function RenkBedenIslemleri() {
     variant: BarkodBilgileri,
     miktar: number,
     fiyatOverride?: number,
-    ind1 = 0, ind2 = 0, ind3 = 0,
+    ind1 = 0, ind2 = 0, ind3 = 0, ind4 = 0, ind5 = 0,
     birimOverride?: string
   ) => {
     hafifTitresim();
@@ -474,6 +473,8 @@ export default function RenkBedenIslemleri() {
       kalemIndirim1: ind1,
       kalemIndirim2: ind2,
       kalemIndirim3: ind3,
+      kalemIndirim4: ind4,
+      kalemIndirim5: ind5,
       renkKodu: variant.renkKodu,
       bedenKodu: variant.bedenKodu,
       renk: variant.renk,
@@ -526,6 +527,8 @@ export default function RenkBedenIslemleri() {
       kalem.kalemIndirim1,
       kalem.kalemIndirim2,
       kalem.kalemIndirim3,
+      kalem.kalemIndirim4 ?? 0,
+      kalem.kalemIndirim5 ?? 0,
       kalem.birim
     );
     setMiktarModalStok(null);
@@ -861,7 +864,7 @@ export default function RenkBedenIslemleri() {
         >
           <Ionicons name="cart-outline" size={22} color="#fff" />
           <Text style={styles.sepetBtnText}>
-            SEPET ({paraTL(sepetToplam)})
+            {t('stok.sepet')} ({paraTL(sepetToplam)})
           </Text>
           {sepetKalemleri.length > 0 && (
             <Animated.View style={[styles.sepetBadge, { backgroundColor: Colors.accent }, badgeAnimStyle]}>
