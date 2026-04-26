@@ -143,7 +143,6 @@ export default function CariIletisim() {
   };
 
   const cariSec = (cari: CariKartBilgileri) => {
-    hafifTitresim();
     setSecilenCari(cari);
   };
 
