@@ -21,6 +21,8 @@ import type { RootStackParamList } from '../../navigation/types';
 import { useColors, useTheme, type TemaSecimi } from '../../contexts/ThemeContext';
 import { PALETLER, type PaletKey } from '../../constants/Colors';
 import { FONT_BOYUTU_ETIKETLERI, type FontBoyutu } from '../../utils/fontOlcek';
+import { useI18n, useT } from '../../i18n/I18nContext';
+import { DIL_ETIKETLERI, type Dil } from '../../i18n/translations';
 import { toast } from '../../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Config } from '../../constants/Config';
@@ -40,6 +42,8 @@ export default function Ayarlar({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { temaSecimi, setTemaSecimi, paletKey, setPaletKey, isDark, fontBoyutu, setFontBoyutu } = useTheme();
   const { sirketBilgileri, setSirketBilgileri, fiyatTipListesi, versiyon, uyumluluk, setUyumluluk } = useAppStore();
+  const { dil, setDil } = useI18n();
+  const t = useT();
 
   const handleUyumlulukDegistir = (val: 'V8' | 'SQL') => {
     setUyumluluk(val);
@@ -151,7 +155,7 @@ export default function Ayarlar({ navigation, route }: Props) {
   const sirketleriFetch = async () => {
     const aktifUrl = aktifApi === '3' ? apiUrl3 : aktifApi === '2' ? apiUrl2 : apiUrl;
     if (!aktifUrl.trim()) {
-      toast.error('Önce aktif API URL giriniz.');
+      toast.error(t('ayarlar.aktifApiGiriniz'));
       return;
     }
     setSirketYukleniyor(true);
@@ -168,12 +172,12 @@ export default function Ayarlar({ navigation, route }: Props) {
           setCalisilanSirket(sonuc.data.varsayilanSirket);
           await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, sonuc.data.varsayilanSirket);
         }
-        toast.success(`${sonuc.data.sirketListesi?.length ?? 0} şirket bulundu.`);
+        toast.success(t('ayarlar.sirketBulundu', { n: sonuc.data.sirketListesi?.length ?? 0 }));
       } else {
-        toast.error(sonuc.mesaj || 'Bilinmeyen hata');
+        toast.error(sonuc.mesaj || t('ayarlar.bilinmeyenHata'));
       }
     } catch (err: unknown) {
-      const mesaj = err instanceof Error ? err.message : 'Bağlantı hatası.';
+      const mesaj = err instanceof Error ? err.message : t('common.baglantiHatasi');
       toast.error(mesaj);
     } finally {
       setSirketYukleniyor(false);
@@ -195,9 +199,9 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.SEPET_SES, sepetSes.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.VARSAYILAN_FIYAT_NO, varsayilanFiyatNo.toString());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.CIHAZ_ADI, cihazAdi.trim());
-      Alert.alert('Başarılı', 'Ayarlar kaydedildi.', [
+      Alert.alert(t('ayarlar.basarili'), t('ayarlar.kaydedildi'), [
         {
-          text: 'Tamam',
+          text: t('ayarlar.tamam'),
           onPress: () => {
             if (fromLogin) {
               navigation.goBack();
@@ -222,7 +226,7 @@ export default function Ayarlar({ navigation, route }: Props) {
       {/* API URL Bölümü */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
-          <Ionicons name="globe-outline" size={16} /> Bağlantı Ayarları
+          <Ionicons name="globe-outline" size={16} /> {t('ayarlar.baglantiAyarlari')}
         </Text>
 
         {/* Aktif API Seçimi */}
@@ -236,7 +240,7 @@ export default function Ayarlar({ navigation, route }: Props) {
               size={18}
               color={aktifApi === '1' ? Colors.primary : Colors.textSecondary}
             />
-            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '1' && { color: Colors.primary }]}>Dış (WebApi1)</Text>
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '1' && { color: Colors.primary }]}>{t('ayarlar.disWebApi1')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, aktifApi === '2' && { borderColor: Colors.primary, backgroundColor: '#eef2ff' }]}
@@ -247,7 +251,7 @@ export default function Ayarlar({ navigation, route }: Props) {
               size={18}
               color={aktifApi === '2' ? Colors.primary : Colors.textSecondary}
             />
-            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '2' && { color: Colors.primary }]}>Dış (WebApi2)</Text>
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '2' && { color: Colors.primary }]}>{t('ayarlar.disWebApi2')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, aktifApi === '3' && { borderColor: Colors.primary, backgroundColor: '#eef2ff' }]}
@@ -258,40 +262,40 @@ export default function Ayarlar({ navigation, route }: Props) {
               size={18}
               color={aktifApi === '3' ? Colors.primary : Colors.textSecondary}
             />
-            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '3' && { color: Colors.primary }]}>İç (WebApi3)</Text>
+            <Text style={[styles.apiSecimText, { color: Colors.textSecondary }, aktifApi === '3' && { color: Colors.primary }]}>{t('ayarlar.icWebApi3')}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.label, { color: Colors.text }]}>Dış API Adresi (WebApi1)</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.disApi1')}</Text>
         <TextInput
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '1' && { borderColor: Colors.primary }]}
           value={apiUrl}
           onChangeText={setApiUrl}
-          placeholder="https://sunucu.com/webapi"
+          placeholder={t('ayarlar.url1Placeholder')}
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
         />
 
-        <Text style={[styles.label, { color: Colors.text }]}>Dış API Adresi (WebApi2)</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.disApi2')}</Text>
         <TextInput
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '2' && { borderColor: Colors.primary }]}
           value={apiUrl2}
           onChangeText={setApiUrl2}
-          placeholder="http://192.168.1.1/webapi"
+          placeholder={t('ayarlar.url2Placeholder')}
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
         />
 
-        <Text style={[styles.label, { color: Colors.text }]}>İç API Adresi (WebApi3)</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.icApi3')}</Text>
         <TextInput
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }, aktifApi === '3' && { borderColor: Colors.primary }]}
           value={apiUrl3}
           onChangeText={setApiUrl3}
-          placeholder="http://192.168.1.1/webapi"
+          placeholder={t('ayarlar.url2Placeholder')}
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
@@ -309,7 +313,7 @@ export default function Ayarlar({ navigation, route }: Props) {
             color="#fff"
           />
           <Text style={styles.senkronBtnText}>
-            {sirketYukleniyor ? 'Bağlanıyor...' : 'Bağlantıyı Test Et'}
+            {sirketYukleniyor ? t('ayarlar.bagliyor') : t('ayarlar.baglantiyiTestEt')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -317,17 +321,17 @@ export default function Ayarlar({ navigation, route }: Props) {
       {/* Şirket Seçimi */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
-          <Ionicons name="business-outline" size={16} /> Şirket
+          <Ionicons name="business-outline" size={16} /> {t('ayarlar.sirket')}
         </Text>
         {sirketListesi.length === 0 ? (
           <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-            Şirket listesi için önce API URL girin ve senkronize edin (↻).
+            {t('ayarlar.sirketListesiYok')}
           </Text>
         ) : (
           <DropdownSecim
             value={calisilanSirket}
             options={sirketListesi.map((s) => ({ label: s, value: s }))}
-            placeholder="Şirket seçiniz..."
+            placeholder={t('ayarlar.sirketSeciniz')}
             onChange={async (s) => {
               setCalisilanSirket(s);
               await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, s);
@@ -339,14 +343,14 @@ export default function Ayarlar({ navigation, route }: Props) {
       {/* Tarayıcı Ayarları */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
-          <Ionicons name="scan-outline" size={16} /> Tarayıcı Ayarları
+          <Ionicons name="scan-outline" size={16} /> {t('ayarlar.tarayiciAyarlari')}
         </Text>
 
         <View style={styles.taramaModRow}>
           <View style={styles.taramaModBilgi}>
-            <Text style={[styles.label, { color: Colors.text }]}>Manuel Tarama</Text>
+            <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.manuelTarama')}</Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-              {manuelTarama ? 'Barkod okunduğunda butona basarak onaylayın' : 'Barkod algılandığında otomatik okunur'}
+              {manuelTarama ? t('ayarlar.manuelTaramaAcik') : t('ayarlar.manuelTaramaKapali')}
             </Text>
           </View>
           <Switch
@@ -357,7 +361,7 @@ export default function Ayarlar({ navigation, route }: Props) {
           />
         </View>
 
-        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Başlangıç Zoom</Text>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>{t('ayarlar.baslangicZoom')}</Text>
         <View style={styles.zoomRow}>
           <Text style={[styles.zoomDeger, { color: Colors.primary }]}>{(1 + baslangicZoom * 9).toFixed(1)}x</Text>
           <Slider
@@ -373,19 +377,19 @@ export default function Ayarlar({ navigation, route }: Props) {
           />
         </View>
         <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-          Kamera açıldığında bu zoom seviyesinden başlar. Kullanıcı isterse değiştirebilir.
+          {t('ayarlar.baslangicZoomAciklama')}
         </Text>
       </View>
 
       {/* Genel Ayarlar */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
-          <Ionicons name="settings-outline" size={16} /> Genel Ayarlar
+          <Ionicons name="settings-outline" size={16} /> {t('ayarlar.genelAyarlar')}
         </Text>
 
-        <Text style={[styles.label, { color: Colors.text }]}>Tema</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.tema')}</Text>
         <View style={styles.apiSecimGrup}>
-          {([['sistem', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu']] as [TemaSecimi, string][]).map(([val, baslik]) => (
+          {([['sistem', t('ayarlar.temaSistem')], ['light', t('ayarlar.temaAcik')], ['dark', t('ayarlar.temaKoyu')]] as [TemaSecimi, string][]).map(([val, baslik]) => (
             <TouchableOpacity
               key={val}
               style={[styles.apiSecimBtn, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }, temaSecimi === val && { borderColor: Colors.primary, backgroundColor: Colors.primary + '15' }]}
@@ -404,10 +408,10 @@ export default function Ayarlar({ navigation, route }: Props) {
         {Config.IS_PRO && (
           <>
             <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
-              <Ionicons name="color-palette-outline" size={14} /> Renk Paleti (Pro)
+              <Ionicons name="color-palette-outline" size={14} /> {t('ayarlar.renkPaleti')}
             </Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
-              Uygulama renklerini değiştirin. Seçim cihazınızda saklanır.
+              {t('ayarlar.renkPaletiAciklama')}
             </Text>
             <View style={styles.paletGrid}>
               {(Object.keys(PALETLER) as PaletKey[]).map((key) => {
@@ -450,10 +454,10 @@ export default function Ayarlar({ navigation, route }: Props) {
             </View>
 
             <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
-              <Ionicons name="text-outline" size={14} /> Yazı Boyutu (Pro)
+              <Ionicons name="text-outline" size={14} /> {t('ayarlar.yaziBoyutu')}
             </Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
-              Uygulama genelinde yazı boyutunu büyütür.
+              {t('ayarlar.yaziBoyutuAciklama')}
             </Text>
             <View style={styles.apiSecimRow}>
               {(['varsayilan', 'orta', 'buyuk'] as FontBoyutu[]).map((val) => (
@@ -485,10 +489,10 @@ export default function Ayarlar({ navigation, route }: Props) {
             </View>
 
             <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
-              <Ionicons name="git-branch-outline" size={14} /> Uyumluluk (Pro)
+              <Ionicons name="git-branch-outline" size={14} /> {t('ayarlar.uyumluluk')}
             </Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
-              V8: 3 kalem indirim alanı. SQL: 5 kalem indirim alanı.
+              {t('ayarlar.uyumlulukAciklama')}
             </Text>
             <View style={styles.apiSecimRow}>
               {(['V8', 'SQL'] as const).map((val) => (
@@ -518,16 +522,49 @@ export default function Ayarlar({ navigation, route }: Props) {
                 </TouchableOpacity>
               ))}
             </View>
+
+            <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>
+              <Ionicons name="language-outline" size={14} /> {t('ayarlar.dil')} (Pro)
+            </Text>
+            <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
+              {t('ayarlar.dilAciklama')}
+            </Text>
+            <View style={styles.apiSecimRow}>
+              {(['tr', 'en'] as Dil[]).map((val) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.apiSecimBtn,
+                    { borderColor: Colors.border, backgroundColor: Colors.inputBackground },
+                    dil === val && { borderColor: Colors.primary, backgroundColor: Colors.primary + '15' },
+                  ]}
+                  onPress={() => setDil(val)}
+                >
+                  <Ionicons
+                    name={dil === val ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={dil === val ? Colors.primary : Colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.apiSecimText,
+                      { color: Colors.textSecondary },
+                      dil === val && { color: Colors.primary },
+                    ]}
+                  >
+                    {DIL_ETIKETLERI[val]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </>
         )}
 
         <View style={styles.taramaModRow}>
           <View style={styles.taramaModBilgi}>
-            <Text style={[styles.label, { color: Colors.text }]}>Miktarlı Giriş Varsayılan</Text>
+            <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.miktarliGiris')}</Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-              {miktarliGirisVarsayilan
-                ? 'Ekranlar açıldığında miktarlı giriş seçili gelir'
-                : 'Ekranlar açıldığında miktarlı giriş kapalı gelir'}
+              {miktarliGirisVarsayilan ? t('ayarlar.miktarliGirisAcik') : t('ayarlar.miktarliGirisKapali')}
             </Text>
           </View>
           <Switch
@@ -540,11 +577,9 @@ export default function Ayarlar({ navigation, route }: Props) {
 
         <View style={[styles.taramaModRow, { marginTop: 16 }]}>
           <View style={styles.taramaModBilgi}>
-            <Text style={[styles.label, { color: Colors.text }]}>Sepet Sesi</Text>
+            <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.sepetSesi')}</Text>
             <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-              {sepetSes
-                ? 'Sepete ürün eklendiğinde ses çalar'
-                : 'Sepete ürün eklendiğinde ses çalmaz'}
+              {sepetSes ? t('ayarlar.sepetSesiAcik') : t('ayarlar.sepetSesiKapali')}
             </Text>
           </View>
           <Switch
@@ -555,36 +590,36 @@ export default function Ayarlar({ navigation, route }: Props) {
           />
         </View>
 
-        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Fiyat Gör - Varsayılan Fiyat No</Text>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>{t('ayarlar.varsayilanFiyatNo')}</Text>
         <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
-          Fiyat Gör sayfasında stoklara girildiğinde öncelikli gösterilecek fiyat tipi
+          {t('ayarlar.varsayilanFiyatNoAciklama')}
         </Text>
         {fiyatTipListesi.length > 0 ? (
           <DropdownSecim
             value={varsayilanFiyatNo.toString()}
             options={fiyatTipListesi.map((f) => ({ label: `${f.fiyatNo} - ${f.fiyatAdi}`, value: f.fiyatNo.toString() }))}
-            placeholder="Fiyat tipi seçiniz..."
+            placeholder={t('ayarlar.fiyatTipiSeciniz')}
             onChange={(v) => setVarsayilanFiyatNo(parseInt(v, 10))}
           />
         ) : (
           <Text style={[styles.aciklama, { color: Colors.textSecondary }]}>
-            Fiyat tipleri giriş yapıldıktan sonra yüklenir.
+            {t('ayarlar.fiyatTipleriYuklenir')}
           </Text>
         )}
 
-        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>Varsayılan Arama Tipi</Text>
+        <Text style={[styles.label, { marginTop: 16, color: Colors.text }]}>{t('ayarlar.varsayilanAramaTipi')}</Text>
         <Text style={[styles.aciklama, { color: Colors.textSecondary, marginBottom: 8 }]}>
-          Alış/Satış işlemlerinde stok ararken varsayılan arama kriteri
+          {t('ayarlar.varsayilanAramaTipiAciklama')}
         </Text>
         <DropdownSecim
           value={varsayilanAramaTipi.toString()}
           options={[
-            { label: 'Başlayan', value: '1' },
-            { label: 'Biten', value: '2' },
-            { label: 'İçeren', value: '3' },
-            { label: 'Barkod', value: '4' },
+            { label: t('aramaTipi.baslayan'), value: '1' },
+            { label: t('aramaTipi.biten'), value: '2' },
+            { label: t('aramaTipi.iceren'), value: '3' },
+            { label: t('aramaTipi.barkod'), value: '4' },
           ]}
-          placeholder="Arama tipi seçiniz..."
+          placeholder={t('ayarlar.aramaTipiSeciniz')}
           onChange={(v) => setVarsayilanAramaTipi(parseInt(v, 10))}
         />
       </View>
@@ -592,10 +627,10 @@ export default function Ayarlar({ navigation, route }: Props) {
       {/* Cihaz Bilgileri */}
       <View style={[styles.bolum, { backgroundColor: Colors.card }]}>
         <Text style={[styles.bolumBaslik, { color: Colors.primary }]}>
-          <Ionicons name="phone-portrait-outline" size={16} /> Cihaz Bilgileri
+          <Ionicons name="phone-portrait-outline" size={16} /> {t('ayarlar.cihazBilgileri')}
         </Text>
 
-        <Text style={[styles.label, { color: Colors.text }]}>Cihaz ID</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.cihazId')}</Text>
         <TextInput
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.textSecondary }]}
           value={cihazId}
@@ -603,12 +638,12 @@ export default function Ayarlar({ navigation, route }: Props) {
           selectTextOnFocus
         />
 
-        <Text style={[styles.label, { color: Colors.text }]}>Cihaz Adı</Text>
+        <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.cihazAdi')}</Text>
         <TextInput
           style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.text }]}
           value={cihazAdi}
           onChangeText={setCihazAdi}
-          placeholder="Cihaz adını girin"
+          placeholder={t('ayarlar.cihazAdiPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
@@ -617,10 +652,10 @@ export default function Ayarlar({ navigation, route }: Props) {
 
         {versiyon != null && (
           <>
-            <Text style={[styles.label, { color: Colors.text }]}>Kalan Lisans Günü</Text>
+            <Text style={[styles.label, { color: Colors.text }]}>{t('ayarlar.kalanLisansGunu')}</Text>
             <TextInput
               style={[styles.input, { borderColor: Colors.border, backgroundColor: Colors.inputBackground, color: Colors.textSecondary }]}
-              value={`${versiyon?.kalanGunSayisi ?? 0} gün`}
+              value={`${versiyon?.kalanGunSayisi ?? 0} ${t('ayarlar.gun')}`}
               editable={false}
             />
           </>
@@ -632,7 +667,7 @@ export default function Ayarlar({ navigation, route }: Props) {
       {/* Kaydet Butonu */}
       <View style={[styles.kaydetContainer, { backgroundColor: Colors.background, paddingBottom: insets.bottom }]}>
         <ThemedButton
-          baslik="Ayarları Kaydet"
+          baslik={t('ayarlar.kaydet')}
           onPress={handleKaydet}
           yukleniyor={kaydediliyor}
         />

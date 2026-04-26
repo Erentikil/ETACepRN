@@ -57,6 +57,7 @@ export async function tekStokFiyatBilgisiniAl(
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('TekStokFiyatBilgisiniAl', stokKodu, cihazKodu, veriTabaniAdi);
   const res = await api.get<Sonuc<StokFiyatBilgileri[]>>(url);
+  console.log('[StokFiyat raw]', JSON.stringify(res.data?.data?.[0], null, 2));
   return res.data;
 }
 
@@ -77,6 +78,7 @@ export async function cariFiyatBilgileriniAl(
   }
   const url = buildUrl('TumStokBilgileriniAl/Cari Fiyat', kullaniciKodu, cihazKodu, veriTabaniAdi);
   const res = await api.get<Sonuc<CariFiyatBilgileri[]>>(url);
+  console.log('[CariFiyat raw]', JSON.stringify(res.data?.data?.[0], null, 2));
   return res.data;
 }
 

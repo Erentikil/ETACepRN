@@ -32,6 +32,7 @@ import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimMod
 import EvrakTipiSecimModal from '../../components/EvrakTipiSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { Config } from '../../constants/Config';
 import { paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim, type StokFiyatBilgileri, type CariFiyatBilgileri } from '../../models';
@@ -118,7 +119,7 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
           onPress={() => onInfo(item)}
         >
           <Ionicons name="information-circle-outline" size={24} color="#fff" />
-          <Text style={styles.infoBtnText}>Bilgi</Text>
+          <Text style={styles.infoBtnText}>{t('stok.bilgiButon')}</Text>
         </TouchableOpacity>
       )}
     >
@@ -160,6 +161,7 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
 
 export default function HizliIslemlerV2() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -419,7 +421,7 @@ export default function HizliIslemlerV2() {
         setStokYuklemeDurumu('tamamlandi');
       })
       .catch(() => {
-        toast.error('Stok listesi yüklenirken bir hata oluştu.');
+        toast.error(t('stok.listeYukHatasi'));
         setStokYuklemeDurumu('hata');
       })
       .finally(() => setYukleniyor(false));
@@ -469,7 +471,7 @@ export default function HizliIslemlerV2() {
       return;
     }
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       setAramaMetni('');
       return;
     }
@@ -485,7 +487,7 @@ export default function HizliIslemlerV2() {
             setModalUrunu(stok);
             modalAcilacak = true;
           } else if (!secilenCari) {
-            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            toast.warning(t('stok.cariSecmedenEklenemez'));
           } else {
             hizliEkle(stok);
           }
@@ -507,7 +509,7 @@ export default function HizliIslemlerV2() {
     }
   }, [aramaMetni, calisilanSirket, miktarliGiris, secilenCari]);
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? 'İçeren';
 
   // Evrak tipi seçimi
   const evrakTipiSec = () => {
@@ -556,7 +558,7 @@ export default function HizliIslemlerV2() {
   // Sepet her zaman 1. birim (ADET) üzerinden çalışır
   const hizliEkle = async (item: StokListesiBilgileri) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
     }
     const birimler = item.birim2 ? item.birim2.split(';').map((b) => b.trim()).filter(Boolean) : [];
@@ -640,7 +642,7 @@ export default function HizliIslemlerV2() {
   // Sepete ekleme
   const kalemEkle = (kalem: SepetKalem) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
     }
     hafifTitresim();
@@ -730,7 +732,7 @@ export default function HizliIslemlerV2() {
   hizliEkleRef.current = hizliEkle;
 
   const onStokPress = useCallback((item: StokListesiBilgileri) => {
-    if (isOnayliReadOnly) { toast.warning('Onaylanmış evrak değiştirilemez.'); return; }
+    if (isOnayliReadOnly) { toast.warning(t('stok.onayliDegistirilemez')); return; }
     hizliEkleRef.current(item);
   }, [isOnayliReadOnly]);
 
@@ -778,7 +780,7 @@ export default function HizliIslemlerV2() {
           onPress={() => setMiktarliGiris(!miktarliGiris)}
         >
           <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color="#fff" />
-          <Text style={styles.miktarBtnText}>Miktarlı</Text>
+          <Text style={styles.miktarBtnText}>{t('stok.miktarli')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.barkodBtn, isOnayliReadOnly && { opacity: 0.4 }]}
@@ -802,7 +804,7 @@ export default function HizliIslemlerV2() {
           color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('stok.cariSeciniz')}
         </Text>
         {secilenCari ? (
           <TouchableOpacity
@@ -814,11 +816,11 @@ export default function HizliIslemlerV2() {
               };
               if (sepetKalemlerRef.current.length > 0) {
                 Alert.alert(
-                  'Cari seçimini iptal et',
-                  'Sepetteki ürünler silinecek. Devam edilsin mi?',
+                  t('stok.cariIptalBaslik'),
+                  t('stok.cariIptalAciklama'),
                   [
-                    { text: 'Vazgeç', style: 'cancel' },
-                    { text: 'Evet, İptal Et', style: 'destructive', onPress: temizle },
+                    { text: t('common.vazgec'), style: 'cancel' },
+                    { text: t('stok.evetIptalEt'), style: 'destructive', onPress: temizle },
                   ]
                 );
               } else {
@@ -845,7 +847,7 @@ export default function HizliIslemlerV2() {
         <TextInput
           ref={aramaInputRef}
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı ara...'}
+          placeholder={aramaTipi === 4 ? t('stok.barkodGiriniz') : t('stok.koduVeyaAdiAra')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -903,9 +905,9 @@ export default function HizliIslemlerV2() {
 
       {/* Stok listesi başlık */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CİNS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FİYAT</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('stok.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('stok.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>{t('stok.fiyatBaslik')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -938,7 +940,7 @@ export default function HizliIslemlerV2() {
                 setStokYuklemeDurumu('tamamlandi');
               })
               .catch(() => {
-                toast.error('Stok listesi yüklenirken bir hata oluştu.');
+                toast.error(t('stok.listeYukHatasi'));
                 setStokYuklemeDurumu('hata');
               })
               .finally(() => setYukleniyor(false));
@@ -1028,7 +1030,7 @@ export default function HizliIslemlerV2() {
         onDetected={(barkod) => {
           setScannerAcik(false);
           if (!secilenCari) {
-            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            toast.warning(t('stok.cariSecmedenEklenemez'));
             return;
           }
           hafifTitresim();
@@ -1037,7 +1039,7 @@ export default function HizliIslemlerV2() {
             if (miktarliGiris) {
               setModalUrunu(bulunan);
             } else if (!secilenCari) {
-              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+              toast.warning(t('stok.cariSecmedenEklenemez'));
             } else {
               hizliEkle(bulunan);
             }
@@ -1049,7 +1051,7 @@ export default function HizliIslemlerV2() {
                 if (miktarliGiris) {
                   setModalUrunu(stok);
                 } else if (!secilenCari) {
-                  toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+                  toast.warning(t('stok.cariSecmedenEklenemez'));
                 } else {
                   hizliEkle(stok);
                 }
@@ -1057,7 +1059,7 @@ export default function HizliIslemlerV2() {
                 toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
               }
             }).catch(() => {
-              toast.error('Barkod araması sırasında bir hata oluştu.');
+              toast.error(t('stok.aramaHatasi'));
             });
           }
         }}

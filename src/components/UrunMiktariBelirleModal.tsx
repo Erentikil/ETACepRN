@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import type { StokListesiBilgileri, SepetKalem, FiyatTipiBilgileri, StokFiyatBilgileri, KurBilgileri, SonSatisFiyatBilgileri, CariFiyatBilgileri } from '../models';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 import { toast } from './Toast';
 import { paraTL, paraFormat, miktarFormat } from '../utils/format';
 import { tekStokFiyatBilgisiniAl, kurBilgileriniAl, sonSatisFiyatlariniAl } from '../api/hizliIslemlerApi';
@@ -62,6 +63,7 @@ export default function UrunMiktariBelirleModal({
   maksimumIndirimSayisi,
 }: Props) {
   const Colors = useColors();
+  const t = useT();
   const uyumluluk = useAppStore((s) => s.uyumluluk);
   const proVarsayilanMax = uyumluluk === 'V8' ? 3 : 5;
   const maxInd = maksimumIndirimSayisi ?? (Config.IS_PRO ? proVarsayilanMax : 3);
@@ -387,11 +389,11 @@ export default function UrunMiktariBelirleModal({
   const handleEkle = () => {
     if (miktarSayi <= 0) return;
     if (fiyatSayi <= 0) {
-      toast.warning('Birim fiyat 0 olamaz.');
+      toast.warning(t('modal.urunFiyatSifirOlamaz'));
       return;
     }
     if (kurGecersiz) {
-      toast.warning('Secilen doviz tipi icin kur bilgisi bulunamadi. Sepete eklenemez.');
+      toast.warning(t('modal.urunKurGecersiz'));
       return;
     }
 
@@ -443,7 +445,7 @@ export default function UrunMiktariBelirleModal({
             {/* Stok Cinsi (PRO) — düzenlenebilir */}
             {Config.IS_PRO && (
               <View style={styles.formSatir}>
-                <Text style={[styles.formEtiket, { color: Colors.text }]}>Stok Cinsi:</Text>
+                <Text style={[styles.formEtiket, { color: Colors.text }]}>{t('modal.stokCinsi')}:</Text>
                 <View style={styles.formSag}>
                   <TextInput
                     style={[styles.formInput, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
@@ -459,7 +461,7 @@ export default function UrunMiktariBelirleModal({
 
             {/* Bakiye satiri */}
             <View style={styles.formSatir}>
-              <Text style={[styles.formEtiket, { color: Colors.text }]}>Bakiye:</Text>
+              <Text style={[styles.formEtiket, { color: Colors.text }]}>{t('modal.bakiyeEtiket')}</Text>
               <View style={styles.formSag}>
                 <View style={[styles.inputKutu, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
                   <Text style={[styles.inputKutuText, { color: Colors.text }]}>{miktarFormat(urun.bakiye)}</Text>
@@ -471,7 +473,7 @@ export default function UrunMiktariBelirleModal({
             {/* Fiyat satiri */}
             <View style={[styles.formSatir, { zIndex: 3 }]}>
               <TouchableOpacity onPress={sonFiyatlariGetir} style={styles.fiyatEtiketBtn}>
-                <Text style={[styles.formEtiket, { color: Colors.priceColor, marginBottom: 0, textDecorationLine: 'underline' }]}>Fiyat:</Text>
+                <Text style={[styles.formEtiket, { color: Colors.priceColor, marginBottom: 0, textDecorationLine: 'underline' }]}>{t('modal.fiyatEtiket')}</Text>
               </TouchableOpacity>
               <View style={styles.formSag}>
                 {fiyatTipListesi.length > 0 ? (
@@ -479,7 +481,7 @@ export default function UrunMiktariBelirleModal({
                     <Text style={[styles.fiyatTipiBtnText, { color: Colors.primary }]} numberOfLines={1}>
                       {seciliFiyatTipi
                         ? `${seciliFiyatTipi.fiyatNo}-${seciliFiyatTipi.fiyatAdi}`
-                        : 'Secin'}
+                        : t('modal.sec')}
                     </Text>
                     <Ionicons name="chevron-down" size={12} color={Colors.primary} />
                   </TouchableOpacity>
@@ -503,7 +505,7 @@ export default function UrunMiktariBelirleModal({
               <View style={styles.fiyatModalOverlay}>
                 <View style={[styles.fiyatModalKart, { backgroundColor: Colors.card }]}>
                   <View style={[styles.fiyatModalBaslik, { backgroundColor: Colors.primary }]}>
-                    <Text style={styles.fiyatModalBaslikText}>Fiyat Tipi Secin</Text>
+                    <Text style={styles.fiyatModalBaslikText}>{t('modal.fiyatTipiSec')}</Text>
                     <TouchableOpacity onPress={() => setFiyatTipiAcik(false)}>
                       <Ionicons name="close" size={22} color="#fff" />
                     </TouchableOpacity>
@@ -543,7 +545,7 @@ export default function UrunMiktariBelirleModal({
             {/* Kalem Indirim satiri */}
             {kalemIndirimYetkisi && (
               <View style={styles.formSatir}>
-                <Text style={[styles.formEtiket, { color: Colors.text }]}>İndirim:</Text>
+                <Text style={[styles.formEtiket, { color: Colors.text }]}>{t('modal.indirimEtiket')}</Text>
                 <View style={styles.formSag}>
                   <TextInput
                     style={[styles.formInputKucuk, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
@@ -592,7 +594,7 @@ export default function UrunMiktariBelirleModal({
 
             {/* Miktar satiri */}
             <View style={[styles.formSatir, { zIndex: 2 }]}>
-              <Text style={[styles.formEtiket, { color: Colors.text }]}>Miktar</Text>
+              <Text style={[styles.formEtiket, { color: Colors.text }]}>{t('common.miktar')}</Text>
               <View style={styles.formSag}>
                 <TextInput
                   style={[styles.formInput, { borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
@@ -652,7 +654,7 @@ export default function UrunMiktariBelirleModal({
 
             {/* Aciklama */}
             <View style={styles.formSatir}>
-              <Text style={[styles.formEtiket, { color: Colors.text }]}>Açıklama</Text>
+              <Text style={[styles.formEtiket, { color: Colors.text }]}>{t('common.aciklama')}</Text>
               <View style={styles.formSag}>
                 <TextInput
                   style={[styles.formInput, { textAlignVertical: 'top', minHeight: 40, borderColor: Colors.border, color: Colors.black, backgroundColor: Colors.inputBackground }]}
@@ -676,7 +678,7 @@ export default function UrunMiktariBelirleModal({
               </View>
               {(ind1Sayi > 0 || ind2Sayi > 0 || (ind3Goster && ind3Sayi > 0) || (ind4Goster && ind4Sayi > 0) || (ind5Goster && ind5Sayi > 0)) && (
                 <View style={styles.toplamSatir}>
-                  <Text style={[styles.toplamEtiket, { color: Colors.text }]}>İndirimli</Text>
+                  <Text style={[styles.toplamEtiket, { color: Colors.text }]}>{t('modal.indirimliTutar')}</Text>
                   <Text style={[styles.toplamDeger, { color: Colors.text }]}>{paraTL(kdvHaricTutar)}</Text>
                 </View>
               )}
@@ -687,7 +689,7 @@ export default function UrunMiktariBelirleModal({
                 </View>
               )}
               <View style={[styles.toplamSatir, styles.toplamSonSatir, { borderTopColor: Colors.border }]}>
-                <Text style={[styles.toplamEtiketBold, { color: Colors.primary }]}>Toplam</Text>
+                <Text style={[styles.toplamEtiketBold, { color: Colors.primary }]}>{t('common.toplam')}</Text>
                 <Text style={[styles.toplamDegerBold, { color: Colors.primary }]}>{paraTL(toplamTutar)}</Text>
               </View>
             </View>
@@ -701,11 +703,11 @@ export default function UrunMiktariBelirleModal({
               disabled={miktarSayi <= 0 || kurGecersiz}
             >
               <Text style={styles.butonText}>
-                {mode === 'duzenle' ? 'Güncelle' : 'Tamam'}
+                {mode === 'duzenle' ? t('common.guncelle') : t('common.tamam')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.buton, styles.vazgecBtn, { backgroundColor: Colors.primary }]} onPress={onClose}>
-              <Text style={styles.butonText}>Vazgeç</Text>
+              <Text style={styles.butonText}>{t('common.vazgec')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -715,7 +717,7 @@ export default function UrunMiktariBelirleModal({
       <Modal visible={sonFiyatModalAcik} animationType="fade" transparent onRequestClose={() => setSonFiyatModalAcik(false)}>
         <View style={styles.sonFiyatOverlay}>
           <View style={[styles.sonFiyatKart, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.sonFiyatBaslikText, { color: Colors.text }]}>Son Satış Fiyatları</Text>
+            <Text style={[styles.sonFiyatBaslikText, { color: Colors.text }]}>{t('modal.sonSatisFiyatlari')}</Text>
             <Text style={[styles.sonFiyatAltBaslik, { color: Colors.textSecondary }]} numberOfLines={1}>{urun?.stokCinsi}</Text>
 
             {sonFiyatYukleniyor ? (
@@ -730,14 +732,14 @@ export default function UrunMiktariBelirleModal({
             ) : sonFiyatListesi.length === 0 ? (
               <View style={styles.sonFiyatMerkez}>
                 <Ionicons name="pricetags-outline" size={36} color={Colors.textSecondary} />
-                <Text style={[styles.sonFiyatMerkezText, { color: Colors.textSecondary }]}>Son satış fiyatı bulunamadı.</Text>
+                <Text style={[styles.sonFiyatMerkezText, { color: Colors.textSecondary }]}>{t('modal.sonSatisYok')}</Text>
               </View>
             ) : (
               <>
                 <View style={[styles.sonFiyatKolonBaslik, { borderBottomColor: Colors.border }]}>
-                  <Text style={[styles.sonFiyatKolonText, { color: Colors.primary }]}>Tarih</Text>
-                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatMerkezHizala, { color: Colors.primary }]}>Miktar</Text>
-                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatSagHizala, { color: Colors.primary }]}>Fiyat</Text>
+                  <Text style={[styles.sonFiyatKolonText, { color: Colors.primary }]}>{t('modal.tarih')}</Text>
+                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatMerkezHizala, { color: Colors.primary }]}>{t('common.miktar')}</Text>
+                  <Text style={[styles.sonFiyatKolonText, styles.sonFiyatSagHizala, { color: Colors.primary }]}>{t('common.fiyat')}</Text>
                 </View>
                 <ScrollView showsVerticalScrollIndicator={false} style={styles.sonFiyatScrollView}>
                   {sonFiyatListesi.map((f, i) => (
@@ -764,7 +766,7 @@ export default function UrunMiktariBelirleModal({
               style={[styles.sonFiyatVazgecBtn, { backgroundColor: Colors.primary }]}
               onPress={() => setSonFiyatModalAcik(false)}
             >
-              <Text style={styles.sonFiyatVazgecText}>Vazgeç</Text>
+              <Text style={styles.sonFiyatVazgecText}>{t('common.vazgec')}</Text>
             </TouchableOpacity>
           </View>
         </View>

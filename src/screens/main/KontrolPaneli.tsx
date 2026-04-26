@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import { paraTL } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
@@ -51,6 +52,7 @@ function grupla(liste: OnayListesiBilgileri[]): Bolum[] {
 
 export default function KontrolPaneli() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { calisilanSirket } = useAppStore();
 
@@ -71,10 +73,10 @@ export default function KontrolPaneli() {
         setBolumler(grupla(liste));
         setAcikGruplar(new Set()); // yeniden yüklemede kapalı sıfırla
       } else {
-        toast.error(sonuc.mesaj || 'Onay listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('onay.listeAlinamadi'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setYukleniyor(false);
     }
@@ -125,22 +127,22 @@ export default function KontrolPaneli() {
       <View style={styles.kartAlt}>
         <View style={styles.kartAltSol}>
           <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-            <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Kullanıcı: </Text>
+            <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.kullanici')}: </Text>
             {item.kullaniciKodu}
           </Text>
           {item.sirketAdi ? (
             <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Şirket: </Text>
+              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.sirket')}: </Text>
               {item.sirketAdi}
             </Text>
           ) : null}
           <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-            <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Tarih: </Text>
+            <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.tarih')}: </Text>
             {formatTarih(item.tarih)}
           </Text>
           {item.onaylayan ? (
             <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Onaylayan: </Text>
+              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.onaylayan')}: </Text>
               {item.onaylayan}
             </Text>
           ) : null}
@@ -171,7 +173,7 @@ export default function KontrolPaneli() {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari ünvana göre ara..."
+          placeholder={t('onay.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={aramaUygula}
@@ -196,8 +198,8 @@ export default function KontrolPaneli() {
         {bolumler.length === 0 ? (
           <EmptyState
             icon="grid-outline"
-            baslik="Kontrol paneli boş"
-            aciklama="Onay listesinde kayıt bulunmamaktadır"
+            baslik={t('kontrolPaneli.bos')}
+            aciklama={t('kontrolPaneli.bosAciklama')}
           />
         ) : (
           bolumler.map((bolum) => {

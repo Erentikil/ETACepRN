@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { kurFormat } from '../../utils/format';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppStore } from '../../store/appStore';
@@ -21,6 +22,7 @@ import AnimatedListItem from '../../components/AnimatedListItem';
 
 export default function KurBilgileri() {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket } = useAppStore();
   const [kurlar, setKurlar] = useState<KurBilgileriModel[]>([]);
   const [guncelleme, setGuncelleme] = useState<string | null>(null);
@@ -38,11 +40,11 @@ export default function KurBilgileri() {
           new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         );
       } else {
-        setHata(sonuc.mesaj || 'Kur bilgileri alınamadı.');
+        setHata(sonuc.mesaj || t('kur.alinamadi'));
       }
     } catch (e: any) {
-      const mesaj = e instanceof Error ? e.message : 'Bağlantı hatası.';
-      setHata(`Kur bilgileri alınamadı. ${mesaj}`);
+      const mesaj = e instanceof Error ? e.message : t('common.baglantiHatasi');
+      setHata(t('kur.alinamadiDetay', { mesaj }));
     } finally {
       setYukleniyor(false);
     }
@@ -84,9 +86,9 @@ export default function KurBilgileri() {
         <View style={styles.bilgiSol}>
           <Ionicons name="globe-outline" size={18} color={Colors.primary} />
           <View>
-            <Text style={[styles.bilgiBaslik, { color: Colors.text }]}>Döviz Kurları</Text>
+            <Text style={[styles.bilgiBaslik, { color: Colors.text }]}>{t('kur.baslik')}</Text>
             {guncelleme && (
-              <Text style={[styles.bilgiTarih, { color: Colors.textSecondary }]}>Son güncelleme: {guncelleme}</Text>
+              <Text style={[styles.bilgiTarih, { color: Colors.textSecondary }]}>{t('kur.sonGuncelleme')}: {guncelleme}</Text>
             )}
           </View>
         </View>
@@ -101,8 +103,8 @@ export default function KurBilgileri() {
 
       {/* Başlık satırı */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1 }]}>DÖVİZ</Text>
-        <Text style={[styles.listeBaslikText, { textAlign: 'right' }]}>KUR</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1 }]}>{t('kur.doviz')}</Text>
+        <Text style={[styles.listeBaslikText, { textAlign: 'right' }]}>{t('kur.kur')}</Text>
       </View>
 
       {hata ? (
@@ -110,7 +112,7 @@ export default function KurBilgileri() {
           <Ionicons name="wifi-outline" size={48} color={Colors.border} />
           <Text style={[styles.hataMetin, { color: Colors.textSecondary }]}>{hata}</Text>
           <TouchableOpacity style={[styles.tekrarBtn, { backgroundColor: Colors.primary }]} onPress={kurlariCek}>
-            <Text style={styles.tekrarBtnText}>Tekrar Dene</Text>
+            <Text style={styles.tekrarBtnText}>{t('kur.tekrarDene')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -129,7 +131,7 @@ export default function KurBilgileri() {
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
             yukleniyor ? null : (
-              <EmptyState icon="cash-outline" baslik="Kur bilgisi bulunamadı" aciklama="Döviz kuru bilgisi bulunmamaktadır" />
+              <EmptyState icon="cash-outline" baslik={t('kur.bulunamadi')} aciklama={t('kur.bulunamadiAciklama')} />
             )
           }
         />

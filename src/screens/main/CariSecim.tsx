@@ -23,6 +23,7 @@ import { useAppStore } from '../../store/appStore';
 import { cariListesiniAl, cariKartKaydet } from '../../api/hizliIslemlerApi';
 import type { CariEvrak } from '../../models';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import type { CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import { toast } from '../../components/Toast';
@@ -40,26 +41,27 @@ type CariIslemSecenegi = {
   yetkiKey?: 'cariTahsilatYetkisi' | 'kasaTahsilatYetkisi' | 'cekTahsilatYetkisi' | 'senetTahsilatYetkisi';
 };
 
-const CARI_ISLEM_SECENEKLERI: CariIslemSecenegi[] = [
-  { key: 'CariEkstreListesi', label: 'Cari Ekstre', icon: 'document-text-outline', aktif: true },
-  { key: 'StokluCariEkstreListesi', label: 'Stoklu Ekstre', icon: 'list-outline', aktif: true },
-  { key: 'BekleyenSiparisler', label: 'Bekleyen Siparişler', icon: 'time-outline', aktif: true },
-  { key: 'TahsilatListesi', label: 'Tahsilat Listesi', icon: 'receipt-outline', aktif: true },
-  { key: 'Adresler', label: 'Adresler', icon: 'location-outline', aktif: true },
-  { key: 'Tahsilatlar', label: 'Cari Tahsilat', icon: 'cash-outline', aktif: true, tahsilatTipi: 'cari', yetkiKey: 'cariTahsilatYetkisi' },
-  { key: 'Tahsilatlar', label: 'Kasa Tahsilatı', icon: 'wallet-outline', aktif: true, tahsilatTipi: 'kasa', yetkiKey: 'kasaTahsilatYetkisi' },
-  { key: 'Tahsilatlar', label: 'Çek Tahsilatı', icon: 'card-outline', aktif: true, tahsilatTipi: 'cek', yetkiKey: 'cekTahsilatYetkisi' },
-  { key: 'Tahsilatlar', label: 'Senet Tahsilatı', icon: 'document-outline', aktif: true, tahsilatTipi: 'senet', yetkiKey: 'senetTahsilatYetkisi' },
-];
-
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<RootStackParamList, 'CariSecim'>;
 
 export default function CariSecim() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+
+  const CARI_ISLEM_SECENEKLERI: CariIslemSecenegi[] = [
+    { key: 'CariEkstreListesi', label: t('cariSecim.cariEkstre'), icon: 'document-text-outline', aktif: true },
+    { key: 'StokluCariEkstreListesi', label: t('cariSecim.stokluEkstre'), icon: 'list-outline', aktif: true },
+    { key: 'BekleyenSiparisler', label: t('cariSecim.bekleyenSiparisler'), icon: 'time-outline', aktif: true },
+    { key: 'TahsilatListesi', label: t('cariSecim.tahsilatListesi'), icon: 'receipt-outline', aktif: true },
+    { key: 'Adresler', label: t('cariSecim.adresler'), icon: 'location-outline', aktif: true },
+    { key: 'Tahsilatlar', label: t('cariSecim.cariTahsilat'), icon: 'cash-outline', aktif: true, tahsilatTipi: 'cari', yetkiKey: 'cariTahsilatYetkisi' },
+    { key: 'Tahsilatlar', label: t('cariSecim.kasaTahsilati'), icon: 'wallet-outline', aktif: true, tahsilatTipi: 'kasa', yetkiKey: 'kasaTahsilatYetkisi' },
+    { key: 'Tahsilatlar', label: t('cariSecim.cekTahsilati'), icon: 'card-outline', aktif: true, tahsilatTipi: 'cek', yetkiKey: 'cekTahsilatYetkisi' },
+    { key: 'Tahsilatlar', label: t('cariSecim.senetTahsilati'), icon: 'document-outline', aktif: true, tahsilatTipi: 'senet', yetkiKey: 'senetTahsilatYetkisi' },
+  ];
 
   const [aramaMetni, setAramaMetni] = useState('');
   const [tumCariListesi, setTumCariListesi] = useState<CariKartBilgileri[]>([]);
@@ -82,26 +84,26 @@ export default function CariSecim() {
 
   const yeniCariKaydet = async () => {
     if (!yeniCari.cariKodu.trim()) {
-      toast.warning('Cari kodu boş bırakılamaz.');
+      toast.warning(t('cariSecim.cariKoduBos'));
       return;
     }
     if (!yeniCari.cariUnvan.trim()) {
-      toast.warning('Cari unvan boş bırakılamaz.');
+      toast.warning(t('cariSecim.cariUnvanBos'));
       return;
     }
     setKayitYapiliyor(true);
     try {
       const sonuc = await cariKartKaydet(yeniCari, calisilanSirket);
       if (sonuc.sonuc) {
-        toast.success(sonuc.mesaj || 'Cari kart kaydedildi.');
+        toast.success(sonuc.mesaj || t('cariSecim.cariKaydedildi'));
         setYeniCariModalGoster(false);
         setYeniCari({ ...bosCariEvrak });
         yenile();
       } else {
-        toast.error(sonuc.mesaj || 'Cari kart kaydedilemedi.');
+        toast.error(sonuc.mesaj || t('cariSecim.cariKaydedilemedi'));
       }
     } catch {
-      toast.error('Cari kart kaydedilirken bir hata oluştu.');
+      toast.error(t('cariSecim.cariKaydetmeHata'));
     } finally {
       setKayitYapiliyor(false);
     }
@@ -120,7 +122,7 @@ export default function CariSecim() {
           }}
         >
           <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.headerYeniText}>Yeni</Text>
+          <Text style={styles.headerYeniText}>{t('cariSecim.yeniBtn')}</Text>
         </TouchableOpacity>
       ),
     });
@@ -140,10 +142,10 @@ export default function CariSecim() {
       if (sonuc.sonuc) {
         setTumCariListesi(sonuc.data);
       } else {
-        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('cariSecim.listeAlinamadi'));
       }
     } catch {
-      toast.error('Cari listesi yüklenirken bir hata oluştu.');
+      toast.error(t('cariSecim.listeYuklemeHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -177,11 +179,11 @@ export default function CariSecim() {
 
     if (sepetDolu) {
       Alert.alert(
-        'Cari Değiştir',
-        'Sepette ürünler var. Cariyi değiştirmek istediğinize emin misiniz?',
+        t('cariSecim.cariDegistir'),
+        t('cariSecim.cariDegistirMesaj'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Değiştir', style: 'destructive', onPress: onayla },
+          { text: t('cariSecim.vazgec'), style: 'cancel' },
+          { text: t('cariSecim.degistir'), style: 'destructive', onPress: onayla },
         ]
       );
     } else {
@@ -194,7 +196,7 @@ export default function CariSecim() {
     const cari = islemModalCari;
     setIslemModalCari(null);
     if (!secenek.aktif) {
-      toast.info(`${secenek.label} henüz aktif değil.`);
+      toast.info(t('cariSecim.henuzAktifDegil', { ad: secenek.label }));
       return;
     }
 
@@ -206,7 +208,7 @@ export default function CariSecim() {
           dizaynAdi: 'Mobil_CariAdresDizayn.repx',
           evrakTipi: 'CariAdres',
           parametre1: cari.cariKodu,
-          baslik: `Adres Listesi - ${cari.cariUnvan}`,
+          baslik: t('cariSecim.adresListesiBaslik', { ad: cari.cariUnvan }),
           kaynakEkran: 'CariSecim',
         },
       });
@@ -221,7 +223,7 @@ export default function CariSecim() {
           dizaynAdi: 'Mobil_TahsilatDetayDizayn.repx',
           evrakTipi: 'TahsilatDetay',
           parametre1: cari.cariKodu,
-          baslik: `Tahsilat Listesi - ${cari.cariUnvan}`,
+          baslik: t('cariSecim.tahsilatListesiBaslik', { ad: cari.cariUnvan }),
           kaynakEkran: 'CariSecim',
         },
       });
@@ -272,7 +274,7 @@ export default function CariSecim() {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari kodu veya unvan filtrele..."
+          placeholder={t('cariSecim.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -306,8 +308,8 @@ export default function CariSecim() {
           ListEmptyComponent={
             <EmptyState
               icon="people-outline"
-              baslik={aramaMetni ? 'Eşleşen cari bulunamadı' : 'Cari listesi boş'}
-              aciklama={aramaMetni ? 'Farklı bir arama kriteri deneyiniz' : 'Kayıtlı cari bulunmamaktadır'}
+              baslik={aramaMetni ? t('cariSecim.eslesenYok') : t('cariSecim.listeBos')}
+              aciklama={aramaMetni ? t('cariSecim.farkliKriter') : t('cariSecim.kayitliCariYok')}
             />
           }
         />
@@ -326,27 +328,27 @@ export default function CariSecim() {
         >
           <View style={[styles.yeniCariModalKutu, { backgroundColor: Colors.card }]}>
             <View style={[styles.yeniCariBaslik, { borderBottomColor: Colors.border }]}>
-              <Text style={[styles.yeniCariBaslikText, { color: Colors.text }]}>Yeni Cari Kart</Text>
+              <Text style={[styles.yeniCariBaslikText, { color: Colors.text }]}>{t('cariSecim.yeniCariBaslik')}</Text>
               <TouchableOpacity onPress={() => setYeniCariModalGoster(false)}>
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.yeniCariForm} showsVerticalScrollIndicator={false}>
               {([
-                { alan: 'cariKodu' as const, label: 'Cari Kodu *', icon: 'barcode-outline' as const },
-                { alan: 'cariUnvan' as const, label: 'Cari Unvan *', icon: 'business-outline' as const },
-                { alan: 'yetkili' as const, label: 'Yetkili', icon: 'person-outline' as const },
-                { alan: 'telefon1' as const, label: 'Telefon', icon: 'call-outline' as const, keyboard: 'phone-pad' as const },
-                { alan: 'eposta1' as const, label: 'E-Posta', icon: 'mail-outline' as const, keyboard: 'email-address' as const },
-                { alan: 'vergiDairesi' as const, label: 'Vergi Dairesi', icon: 'reader-outline' as const },
-                { alan: 'vergiNumarasi' as const, label: 'Vergi Numarası', icon: 'document-text-outline' as const },
-                { alan: 'tcKimlikNo' as const, label: 'TC Kimlik No', icon: 'id-card-outline' as const, keyboard: 'numeric' as const },
-                { alan: 'adres1' as const, label: 'Adres 1', icon: 'location-outline' as const },
-                { alan: 'adres2' as const, label: 'Adres 2', icon: 'location-outline' as const },
-                { alan: 'il' as const, label: 'İl', icon: 'map-outline' as const },
-                { alan: 'ilce' as const, label: 'İlçe', icon: 'navigate-outline' as const },
-                { alan: 'ulke' as const, label: 'Ülke', icon: 'globe-outline' as const },
-                { alan: 'postaKodu' as const, label: 'Posta Kodu', icon: 'mail-open-outline' as const },
+                { alan: 'cariKodu' as const, label: t('cariSecim.formCariKodu'), icon: 'barcode-outline' as const },
+                { alan: 'cariUnvan' as const, label: t('cariSecim.formCariUnvan'), icon: 'business-outline' as const },
+                { alan: 'yetkili' as const, label: t('cariSecim.formYetkili'), icon: 'person-outline' as const },
+                { alan: 'telefon1' as const, label: t('cariSecim.formTelefon'), icon: 'call-outline' as const, keyboard: 'phone-pad' as const },
+                { alan: 'eposta1' as const, label: t('cariSecim.formEPosta'), icon: 'mail-outline' as const, keyboard: 'email-address' as const },
+                { alan: 'vergiDairesi' as const, label: t('cariSecim.formVergiDairesi'), icon: 'reader-outline' as const },
+                { alan: 'vergiNumarasi' as const, label: t('cariSecim.formVergiNumarasi'), icon: 'document-text-outline' as const },
+                { alan: 'tcKimlikNo' as const, label: t('cariSecim.formTcKimlik'), icon: 'id-card-outline' as const, keyboard: 'numeric' as const },
+                { alan: 'adres1' as const, label: t('cariSecim.formAdres1'), icon: 'location-outline' as const },
+                { alan: 'adres2' as const, label: t('cariSecim.formAdres2'), icon: 'location-outline' as const },
+                { alan: 'il' as const, label: t('cariSecim.formIl'), icon: 'map-outline' as const },
+                { alan: 'ilce' as const, label: t('cariSecim.formIlce'), icon: 'navigate-outline' as const },
+                { alan: 'ulke' as const, label: t('cariSecim.formUlke'), icon: 'globe-outline' as const },
+                { alan: 'postaKodu' as const, label: t('cariSecim.formPostaKodu'), icon: 'mail-open-outline' as const },
               ]).map((f) => (
                 <View key={f.alan} style={styles.formSatir}>
                   <View style={styles.formLabelRow}>
@@ -368,7 +370,7 @@ keyboardType={f.keyboard ?? 'default'}
                 style={[styles.yeniCariIptalButon, { borderColor: Colors.border }]}
                 onPress={() => setYeniCariModalGoster(false)}
               >
-                <Text style={[styles.yeniCariIptalText, { color: Colors.text }]}>İptal</Text>
+                <Text style={[styles.yeniCariIptalText, { color: Colors.text }]}>{t('cariSecim.iptal')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.yeniCariKaydetButon, { backgroundColor: Colors.primary }, kayitYapiliyor && { opacity: 0.6 }]}
@@ -380,7 +382,7 @@ keyboardType={f.keyboard ?? 'default'}
                 ) : (
                   <>
                     <Ionicons name="checkmark" size={20} color="#fff" />
-                    <Text style={styles.yeniCariKaydetText}>Kaydet</Text>
+                    <Text style={styles.yeniCariKaydetText}>{t('cariSecim.kaydet')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -424,7 +426,7 @@ keyboardType={f.keyboard ?? 'default'}
               style={[styles.vazgecButon, { backgroundColor: Colors.accent }]}
               onPress={() => setIslemModalCari(null)}
             >
-              <Text style={styles.vazgecText}>Vazgeç</Text>
+              <Text style={styles.vazgecText}>{t('cariSecim.vazgec')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -23,6 +23,7 @@ import {
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { paraTL } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type { BekleyenEvrakKaydi } from '../../models';
@@ -68,6 +69,7 @@ function tarihFormat(iso: string): string {
 
 export default function BekleyenEvraklar() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const { calisilanSirket } = useAppStore();
   const [evraklar, setEvraklar] = useState<BekleyenEvrakKaydi[]>([]);
@@ -117,12 +119,12 @@ export default function BekleyenEvraklar() {
 
   const handleSil = (kayit: BekleyenEvrakKaydi) => {
     Alert.alert(
-      'Uyarı',
-      `"${kayit.cariUnvan || evrakTipiAdi(kayit.evrakTipi, kayit.alimSatim)}" evrakını silmek istediğinize emin misiniz?`,
+      t('common.uyari'),
+      t('bekleyen.silEvrakMesaj', { ad: kayit.cariUnvan || evrakTipiAdi(kayit.evrakTipi, kayit.alimSatim) }),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('common.iptal'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('common.sil'),
           style: 'destructive',
           onPress: async () => {
             await evrakiSil(kayit.id, calisilanSirket);
@@ -138,12 +140,12 @@ export default function BekleyenEvraklar() {
   const handleTumunuTemizle = () => {
     if (evraklar.length === 0) return;
     Alert.alert(
-      'Uyarı',
-      'Tüm bekleyen evraklar silinecektir. Emin misiniz?',
+      t('common.uyari'),
+      t('bekleyen.tumunuTemizleOnay'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('common.iptal'), style: 'cancel' },
         {
-          text: 'Temizle',
+          text: t('bekleyen.tumunuTemizle'),
           style: 'destructive',
           onPress: async () => {
             await tumEvraklariSil(calisilanSirket);
@@ -161,22 +163,22 @@ export default function BekleyenEvraklar() {
 
     const devamEt = () => {
       Alert.alert(
-        'Evrak Aç',
-        'Bu evrak sepete aktarılacak ve taslaktan silinecektir. Devam etmek istiyor musunuz?',
+        t('bekleyen.evrakAcBaslik'),
+        t('bekleyen.evrakAcAciklama'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Devam', onPress: () => navigation.navigate('HizliIslemlerV2', { taslakEvrak: kayit }) },
+          { text: t('common.vazgec'), style: 'cancel' },
+          { text: t('bekleyen.devam'), onPress: () => navigation.navigate('HizliIslemlerV2', { taslakEvrak: kayit }) },
         ]
       );
     };
 
     if (sepetDolu) {
       Alert.alert(
-        'Sepet Dolu',
-        'Sepetinizde ürünler bulunmaktadır. Devam ederseniz mevcut sepet silinecektir. Emin misiniz?',
+        t('bekleyen.sepetDoluBaslik'),
+        t('bekleyen.sepetDoluAciklama'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Devam', onPress: devamEt },
+          { text: t('common.vazgec'), style: 'cancel' },
+          { text: t('bekleyen.devam'), onPress: devamEt },
         ]
       );
     } else {
@@ -220,7 +222,7 @@ export default function BekleyenEvraklar() {
           <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
           <TextInput
             style={[styles.aramaInput, { color: Colors.text }]}
-            placeholder="Cari kodu, unvan veya evrak tipi ara..."
+            placeholder={t('bekleyen.aramaPlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={aramaMetni}
             onChangeText={handleArama}
@@ -249,7 +251,7 @@ export default function BekleyenEvraklar() {
           yukleniyor ? (
             <SkeletonLoader satirSayisi={5} />
           ) : (
-            <EmptyState icon="document-text-outline" baslik="Bekleyen evrak bulunamadı" aciklama="Taslak olarak kaydedilmiş evrak bulunmamaktadır" />
+            <EmptyState icon="document-text-outline" baslik={t('bekleyen.evrakBulunamadi')} aciklama={t('bekleyen.evrakBulunamadiAciklama')} />
           )
         }
       />

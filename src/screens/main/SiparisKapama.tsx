@@ -30,6 +30,7 @@ import {
 import { fisTipleriniAl, generateGuid, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
 import { evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type {
   AcmaSiparisFisBilgileri,
@@ -92,6 +93,7 @@ let _savedFisTipi: FisTipiItem | null = null;
 
 export default function SiparisKapama() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
 
@@ -242,11 +244,11 @@ export default function SiparisKapama() {
   // ── Fiş Listesi Ara ────────────────────────────────────────────────────────
   const fisleriniAra = useCallback(async () => {
     if (!secilenGrup) {
-      toast.warning('Lütfen fiş tipi seçiniz.');
+      toast.warning(t('siparis.fisTipiSec'));
       return;
     }
     if (!secilenCari && !evrakNo.trim()) {
-      toast.warning('Lütfen cari seçiniz veya evrak numarası giriniz.');
+      toast.warning(t('siparis.cariVeyaEvrak'));
       return;
     }
 
@@ -262,13 +264,13 @@ export default function SiparisKapama() {
       if (sonuc?.sonuc) {
         setFisListesi(sonuc.data ?? []);
         if ((sonuc.data ?? []).length === 0) {
-          toast.info('Sipariş fişi bulunamadı.');
+          toast.info(t('siparis.fisBulunamadi'));
         }
       } else {
-        toast.error(sonuc?.mesaj || 'Sipariş fişleri alınamadı.');
+        toast.error(sonuc?.mesaj || t('siparis.fisAlinamadi'));
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.mesaj || e?.message || 'Bağlantı hatası oluştu.');
+      toast.error(e?.response?.data?.mesaj || e?.message || t('common.baglantiHatasi'));
     } finally {
       setFisYukleniyor(false);
     }
@@ -309,7 +311,7 @@ export default function SiparisKapama() {
           if (sonuc.sonuc && sonuc.data) {
             tumHareketler = normalizeHareketler(sonuc.data);
           } else {
-            toast.error(sonuc.mesaj || 'Sipariş hareketleri alınamadı.');
+            toast.error(sonuc.mesaj || t('siparis.hareketAlinamadi'));
           }
         } else {
           // Tek fiş → evrak bazlı hareketleri al (MAUI: SiparisEvrakHareketiniAl)
@@ -327,7 +329,7 @@ export default function SiparisKapama() {
         setAramaMetni('');
         setAdim('hareketler');
       } catch {
-        toast.error('Sipariş hareketleri alınamadı.');
+        toast.error(t('siparis.hareketAlinamadi'));
       } finally {
         setHareketYukleniyor(false);
       }
@@ -351,7 +353,7 @@ export default function SiparisKapama() {
   // ── Sipariş Ekle (açma → kapama) ──────────────────────────────────────────
   const siparisEkle = (ashb: AcmaSiparisHareketBilgileri, miktar: number) => {
     if (miktar + ashb.sepetMiktar > ashb.kalMiktar) {
-      toast.warning('Ürün miktarı sipariş miktarından büyük olamaz.');
+      toast.warning(t('siparis.miktarBuyuk'));
       return;
     }
 
@@ -396,7 +398,7 @@ export default function SiparisKapama() {
     const fark = yeniMiktar - kalem.miktar;
     const ashb = acmaListesi.find((a) => a.takipNo === kalem.siparisTakipNo);
     if (ashb && fark > 0 && ashb.sepetMiktar + fark > ashb.kalMiktar) {
-      toast.warning('Ürün miktarı sipariş miktarından büyük olamaz.');
+      toast.warning(t('siparis.miktarBuyuk'));
       return;
     }
 
@@ -434,15 +436,15 @@ export default function SiparisKapama() {
   // ── Evrak Kaydet ───────────────────────────────────────────────────────────
   const evrakKaydet = async () => {
     if (!secilenCari && fisListesi.length === 0) {
-      toast.warning('Lütfen cari seçiniz.');
+      toast.warning(t('siparis.cariSec'));
       return;
     }
     if (kapamaSepeti.length === 0) {
-      toast.warning('Kapama sepeti boş.');
+      toast.warning(t('siparis.sepetBos'));
       return;
     }
     if (!secilenFisTipi) {
-      toast.warning('Fiş tipi bulunamadı.');
+      toast.warning(t('siparis.fisTipiBulunamadi'));
       return;
     }
 
@@ -474,14 +476,14 @@ export default function SiparisKapama() {
         
       if (sonuc.sonuc) basariliTitresim();
       if (sonuc.sonuc) {
-        toast.success(sonuc.mesaj || 'Kaydedildi.');
+        toast.success(sonuc.mesaj || t('siparis.kaydedildi'));
         if (sonuc.data) setKaydedilenRefNo(sonuc.data);
         setKaydedildi(true);
       } else {
-        toast.error(sonuc.mesaj || 'Hata oluştu.');
+        toast.error(sonuc.mesaj || t('siparis.hataOlustu'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setKaydediliyor(false);
     }
@@ -489,10 +491,10 @@ export default function SiparisKapama() {
 
   // ── Temizle ────────────────────────────────────────────────────────────────
   const sepetiTemizle = () => {
-    Alert.alert('Temizle', 'Kapama sepetini temizlemek istiyor musunuz?', [
-      { text: 'İptal', style: 'cancel' },
+    Alert.alert(t('siparis.temizleBaslik'), t('siparis.temizleAciklama'), [
+      { text: t('common.iptal'), style: 'cancel' },
       {
-        text: 'Temizle',
+        text: t('siparis.temizle'),
         style: 'destructive',
         onPress: () => {
           setAcmaListesi((prev) =>
@@ -547,7 +549,7 @@ export default function SiparisKapama() {
   const miktarModalOnayla = () => {
     const miktar = parseFloat(modalMiktar.replace(',', '.'));
     if (isNaN(miktar) || miktar <= 0) {
-      toast.warning('Geçerli bir miktar giriniz.');
+      toast.warning(t('siparis.gecerliMiktar'));
       return;
     }
     if (modalHedef?.tip === 'acma') {
@@ -569,10 +571,10 @@ export default function SiparisKapama() {
   // ── Geri dön ───────────────────────────────────────────────────────────────
   const geriDon = () => {
     if (kapamaSepeti.length > 0) {
-      Alert.alert('Uyarı', 'Geri dönmek istiyor musunuz?', [
-        { text: 'İptal', style: 'cancel' },
+      Alert.alert(t('common.uyari'), t('siparis.geriDonOnay'), [
+        { text: t('common.iptal'), style: 'cancel' },
         {
-          text: 'Geri Dön',
+          text: t('siparis.geriDon'),
           style: 'destructive',
           onPress: () => {
             setKapamaSepeti([]);
@@ -600,7 +602,7 @@ export default function SiparisKapama() {
   // ── PDF ───────────────────────────────────────────────────────────────────
   const handlePdfGoster = async () => {
     if (!kaydedilenRefNo) {
-      toast.error('Evrak henüz kaydedilmemiş, PDF alınamaz.');
+      toast.error(t('siparis.evrakKaydedilmedi'));
       return;
     }
     setPdfModalAcik(true);
@@ -615,7 +617,7 @@ export default function SiparisKapama() {
       setPdfDosyaUri(dosyaYolu);
     } catch (err: any) {
       setPdfModalAcik(false);
-      toast.error(err?.message || 'PDF alınamadı.');
+      toast.error(err?.message || t('siparis.pdfAlinamadi'));
     } finally {
       setPdfYukleniyor(false);
     }
@@ -626,7 +628,7 @@ export default function SiparisKapama() {
     try {
       await Sharing.shareAsync(pdfDosyaUri, { mimeType: 'application/pdf' });
     } catch {
-      toast.error('PDF paylaşılamadı.');
+      toast.error(t('siparis.pdfPaylasilamadi'));
     }
   };
 
@@ -650,7 +652,7 @@ export default function SiparisKapama() {
         <Text style={[styles.secimBtnText, { color: Colors.textSecondary }, secilenFisTipi && { color: Colors.text, fontWeight: '600' as const }]}>
           {secilenFisTipi
             ? `${secilenGrup?.alimSatim ?? ''} - ${secilenFisTipi.fisTipiAdi}`
-            : 'Fiş tipi seçiniz...'}
+            : t('siparis.fisTipiSeciniz')}
         </Text>
         <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
@@ -660,7 +662,7 @@ export default function SiparisKapama() {
         <Ionicons name="document-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.evrakNoInput, { color: Colors.text }]}
-          placeholder="Evrak numarası giriniz..."
+          placeholder={t('siparis.evrakNoGiriniz')}
           placeholderTextColor={Colors.textSecondary}
           value={evrakNo}
           onChangeText={(text) => {
@@ -837,7 +839,7 @@ export default function SiparisKapama() {
               onPress={() => setAramaTipiAcik(!aramaTipiAcik)}
             >
               <Text style={[styles.aramaTipiBtnText, { color: Colors.primary }]}>
-                {ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren'}
+                {ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? 'İçeren'}
               </Text>
               <Ionicons name="chevron-down" size={13} color={Colors.primary} />
             </TouchableOpacity>

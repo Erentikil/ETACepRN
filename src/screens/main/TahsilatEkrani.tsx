@@ -33,6 +33,7 @@ import { useAppStore } from '../../store/appStore';
 import { cariBakiyeAl, islemTipleriniAl, tahsilatKaydet, kasaTahsilatKaydet, cekSenetKaydet } from '../../api/tahsilatApi';
 import { kasaKartListesiniAl, evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from '../../components/Toast';
 import type { CariKartBilgileri, IslemTipleri, KasaKartBilgileri } from '../../models';
@@ -102,6 +103,7 @@ function tutarSayisi(t: string): number {
 
 export default function TahsilatEkrani() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -282,7 +284,7 @@ export default function TahsilatEkrani() {
   // Header'ı güncelle
   useEffect(() => {
     const tahsilatItem = ISLEM_MENUSU.find((m) => m.turu === 'tahsilat' && m.tip === aktifTip);
-    const baslik = tahsilatItem?.baslik ?? 'Tahsilat İşlemleri';
+    const baslik = tahsilatItem?.baslik ?? t('tahsilat.tahsilatIslemleri');
     navigation.setOptions({
       title: baslik,
       headerLeft: aktifTip
@@ -360,7 +362,7 @@ export default function TahsilatEkrani() {
 
   const handlePdfGoster = async () => {
     if (!kaydedilenRefNo) {
-      toast.error('Evrak henüz kaydedilmemiş, PDF alınamaz.');
+      toast.error(t('tahsilat.evrakKaydedilmedi'));
       return;
     }
     setPdfModalAcik(true);
@@ -380,7 +382,7 @@ export default function TahsilatEkrani() {
       setPdfDosyaUri(dosyaYolu);
     } catch (err: any) {
       setPdfModalAcik(false);
-      toast.error(err?.message || 'PDF alınamadı.');
+      toast.error(err?.message || t('tahsilat.pdfAlinamadi'));
     } finally {
       setPdfYukleniyor(false);
     }
@@ -391,7 +393,7 @@ export default function TahsilatEkrani() {
     try {
       await Sharing.shareAsync(pdfDosyaUri, { mimeType: 'application/pdf' });
     } catch {
-      toast.error('PDF paylaşılamadı.');
+      toast.error(t('tahsilat.pdfPaylasilamadi'));
     }
   };
 
@@ -418,24 +420,24 @@ export default function TahsilatEkrani() {
 
   const dogrula = (): boolean => {
     if (!secilenCari) {
-      toast.error('Lütfen cari seçiniz.');
+      toast.error(t('tahsilat.cariSec'));
       return false;
     }
     if (!aktifTip) {
-      toast.error('Lütfen işlem türü seçiniz.');
+      toast.error(t('tahsilat.islemTuruSec'));
       return false;
     }
     if (aktifTip === 'kasa' && !secilenKasa) {
-      toast.error('Lütfen kasa seçiniz.');
+      toast.error(t('tahsilat.kasaSec'));
       return false;
     }
     if ((aktifTip === 'cari' || aktifTip === 'kasa') && !secilenIslem) {
-      toast.error('Lütfen işlem tipi seçiniz.');
+      toast.error(t('tahsilat.islemTipiSec'));
       return false;
     }
     const tutarSayi = tutarSayisi(tutar);
     if (!tutar || isNaN(tutarSayi) || tutarSayi <= 0) {
-      toast.error('Tutar 0 ve 0\'dan küçük olamaz.');
+      toast.error(t('tahsilat.tutarSifir'));
       return false;
     }
     return true;
@@ -520,9 +522,9 @@ export default function TahsilatEkrani() {
         if (bakiyeSonuc.sonuc) {
           setCariBakiye(parseFloat(bakiyeSonuc.data?.replace(',', '.') ?? '0'));
         }
-        Alert.alert('Bilgi', 'Evrak başarı ile kaydedildi.');
+        Alert.alert(t('common.bilgi'), t('tahsilat.kayitBasarili'));
       } else {
-        toast.error(sonuc.mesaj || 'Kayıt başarısız.');
+        toast.error(sonuc.mesaj || t('tahsilat.kayitBasarisiz'));
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
@@ -605,7 +607,7 @@ export default function TahsilatEkrani() {
   };
 
   const renderVadeTarihi = () => (
-    renderSatir('Vade Tar.',
+    renderSatir(t('tahsilat.vadeTar'),
       <TouchableOpacity
         style={styles.tarihBtn}
         onPress={() => setTarihPickerAcik(true)}
@@ -617,7 +619,7 @@ export default function TahsilatEkrani() {
   );
 
   const renderIslemTipiPicker = () => (
-    renderSatir('İşlem Tipi',
+    renderSatir(t('tahsilat.islemTipi'),
       <TouchableOpacity
         style={styles.pickerTrigger}
         onPress={() => setIslemPickerAcik(true)}
@@ -628,7 +630,7 @@ export default function TahsilatEkrani() {
         ) : (
           <>
             <Text style={[styles.pickerTriggerText, { color: Colors.primary }]} numberOfLines={1}>
-              {secilenIslem ? `${secilenIslem.islemTipiKodu} - ${secilenIslem.islemTipiAdi}` : 'Seçiniz...'}
+              {secilenIslem ? `${secilenIslem.islemTipiKodu} - ${secilenIslem.islemTipiAdi}` : t('tahsilat.seciniz')}
             </Text>
             <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
           </>
@@ -638,15 +640,15 @@ export default function TahsilatEkrani() {
   );
 
   const renderTutarInput = () => (
-    renderSatir('Tutar',
+    renderSatir(t('tahsilat.tutar'),
       <TextInput
         style={[styles.giris, styles.tutarGiris, { color: Colors.error }]}
         value={tutar}
-        onChangeText={(t) => setTutar(tutarYaz(t))}
+        onChangeText={(val) => setTutar(tutarYaz(val))}
         placeholder="0,00"
         placeholderTextColor={Colors.textSecondary}
         keyboardType="decimal-pad"
-        onFocus={() => inputFocusScroll('Tutar')}
+        onFocus={() => inputFocusScroll(t('tahsilat.tutar'))}
       />
     )
   );
@@ -655,8 +657,8 @@ export default function TahsilatEkrani() {
   const renderCariForm = () => (
     <>
       {renderIslemTipiPicker()}
-      {renderInput('Evrak No', evrakNo, setEvrakNo)}
-      {renderInput('Açıklama', aciklama, setAciklama)}
+      {renderInput(t('tahsilat.evrakNo'), evrakNo, setEvrakNo)}
+      {renderInput(t('tahsilat.aciklama'), aciklama, setAciklama)}
       {renderVadeTarihi()}
       {renderTutarInput()}
     </>
@@ -665,20 +667,20 @@ export default function TahsilatEkrani() {
   // ─── Kasa Tahsilatı formu ──────────────────────────────────────────────────
   const renderKasaForm = () => (
     <>
-      {renderSatir('Kasa',
+      {renderSatir(t('tahsilat.kasa'),
         <TouchableOpacity
           style={styles.pickerTrigger}
           onPress={() => setKasaPickerAcik(true)}
         >
           <Text style={[styles.pickerTriggerText, { color: Colors.primary }]} numberOfLines={1}>
-            {secilenKasa ? `${secilenKasa.kasaKodu}-${secilenKasa.kasaAdi}` : 'Seçiniz...'}
+            {secilenKasa ? `${secilenKasa.kasaKodu}-${secilenKasa.kasaAdi}` : t('tahsilat.seciniz')}
           </Text>
           <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
         </TouchableOpacity>
       )}
       {renderIslemTipiPicker()}
-      {renderInput('Evrak No', evrakNo, setEvrakNo)}
-      {renderInput('Açıklama', aciklama, setAciklama)}
+      {renderInput(t('tahsilat.evrakNo'), evrakNo, setEvrakNo)}
+      {renderInput(t('tahsilat.aciklama'), aciklama, setAciklama)}
       {renderVadeTarihi()}
       {renderTutarInput()}
     </>
@@ -687,9 +689,9 @@ export default function TahsilatEkrani() {
   // ─── Çek Tahsilatı formu ───────────────────────────────────────────────────
   const renderCekForm = () => (
     <>
-      {renderInput('Asıl Borçlu', asilBorclu, setAsilBorclu)}
-      {renderInput('Evrak No', evrakNo, setEvrakNo)}
-      {renderSatir('Kendi Çeki',
+      {renderInput(t('tahsilat.asilBorclu'), asilBorclu, setAsilBorclu)}
+      {renderInput(t('tahsilat.evrakNo'), evrakNo, setEvrakNo)}
+      {renderSatir(t('tahsilat.kendiCeki'),
         <Switch
           value={kendiCeki}
           onValueChange={setKendiCeki}
@@ -698,14 +700,14 @@ export default function TahsilatEkrani() {
         />
       )}
       {renderVadeTarihi()}
-      {renderInput('Banka', banka, setBanka)}
-      {renderInput('Şube', sube, setSube)}
-      {renderInput('Çek No.', cekNo, setCekNo)}
-      {renderInput('Hesap No.', hesapNo, setHesapNo)}
-      {renderInput('Keşide Yeri', kesideYeri, setKesideYeri)}
-      {renderInput('Açıklama', aciklama, setAciklama)}
-      {renderInput('Satır Açık. 1', satirAcik1, setSatirAcik1)}
-      {renderInput('Satır Açık. 2', satirAcik2, setSatirAcik2)}
+      {renderInput(t('tahsilat.banka'), banka, setBanka)}
+      {renderInput(t('tahsilat.sube'), sube, setSube)}
+      {renderInput(t('tahsilat.cekNo'), cekNo, setCekNo)}
+      {renderInput(t('tahsilat.hesapNo'), hesapNo, setHesapNo)}
+      {renderInput(t('tahsilat.kesideYeri'), kesideYeri, setKesideYeri)}
+      {renderInput(t('tahsilat.aciklama'), aciklama, setAciklama)}
+      {renderInput(t('tahsilat.satirAcik1'), satirAcik1, setSatirAcik1)}
+      {renderInput(t('tahsilat.satirAcik2'), satirAcik2, setSatirAcik2)}
       {renderTutarInput()}
     </>
   );
@@ -713,9 +715,9 @@ export default function TahsilatEkrani() {
   // ─── Senet Tahsilatı formu ─────────────────────────────────────────────────
   const renderSenetForm = () => (
     <>
-      {renderInput('Asıl Borçlu', asilBorclu, setAsilBorclu)}
-      {renderInput('Evrak No', evrakNo, setEvrakNo)}
-      {renderSatir('Kendi Senedi',
+      {renderInput(t('tahsilat.asilBorclu'), asilBorclu, setAsilBorclu)}
+      {renderInput(t('tahsilat.evrakNo'), evrakNo, setEvrakNo)}
+      {renderSatir(t('tahsilat.kendiSenedi'),
         <Switch
           value={kendiCeki}
           onValueChange={setKendiCeki}
@@ -724,12 +726,12 @@ export default function TahsilatEkrani() {
         />
       )}
       {renderVadeTarihi()}
-      {renderInput('Düz. Adresi', duzAdresi, setDuzAdresi)}
-      {renderInput('Düz. İl', duzIl, setDuzIl)}
-      {renderInput('Düz. İlçe', duzIlce, setDuzIlce)}
-      {renderInput('Açıklama', aciklama, setAciklama)}
-      {renderInput('Satır Açık. 1', satirAcik1, setSatirAcik1)}
-      {renderInput('Satır Açık. 2', satirAcik2, setSatirAcik2)}
+      {renderInput(t('tahsilat.duzAdresi'), duzAdresi, setDuzAdresi)}
+      {renderInput(t('tahsilat.duzIl'), duzIl, setDuzIl)}
+      {renderInput(t('tahsilat.duzIlce'), duzIlce, setDuzIlce)}
+      {renderInput(t('tahsilat.aciklama'), aciklama, setAciklama)}
+      {renderInput(t('tahsilat.satirAcik1'), satirAcik1, setSatirAcik1)}
+      {renderInput(t('tahsilat.satirAcik2'), satirAcik2, setSatirAcik2)}
       {renderTutarInput()}
     </>
   );
@@ -773,7 +775,7 @@ export default function TahsilatEkrani() {
                 );
               })}
             <TouchableOpacity style={[styles.islemMenuVazgec, { backgroundColor: Colors.background }]} onPress={() => setIslemMenuAcik(false)}>
-              <Text style={[styles.islemMenuVazgecText, { color: Colors.primary }]}>Vazgeç</Text>
+              <Text style={[styles.islemMenuVazgecText, { color: Colors.primary }]}>{t('tahsilat.vazgec')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -783,7 +785,7 @@ export default function TahsilatEkrani() {
       <Modal visible={islemPickerAcik} transparent animationType="fade" onRequestClose={() => setIslemPickerAcik(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIslemPickerAcik(false)}>
           <View style={[styles.pickerKutu, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.pickerBaslik, { color: Colors.text, borderBottomColor: Colors.border }]}>İşlem Tipi Seçin</Text>
+            <Text style={[styles.pickerBaslik, { color: Colors.text, borderBottomColor: Colors.border }]}>{t('tahsilat.islemTipiSecBaslik')}</Text>
             <FlatList
               data={islemListesi}
               keyExtractor={(item) => item.islemTipiKodu}

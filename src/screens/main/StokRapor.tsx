@@ -14,6 +14,7 @@ import { toast } from '../../components/Toast';
 import { useAppStore } from '../../store/appStore';
 import { stokListesiniAl } from '../../api/hizliIslemlerApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import type { StokListesiBilgileri } from '../../models';
 import type { DrawerParamList } from '../../navigation/types';
 import EmptyState from '../../components/EmptyState';
@@ -26,6 +27,7 @@ function f(n: number) {
 
 export default function StokRapor() {
   const Colors = useColors();
+  const t = useT();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
   const mod = route.params?.mod ?? 'bakiye';
@@ -45,10 +47,10 @@ export default function StokRapor() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          toast.error(sonuc.mesaj || 'Stok listesi alınamadı.');
+          toast.error(sonuc.mesaj || t('raporListe.stokListesiAlinamadi'));
         }
       } catch (err: any) {
-        toast.error(err.message || 'Stok listesi yüklenirken hata oluştu.');
+        toast.error(err.message || t('raporListe.stokListesiHata'));
       } finally {
         setYukleniyor(false);
       }
@@ -70,7 +72,7 @@ export default function StokRapor() {
     return (
       <View style={[styles.merkez, { backgroundColor: Colors.background }]}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
+        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>{t('raporListe.yukleniyor')}</Text>
       </View>
     );
   }
@@ -82,7 +84,7 @@ export default function StokRapor() {
         <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Stok kodu, cinsi veya barkod ara..."
+          placeholder={t('raporListe.stokAramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={arama}
           onChangeText={setArama}
@@ -96,10 +98,10 @@ export default function StokRapor() {
 
       {/* Başlık */}
       <View style={[styles.baslikRow, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.baslikText, { flex: 3 }]}>Stok</Text>
-        <Text style={[styles.baslikText, { flex: 1, textAlign: 'center' }]}>Birim</Text>
+        <Text style={[styles.baslikText, { flex: 3 }]}>{t('raporListe.stokBaslik')}</Text>
+        <Text style={[styles.baslikText, { flex: 1, textAlign: 'center' }]}>{t('raporListe.birimBaslik')}</Text>
         <Text style={[styles.baslikText, { flex: 1.5, textAlign: 'right' }]}>
-          {mod === 'bakiye' ? 'Bakiye' : 'Fiyat'}
+          {mod === 'bakiye' ? t('raporListe.bakiyeBaslik') : t('raporListe.fiyatBaslik')}
         </Text>
       </View>
 
@@ -127,10 +129,10 @@ export default function StokRapor() {
         ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <EmptyState icon="cube-outline" baslik="Stok bulunamadı" aciklama="Arama kriterlerine uygun stok bulunmamaktadır" />
+          <EmptyState icon="cube-outline" baslik={t('raporListe.stokBulunamadi')} aciklama={t('raporListe.stokBulunamadiAciklama')} />
         }
         ListHeaderComponent={
-          <Text style={[styles.sayac, { color: Colors.textSecondary }]}>Toplam {filtreli.length} stok</Text>
+          <Text style={[styles.sayac, { color: Colors.textSecondary }]}>{t('raporListe.toplamStokSayisi', { n: filtreli.length })}</Text>
         }
       />
     </View>

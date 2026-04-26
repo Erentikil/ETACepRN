@@ -13,6 +13,7 @@ import SepetListesi from '../screens/main/SepetListesi';
 import OnayDuzenleme from '../screens/main/OnayDuzenleme';
 import KontrolPaneliDetay from '../screens/main/KontrolPaneliDetay';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { I18nProvider, useT } from '../i18n/I18nContext';
 import { useAppStore } from '../store/appStore';
 import { Config } from '../constants/Config';
 
@@ -20,6 +21,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 function AppStack() {
   const { colors, isDark } = useTheme();
+  const t = useT();
   const setUyumluluk = useAppStore((s) => s.setUyumluluk);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ function AppStack() {
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
-          headerBackTitle: 'Geri',
+          headerBackTitle: t('common.geri'),
           headerTintColor: colors.headerText,
           headerTitleStyle: { fontWeight: 'bold' },
           headerBackground: () => (
@@ -67,7 +69,7 @@ function AppStack() {
         <Stack.Screen
           name="Ayarlar"
           component={Ayarlar}
-          options={{ title: 'Ayarlar', headerShown: true }}
+          options={{ title: t('header.ayarlar'), headerShown: true }}
         />
         <Stack.Screen
           name="Drawer"
@@ -77,27 +79,27 @@ function AppStack() {
         <Stack.Screen
           name="CariSecim"
           component={CariSecim}
-          options={{ title: 'Cari Seçin' }}
+          options={{ title: t('header.cariSecim') }}
         />
         <Stack.Screen
           name="CRMCariSecim"
           component={CRMCariSecim}
-          options={{ title: 'Cari Seçin' }}
+          options={{ title: t('header.crmCariSecim') }}
         />
         <Stack.Screen
           name="SepetListesi"
           component={SepetListesi}
-          options={{ title: 'Sepet' }}
+          options={{ title: t('header.sepetListesi') }}
         />
         <Stack.Screen
           name="OnayDuzenleme"
           component={OnayDuzenleme}
-          options={{ title: 'Onay Düzenleme' }}
+          options={{ title: t('header.onayDuzenleme') }}
         />
         <Stack.Screen
           name="KontrolPaneliDetay"
           component={KontrolPaneliDetay}
-          options={{ title: 'Kontrol Panel Detay' }}
+          options={{ title: t('header.kontrolPaneliDetay') }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -106,8 +108,10 @@ function AppStack() {
 
 export default function AppNavigator() {
   return (
-    <ThemeProvider>
-      <AppStack />
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <AppStack />
+      </ThemeProvider>
+    </I18nProvider>
   );
 }

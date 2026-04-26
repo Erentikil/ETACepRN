@@ -15,6 +15,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { useAppStore } from '../../store/appStore';
 import { bekleyenSiparisleriAl } from '../../api/hizliIslemlerApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import { paraTL, miktarFormat } from '../../utils/format';
 import type { BekleyenSiparisBilgileri, CariKartBilgileri } from '../../models';
@@ -35,6 +36,7 @@ function formatTarih(tarih: string): string {
 
 export default function BekleyenSiparisler() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
@@ -67,10 +69,10 @@ export default function BekleyenSiparisler() {
       if (sonuc.sonuc) {
         setSiparisler(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'Siparişler alınamadı.');
+        toast.error(sonuc.mesaj || t('bekleyen.siparisAlinamadi'));
       }
     } catch {
-      toast.error('Bağlantı hatası oluştu.');
+      toast.error(t('common.baglantiHatasi'));
     } finally {
       setYukleniyor(false);
     }
@@ -140,7 +142,7 @@ export default function BekleyenSiparisler() {
         {tamamlandi && (
           <View style={styles.tamamBadge}>
             <Ionicons name="checkmark-circle" size={14} color="#43a047" />
-            <Text style={styles.tamamText}>Tamamlandı</Text>
+            <Text style={styles.tamamText}>{t('bekleyen.tamamlandi')}</Text>
           </View>
         )}
       </View>
@@ -157,7 +159,7 @@ export default function BekleyenSiparisler() {
           color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('stok.cariSeciniz')}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>}
@@ -177,9 +179,9 @@ export default function BekleyenSiparisler() {
       {!secilenCari ? (
         <View style={styles.bosEkran}>
           <Ionicons name="person-add-outline" size={56} color={Colors.border} />
-          <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>Bekleyen siparişleri görmek için{'\n'}bir cari seçiniz</Text>
+          <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>{t('bekleyen.siparisGormekIcin')}</Text>
           <TouchableOpacity style={[styles.cariSecBtn, { backgroundColor: Colors.primary }]} onPress={cariSec}>
-            <Text style={styles.cariSecBtnText}>Cari Seç</Text>
+            <Text style={styles.cariSecBtnText}>{t('bekleyen.cariSec')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -200,7 +202,7 @@ export default function BekleyenSiparisler() {
             yukleniyor ? (
               <SkeletonLoader satirSayisi={5} />
             ) : (
-              <EmptyState icon="checkmark-done-circle-outline" baslik="Bekleyen sipariş bulunamadı" aciklama="Bu cari için bekleyen sipariş bulunmamaktadır" />
+              <EmptyState icon="checkmark-done-circle-outline" baslik={t('bekleyen.siparisBulunamadi')} aciklama={t('bekleyen.siparisBulunamadiAciklama')} />
             )
           }
         />

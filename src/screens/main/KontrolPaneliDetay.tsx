@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { paraFormat, paraTL } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
@@ -21,12 +22,6 @@ import DropdownSecim from '../../components/DropdownSecim';
 import type { OnayEvrakDetay, SepetBaslikBilgileri } from '../../models';
 
 type Props = StackScreenProps<RootStackParamList, 'KontrolPaneliDetay'>;
-
-const ONAY_DURUMU_SECENEKLER = [
-  { label: 'Onayla', value: '1' },
-  { label: 'Reddet', value: '2' },
-  { label: 'Güncelle', value: '3' },
-];
 
 function tarihFormat(tarih: string): string {
   try {
@@ -40,7 +35,14 @@ function tarihFormat(tarih: string): string {
 export default function KontrolPaneliDetay({ route, navigation }: Props) {
   const { item } = route.params;
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+
+  const ONAY_DURUMU_SECENEKLER = useMemo(() => [
+    { label: t('kontrolPaneli.dropOnayla'), value: '1' },
+    { label: t('kontrolPaneli.dropReddet'), value: '2' },
+    { label: t('kontrolPaneli.dropGuncelle'), value: '3' },
+  ], [t]);
 
   const [evrak, setEvrak] = useState<OnayEvrakDetay | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -64,10 +66,10 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
         setEvrak(sonuc.data);
         setOnayNotu(sonuc.data.onaylamaNotu || item.not || '');
       } else {
-        toast.error(sonuc.mesaj || 'Evrak yüklenemedi.');
+        toast.error(sonuc.mesaj || t('kontrolPaneli.evrakYuklenemedi'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setYukleniyor(false);
     }
@@ -81,7 +83,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
   async function kaydet() {
     if (!evrak) return;
     if (!onayDurumu) {
-      toast.error('Lütfen onay durumu seçiniz.');
+      toast.error(t('kontrolPaneli.onayDurumuSec'));
       return;
     }
 
@@ -90,9 +92,9 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
 
     Alert.alert(
       durumLabel,
-      `"${item.cariUnvani}" için işlem gerçekleştirilecek. Emin misiniz?`,
+      t('kontrolPaneli.cariIcinIslemMesaj', { ad: item.cariUnvani }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('common.vazgec'), style: 'cancel' },
         {
           text: durumLabel,
           onPress: async () => {
@@ -110,10 +112,10 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
               if (sonuc.sonuc) {
                 navigation.goBack();
               } else {
-                toast.error(sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
+                toast.error(sonuc.mesaj || t('onay.islemBasarisiz'));
               }
             } catch (e: any) {
-              toast.error(e?.message || 'Bağlantı hatası.');
+              toast.error(e?.message || t('common.baglantiHatasi'));
             } finally {
               setIslem(false);
             }
@@ -127,7 +129,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
     return (
       <View style={[styles.merkezle, { backgroundColor: Colors.background }]}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={[styles.yukleniyorMetin, { color: Colors.textSecondary }]}>Evrak yükleniyor...</Text>
+        <Text style={[styles.yukleniyorMetin, { color: Colors.textSecondary }]}>{t('kontrolPaneli.evrakYukleniyor')}</Text>
       </View>
     );
   }
@@ -143,7 +145,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
           activeOpacity={0.8}
         >
           <Text style={[styles.expanderBaslikMetin, { color: Colors.primary }]}>
-            Evrak Fiş Bilgileri ({item.evrakTipi} - {item.fisTipi})
+            {t('kontrolPaneli.evrakFisBilgileri')} ({item.evrakTipi} - {item.fisTipi})
           </Text>
           <Ionicons
             name={evrakAcik ? 'chevron-up' : 'chevron-down'}
@@ -160,33 +162,33 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
 
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Evrak</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.evrak')}</Text>
                 <Text style={[styles.deger, { color: Colors.text }]}>{item.evrakTipi}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Fiş Tipi</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.fisTipi')}</Text>
                 <Text style={[styles.deger, { color: Colors.text }]}>{item.fisTipi}</Text>
               </View>
             </View>
 
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Kullanıcı</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('onay.kullanici')}</Text>
                 <Text style={[styles.deger, { color: Colors.text }]}>{item.kullaniciKodu}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Şirket</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('onay.sirket')}</Text>
                 <Text style={[styles.deger, { color: Colors.text }]}>{item.sirketAdi || '—'}</Text>
               </View>
             </View>
 
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Tarih</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('onay.tarih')}</Text>
                 <Text style={[styles.deger, { color: Colors.text }]}>{tarihFormat(item.tarih)}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Durum</Text>
+                <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.durum')}</Text>
                 <Text style={[styles.deger, { color: '#e65100' }]}>{item.durum}</Text>
               </View>
             </View>
@@ -194,7 +196,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
             {item.onaylayan ? (
               <View style={styles.satirIkili}>
                 <View style={styles.satirSol}>
-                  <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Onaylayan</Text>
+                  <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('onay.onaylayan')}</Text>
                   <Text style={[styles.deger, { color: Colors.text }]}>{item.onaylayan}</Text>
                 </View>
               </View>
@@ -203,7 +205,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
             <View style={[styles.ayrac, { backgroundColor: Colors.border }]} />
 
             <View style={[styles.finansalSatir, styles.genelToplamSatir]}>
-              <Text style={[styles.genelToplamEtiket, { color: Colors.primary }]}>Genel Toplam</Text>
+              <Text style={[styles.genelToplamEtiket, { color: Colors.primary }]}>{t('kontrolPaneli.genelToplam')}</Text>
               <Text style={[styles.genelToplamDeger, { color: Colors.primary }]}>{paraTL(item.genelToplam)}</Text>
             </View>
 
@@ -211,7 +213,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
               <>
                 <View style={[styles.ayrac, { backgroundColor: Colors.border }]} />
                 <View style={styles.finansalSatir}>
-                  <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>Not</Text>
+                  <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.not')}</Text>
                   <Text style={[styles.finansalDeger, { flex: 2, color: '#e65100', fontStyle: 'italic' }]}>{item.not}</Text>
                 </View>
               </>
@@ -227,7 +229,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
               onPress={() => setAdresAcik((v) => !v)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.expanderBaslikMetin, { color: Colors.primary }]}>Adresler</Text>
+              <Text style={[styles.expanderBaslikMetin, { color: Colors.primary }]}>{t('kontrolPaneli.adresler')}</Text>
               <Ionicons
                 name={adresAcik ? 'chevron-up' : 'chevron-down'}
                 size={18}
@@ -241,41 +243,41 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
                   <View key={idx} style={[styles.adresKart, idx > 0 && { borderTopColor: Colors.border }]}>
                     <View style={styles.satirIkili}>
                       <View style={styles.satirSol}>
-                        <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Adres No</Text>
+                        <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.adresNo')}</Text>
                         <Text style={[styles.deger, { color: Colors.text }]}>{adres.adresNo}</Text>
                       </View>
                       <View style={styles.satirSag}>
-                        <Text style={[styles.etiket, { color: Colors.textSecondary }]}>Yetkili</Text>
+                        <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.yetkili')}</Text>
                         <Text style={[styles.deger, { color: Colors.text }]}>{adres.yetkili || '—'}</Text>
                       </View>
                     </View>
                     {adres.adres1 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>Adres 1</Text>
+                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.adres1')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2, color: Colors.text }]}>{adres.adres1}</Text>
                       </View>
                     ) : null}
                     {adres.adres2 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>Adres 2</Text>
+                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.adres2')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2, color: Colors.text }]}>{adres.adres2}</Text>
                       </View>
                     ) : null}
                     {(adres.il || adres.ilce) ? (
                       <View style={styles.satirIkili}>
                         <View style={styles.satirSol}>
-                          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>İl</Text>
+                          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.il')}</Text>
                           <Text style={[styles.deger, { color: Colors.text }]}>{adres.il || '—'}</Text>
                         </View>
                         <View style={styles.satirSag}>
-                          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>İlçe</Text>
+                          <Text style={[styles.etiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.ilce')}</Text>
                           <Text style={[styles.deger, { color: Colors.text }]}>{adres.ilce || '—'}</Text>
                         </View>
                       </View>
                     ) : null}
                     {adres.telefon ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>Telefon</Text>
+                        <Text style={[styles.finansalEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.telefon')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2, color: Colors.text }]}>{adres.telefon}</Text>
                       </View>
                     ) : null}
@@ -292,7 +294,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
           onPress={() => setOnayBilgiAcik((v) => !v)}
           activeOpacity={0.8}
         >
-          <Text style={[styles.expanderBaslikMetin, { color: Colors.primary }]}>Onay Bilgileri</Text>
+          <Text style={[styles.expanderBaslikMetin, { color: Colors.primary }]}>{t('kontrolPaneli.onayBilgileri')}</Text>
           <Ionicons
             name={onayBilgiAcik ? 'chevron-up' : 'chevron-down'}
             size={18}
@@ -302,22 +304,22 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
 
         {onayBilgiAcik && (
           <View style={[styles.expanderIcerik, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
-            <Text style={[styles.etiket, { color: Colors.textSecondary, marginBottom: 6 }]}>Onay Durumu</Text>
+            <Text style={[styles.etiket, { color: Colors.textSecondary, marginBottom: 6 }]}>{t('kontrolPaneli.onayDurumu')}</Text>
             <DropdownSecim
               value={onayDurumu}
               options={ONAY_DURUMU_SECENEKLER}
-              placeholder="Onaylama Durumu"
+              placeholder={t('kontrolPaneli.onaylamaDurumu')}
               onChange={setOnayDurumu}
             />
 
-            <Text style={[styles.etiket, { color: Colors.textSecondary, marginTop: 14, marginBottom: 6 }]}>Onay Notu</Text>
+            <Text style={[styles.etiket, { color: Colors.textSecondary, marginTop: 14, marginBottom: 6 }]}>{t('kontrolPaneli.onayNotu')}</Text>
             <TextInput
               style={[styles.notInput, { backgroundColor: Colors.inputBackground, borderColor: Colors.border, color: Colors.text }]}
               value={onayNotu}
               onChangeText={setOnayNotu}
               multiline
               numberOfLines={4}
-              placeholder="Onay notu giriniz..."
+              placeholder={t('kontrolPaneli.onayNotuPlaceholder')}
               placeholderTextColor={Colors.textSecondary}
               textAlignVertical="top"
             />
@@ -331,7 +333,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
               {islem ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.kaydetBtnMetin}>Kaydet</Text>
+                <Text style={styles.kaydetBtnMetin}>{t('kontrolPaneli.kaydet')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -339,14 +341,14 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
 
         {/* ─── Sepet Listesi ───────────────────────────────────────── */}
         <View style={[styles.sepetBaslik, { backgroundColor: Colors.primary }]}>
-          <Text style={styles.sepetBaslikMetin}>Sepet Listesi</Text>
+          <Text style={styles.sepetBaslikMetin}>{t('kontrolPaneli.sepetListesi')}</Text>
         </View>
 
         <View style={[styles.tabloBaslikRow, { backgroundColor: Colors.card, borderColor: Colors.border }]}>
-          <Text style={[styles.tabloBaslik, { flex: 2, color: Colors.primary }]}>Stok</Text>
-          <Text style={[styles.tabloBaslik, { color: Colors.primary }]}>Birim</Text>
-          <Text style={[styles.tabloBaslik, { color: Colors.primary, textAlign: 'right' }]}>Miktar</Text>
-          <Text style={[styles.tabloBaslik, { color: Colors.primary, textAlign: 'right' }]}>Fiyat</Text>
+          <Text style={[styles.tabloBaslik, { flex: 2, color: Colors.primary }]}>{t('kontrolPaneli.stok')}</Text>
+          <Text style={[styles.tabloBaslik, { color: Colors.primary }]}>{t('kontrolPaneli.birim')}</Text>
+          <Text style={[styles.tabloBaslik, { color: Colors.primary, textAlign: 'right' }]}>{t('kontrolPaneli.miktar')}</Text>
+          <Text style={[styles.tabloBaslik, { color: Colors.primary, textAlign: 'right' }]}>{t('kontrolPaneli.fiyat')}</Text>
         </View>
 
         {evrak?.snbListe && evrak.snbListe.length > 0 ? (
@@ -375,7 +377,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
           ))
         ) : (
           <View style={[styles.tabloBos, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.tabloBosMesin, { color: Colors.textSecondary }]}>Kalem bulunamadı</Text>
+            <Text style={[styles.tabloBosMesin, { color: Colors.textSecondary }]}>{t('kontrolPaneli.kalemBulunamadi')}</Text>
           </View>
         )}
 
@@ -383,7 +385,7 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
         {evrak?.sRBbListe && evrak.sRBbListe.length > 0 && (
           <>
             <View style={[styles.rbBaslik, { backgroundColor: `${Colors.primary}22` }]}>
-              <Text style={[styles.rbBaslikMetin, { color: Colors.primary }]}>Renk-Beden Kalemleri</Text>
+              <Text style={[styles.rbBaslikMetin, { color: Colors.primary }]}>{t('kontrolPaneli.renkBedenKalemleri')}</Text>
             </View>
             {evrak.sRBbListe.map((kalem, idx) => (
               <View
@@ -417,21 +419,21 @@ export default function KontrolPaneliDetay({ route, navigation }: Props) {
       {/* ─── Alt Özet Barı ──────────────────────────────────────────── */}
       <View style={[styles.ozet, { backgroundColor: Colors.card, borderTopColor: Colors.border }]}>
         <View style={styles.ozetItem}>
-          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>Satır</Text>
+          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.satir')}</Text>
           <Text style={[styles.ozetDeger, { color: Colors.primary }]}>
             {evrak?.snbListe?.length ?? 0}
           </Text>
         </View>
         <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
         <View style={styles.ozetItem}>
-          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>Miktar</Text>
+          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.miktar')}</Text>
           <Text style={[styles.ozetDeger, { color: Colors.primary }]}>
             {toplamMiktar.toLocaleString('tr-TR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
           </Text>
         </View>
         <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
         <View style={styles.ozetItem}>
-          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>Toplam</Text>
+          <Text style={[styles.ozetEtiket, { color: Colors.textSecondary }]}>{t('kontrolPaneli.toplam')}</Text>
           <Text style={[styles.ozetDeger, { color: Colors.primary }]}>
             {paraTL(evrak?.genelToplam ?? item.genelToplam ?? 0)}
           </Text>

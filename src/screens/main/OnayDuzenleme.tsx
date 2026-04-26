@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Colors } from '../../constants/Colors';
+import { useT } from '../../i18n/I18nContext';
 import { paraFormat, paraTL, kurFormat } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
@@ -33,6 +34,7 @@ function tarihFormat(tarih: string): string {
 }
 
 export default function OnayDuzenleme({ route, navigation }: Props) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const { item } = route.params;
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
@@ -58,7 +60,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
         setNot(sonuc.data.onaylamaNotu || item.not || '');
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setYukleniyor(false);
     }
@@ -76,15 +78,15 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
       );
       if (sonuc.sonuc) {
         Alert.alert(
-          durum === 2 ? 'Onaylandı' : 'Reddedildi',
-          durum === 2 ? 'Evrak başarıyla onaylandı.' : 'Evrak reddedildi.',
-          [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+          durum === 2 ? t('onayDuzenleme.onaylandi') : t('onayDuzenleme.reddedildi'),
+          durum === 2 ? t('onayDuzenleme.evrakOnaylandi') : t('onayDuzenleme.evrakReddedildi'),
+          [{ text: t('onayDuzenleme.tamam'), onPress: () => navigation.goBack() }]
         );
       } else {
-        toast.error(sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
+        toast.error(sonuc.mesaj || t('onayDuzenleme.islemBasarisiz'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setIslem(false);
     }
@@ -92,22 +94,22 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
 
   function onaylaIste() {
     Alert.alert(
-      'Evrakı Onayla',
-      `"${item.cariUnvani}" için ${item.evrakTipi} evrakı onaylanacak. Emin misiniz?`,
+      t('onayDuzenleme.evrakOnayla'),
+      t('onayDuzenleme.evrakOnaylaMesaj', { ad: item.cariUnvani, tip: item.evrakTipi }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Onayla', onPress: () => durumGuncelle(2, not) },
+        { text: t('onayDuzenleme.vazgec'), style: 'cancel' },
+        { text: t('onayDuzenleme.onayla'), onPress: () => durumGuncelle(2, not) },
       ]
     );
   }
 
   function reddetIste() {
     Alert.alert(
-      'Evrakı Reddet',
-      `"${item.cariUnvani}" için ${item.evrakTipi} evrakı reddedilecek. Emin misiniz?`,
+      t('onayDuzenleme.evrakReddet'),
+      t('onayDuzenleme.evrakReddetMesaj', { ad: item.cariUnvani, tip: item.evrakTipi }),
       [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Reddet', style: 'destructive', onPress: () => durumGuncelle(4, not) },
+        { text: t('onayDuzenleme.vazgec'), style: 'cancel' },
+        { text: t('onayDuzenleme.reddet'), style: 'destructive', onPress: () => durumGuncelle(4, not) },
       ]
     );
   }
@@ -116,7 +118,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
     return (
       <View style={styles.merkezle}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.yukleniyorMetin}>Evrak yükleniyor...</Text>
+        <Text style={styles.yukleniyorMetin}>{t('onayDuzenleme.evrakYukleniyor')}</Text>
       </View>
     );
   }
@@ -144,11 +146,11 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
             {/* Evrak / Fiş Tipi */}
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={styles.etiket}>Evrak</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.evrak')}</Text>
                 <Text style={styles.deger}>{item.evrakTipi}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={styles.etiket}>Fiş Tipi</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.fisTipi')}</Text>
                 <Text style={styles.deger}>{item.fisTipi}</Text>
               </View>
             </View>
@@ -156,11 +158,11 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
             {/* Kullanıcı / Şirket */}
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={styles.etiket}>Kullanıcı</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.kullanici')}</Text>
                 <Text style={styles.deger}>{item.kullaniciKodu}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={styles.etiket}>Şirket</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.sirket')}</Text>
                 <Text style={styles.deger}>{item.sirketAdi || '—'}</Text>
               </View>
             </View>
@@ -168,11 +170,11 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
             {/* Tarih / Durum */}
             <View style={styles.satirIkili}>
               <View style={styles.satirSol}>
-                <Text style={styles.etiket}>Tarih</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.tarih')}</Text>
                 <Text style={styles.deger}>{tarihFormat(item.tarih)}</Text>
               </View>
               <View style={styles.satirSag}>
-                <Text style={styles.etiket}>Durum</Text>
+                <Text style={styles.etiket}>{t('onayDuzenleme.durum')}</Text>
                 <Text style={[styles.deger, { color: '#e65100' }]}>{item.durum}</Text>
               </View>
             </View>
@@ -182,13 +184,13 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                 {/* KDV */}
                 <View style={styles.satirIkili}>
                   <View style={styles.satirSol}>
-                    <Text style={styles.etiket}>KDV</Text>
+                    <Text style={styles.etiket}>{t('onayDuzenleme.kdv')}</Text>
                     <Text style={styles.deger}>{evrak.kdvListesi || '—'}</Text>
                   </View>
                   <View style={styles.satirSag}>
-                    <Text style={styles.etiket}>KDV</Text>
+                    <Text style={styles.etiket}>{t('onayDuzenleme.kdv')}</Text>
                     <Text style={styles.deger}>
-                      {evrak.sbb?.kdvDahilFlag === 1 ? 'Dahil' : 'Hariç'}
+                      {evrak.sbb?.kdvDahilFlag === 1 ? t('onayDuzenleme.dahil') : t('onayDuzenleme.haric')}
                     </Text>
                   </View>
                 </View>
@@ -197,13 +199,13 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
 
                 {/* Finansal özet */}
                 <View style={styles.finansalSatir}>
-                  <Text style={styles.finansalEtiket}>Mal Toplam</Text>
+                  <Text style={styles.finansalEtiket}>{t('onayDuzenleme.malToplam')}</Text>
                   <Text style={styles.finansalDeger}>{paraFormat(evrak.toplam)}</Text>
                 </View>
                 {evrak.indirim > 0 && (
                   <View style={styles.finansalSatir}>
                     <Text style={styles.finansalEtiket}>
-                      İndirim ({paraFormat(evrak.indirimYuzde)}%)
+                      {t('onayDuzenleme.indirim')} ({paraFormat(evrak.indirimYuzde)}%)
                     </Text>
                     <Text style={[styles.finansalDeger, { color: Colors.error }]}>
                       -{paraFormat(evrak.indirim)}
@@ -212,18 +214,18 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                 )}
                 {evrak.kalemIndirimlerToplam > 0 && (
                   <View style={styles.finansalSatir}>
-                    <Text style={styles.finansalEtiket}>Kalem İndirim</Text>
+                    <Text style={styles.finansalEtiket}>{t('onayDuzenleme.kalemIndirim')}</Text>
                     <Text style={[styles.finansalDeger, { color: Colors.error }]}>
                       -{paraFormat(evrak.kalemIndirimlerToplam)}
                     </Text>
                   </View>
                 )}
                 <View style={styles.finansalSatir}>
-                  <Text style={styles.finansalEtiket}>KDV Toplam</Text>
+                  <Text style={styles.finansalEtiket}>{t('onayDuzenleme.kdvToplam')}</Text>
                   <Text style={styles.finansalDeger}>{paraFormat(evrak.kdvToplam)}</Text>
                 </View>
                 <View style={[styles.finansalSatir, styles.genelToplamSatir]}>
-                  <Text style={styles.genelToplamEtiket}>Genel Toplam</Text>
+                  <Text style={styles.genelToplamEtiket}>{t('onayDuzenleme.genelToplam')}</Text>
                   <Text style={styles.genelToplamDeger}>{paraFormat(evrak.genelToplam)}</Text>
                 </View>
 
@@ -233,25 +235,25 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                     <View style={styles.ayrac} />
                     <View style={styles.satirIkili}>
                       <View style={styles.satirSol}>
-                        <Text style={styles.etiket}>Döviz Kodu</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.dovizKodu')}</Text>
                         <Text style={[styles.deger, { color: Colors.error }]}>
                           {evrak.kurBilgileri.dovizKodu}
                         </Text>
                       </View>
                       <View style={styles.satirSag}>
-                        <Text style={styles.etiket}>Döviz Türü</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.dovizTuru')}</Text>
                         <Text style={styles.deger}>{evrak.kurBilgileri.dovizTuru}</Text>
                       </View>
                     </View>
                     <View style={styles.satirIkili}>
                       <View style={styles.satirSol}>
-                        <Text style={styles.etiket}>Döviz Kuru</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.dovizKuru')}</Text>
                         <Text style={[styles.deger, { color: Colors.primary }]}>
                           {kurFormat(evrak.kurBilgileri.dovizKuru)}
                         </Text>
                       </View>
                       <View style={styles.satirSag}>
-                        <Text style={styles.etiket}>Döviz Toplam</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.dovizToplam')}</Text>
                         <Text style={[styles.deger, { color: Colors.primary }]}>
                           {paraTL(evrak.dovizGenelToplam)}
                         </Text>
@@ -266,7 +268,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                     <View style={styles.ayrac} />
                     {evrak.aciklama1 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={styles.finansalEtiket}>Açıklama 1</Text>
+                        <Text style={styles.finansalEtiket}>{t('onayDuzenleme.aciklama1')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2 }]}>
                           {evrak.aciklama1}
                         </Text>
@@ -274,7 +276,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                     ) : null}
                     {evrak.aciklama2 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={styles.finansalEtiket}>Açıklama 2</Text>
+                        <Text style={styles.finansalEtiket}>{t('onayDuzenleme.aciklama2')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2 }]}>
                           {evrak.aciklama2}
                         </Text>
@@ -295,7 +297,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
               onPress={() => setAdresAcik((v) => !v)}
               activeOpacity={0.8}
             >
-              <Text style={styles.expanderBaslikMetin}>Adresler</Text>
+              <Text style={styles.expanderBaslikMetin}>{t('onayDuzenleme.adresler')}</Text>
               <Ionicons
                 name={adresAcik ? 'chevron-up' : 'chevron-down'}
                 size={18}
@@ -309,41 +311,41 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
                   <View key={idx} style={[styles.adresKart, idx > 0 && { marginTop: 8 }]}>
                     <View style={styles.satirIkili}>
                       <View style={styles.satirSol}>
-                        <Text style={styles.etiket}>Adres No</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.adresNo')}</Text>
                         <Text style={styles.deger}>{adres.adresNo}</Text>
                       </View>
                       <View style={styles.satirSag}>
-                        <Text style={styles.etiket}>Yetkili</Text>
+                        <Text style={styles.etiket}>{t('onayDuzenleme.yetkili')}</Text>
                         <Text style={styles.deger}>{adres.yetkili || '—'}</Text>
                       </View>
                     </View>
                     {adres.adres1 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={styles.finansalEtiket}>Adres 1</Text>
+                        <Text style={styles.finansalEtiket}>{t('onayDuzenleme.adres1')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2 }]}>{adres.adres1}</Text>
                       </View>
                     ) : null}
                     {adres.adres2 ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={styles.finansalEtiket}>Adres 2</Text>
+                        <Text style={styles.finansalEtiket}>{t('onayDuzenleme.adres2')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2 }]}>{adres.adres2}</Text>
                       </View>
                     ) : null}
                     {(adres.il || adres.ilce) ? (
                       <View style={styles.satirIkili}>
                         <View style={styles.satirSol}>
-                          <Text style={styles.etiket}>İl</Text>
+                          <Text style={styles.etiket}>{t('onayDuzenleme.il')}</Text>
                           <Text style={styles.deger}>{adres.il || '—'}</Text>
                         </View>
                         <View style={styles.satirSag}>
-                          <Text style={styles.etiket}>İlçe</Text>
+                          <Text style={styles.etiket}>{t('onayDuzenleme.ilce')}</Text>
                           <Text style={styles.deger}>{adres.ilce || '—'}</Text>
                         </View>
                       </View>
                     ) : null}
                     {adres.telefon ? (
                       <View style={styles.finansalSatir}>
-                        <Text style={styles.finansalEtiket}>Telefon</Text>
+                        <Text style={styles.finansalEtiket}>{t('onayDuzenleme.telefon')}</Text>
                         <Text style={[styles.finansalDeger, { flex: 2 }]}>{adres.telefon}</Text>
                       </View>
                     ) : null}
@@ -356,14 +358,14 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
 
         {/* ─── Onaylama Notu ────────────────────────────────────────── */}
         <View style={[styles.expanderIcerik, { marginTop: 10 }]}>
-          <Text style={[styles.etiket, { marginBottom: 6 }]}>Onay Notu</Text>
+          <Text style={[styles.etiket, { marginBottom: 6 }]}>{t('onayDuzenleme.onayNotu')}</Text>
           <TextInput
             style={styles.notInput}
             value={not}
             onChangeText={setNot}
             multiline
             numberOfLines={3}
-            placeholder="Onay notu giriniz..."
+            placeholder={t('onayDuzenleme.onayNotuPlaceholder')}
             placeholderTextColor={Colors.gray}
             textAlignVertical="top"
           />
@@ -382,7 +384,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={18} color={Colors.white} />
-              <Text style={styles.butonMetin}>Onayla</Text>
+              <Text style={styles.butonMetin}>{t('onayDuzenleme.onayla')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -397,7 +399,7 @@ export default function OnayDuzenleme({ route, navigation }: Props) {
           ) : (
             <>
               <Ionicons name="close-circle-outline" size={18} color={Colors.white} />
-              <Text style={styles.butonMetin}>Reddet</Text>
+              <Text style={styles.butonMetin}>{t('onayDuzenleme.reddet')}</Text>
             </>
           )}
         </TouchableOpacity>

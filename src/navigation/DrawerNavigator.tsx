@@ -8,6 +8,7 @@ import type { DrawerParamList } from './types';
 import DrawerMenu from '../components/DrawerMenu';
 import AnaSayfa from '../screens/main/AnaSayfa';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 
 import KontrolPaneli from '../screens/main/KontrolPaneli';
 import HizliIslemlerV2 from '../screens/main/HizliIslemlerV2';
@@ -60,6 +61,7 @@ function RaporGeriButonu({ navigation, kaynakEkran }: { navigation: DrawerNaviga
 
 export default function DrawerNavigator() {
   const colors = useColors();
+  const t = useT();
 
   return (
     <Drawer.Navigator
@@ -93,43 +95,43 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="AnaSayfa"
         component={AnaSayfa}
-        options={{ title: 'Ana Sayfa' }}
+        options={{ title: t('menu.anaSayfa') }}
       />
       <Drawer.Screen
         name="HizliIslemlerV2"
         component={HizliIslemlerV2}
-        options={{ title: 'Alış/Satış' }}
+        options={{ title: t('menu.alisSatis') }}
       />
       <Drawer.Screen
         name="AlisSatisIslemleri"
         component={AlisSatisIslemleri}
-        options={{ title: 'Evrak Oluştur' }}
+        options={{ title: t('menu.evrakOlustur') }}
       />
       <Drawer.Screen
         name="RenkBedenIslemleri"
         component={RenkBedenIslemleri}
-        options={{ title: 'Renk-Beden İşlemleri' }}
+        options={{ title: t('menu.renkBeden') }}
       />
       <Drawer.Screen
         name="SiparisKapama"
         component={SiparisKapama}
-        options={{ title: 'Sipariş Kapama' }}
+        options={{ title: t('menu.siparisKapama') }}
       />
       <Drawer.Screen
         name="Tahsilatlar"
         component={TahsilatEkrani}
-        options={{ title: 'Cari Tahsilat' }}
+        options={{ title: t('header.tahsilat') }}
       />
       <Drawer.Screen
         name="Raporlar"
         component={RaporlarAnaSayfa}
-        options={{ title: 'Raporlar' }}
+        options={{ title: t('menu.raporlar') }}
       />
       <Drawer.Screen
         name="CariEkstreListesi"
         component={CariEkstreListesi}
         options={({ navigation, route }) => ({
-          title: 'Cari Ekstre',
+          title: t('rapor.cariEkstre'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
@@ -137,7 +139,7 @@ export default function DrawerNavigator() {
         name="CekSenetListesi"
         component={CekSenetListesi}
         options={({ navigation }) => ({
-          title: 'Çek Senet Durumu',
+          title: t('header.cekSenetDurumu'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
@@ -145,48 +147,48 @@ export default function DrawerNavigator() {
         name="StokluCariEkstreListesi"
         component={StokluCariEkstreListesi}
         options={({ navigation, route }) => ({
-          title: 'Stoklu Cari Ekstre',
+          title: t('header.stokluCariEkstre'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
         name="BekleyenEvraklar"
         component={BekleyenEvraklar}
-        options={{ title: 'Bekleyen Evraklar' }}
+        options={{ title: t('menu.bekleyenEvraklar') }}
       />
       <Drawer.Screen
         name="BekleyenSiparisler"
         component={BekleyenSiparisler}
         options={({ navigation, route }) => ({
-          title: 'Bekleyen Siparişler',
+          title: t('header.bekleyenSiparisler'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
       <Drawer.Screen
         name="ZiyaretIslemleri"
         component={CRMTeklif}
-        options={{ title: 'CRM Teklif' }}
+        options={{ title: t('menu.crmTeklif') }}
       />
       <Drawer.Screen
         name="OnayIslemleri"
         component={OnayIslemleri}
-        options={{ title: 'Onay İşlemleri' }}
+        options={{ title: t('menu.onayIslemleri') }}
       />
       <Drawer.Screen
         name="KurBilgileri"
         component={KurBilgileri}
-        options={{ title: 'Kur Bilgileri' }}
+        options={{ title: t('menu.kurBilgileri') }}
       />
       <Drawer.Screen
         name="Panel"
         component={KontrolPaneli}
-        options={{ title: 'Kontrol Panel' }}
+        options={{ title: t('header.kontrolPanel') }}
       />
       <Drawer.Screen
         name="PDFRaporGoster"
         component={PDFRaporGoster}
         options={({ navigation, route }) => ({
-          title: (route.params as any)?.baslik ?? 'Rapor',
+          title: (route.params as any)?.baslik ?? t('header.rapor'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} kaynakEkran={(route.params as any)?.kaynakEkran} />,
         })}
       />
@@ -194,7 +196,7 @@ export default function DrawerNavigator() {
         name="KasaBakiye"
         component={KasaBakiye}
         options={({ navigation }) => ({
-          title: 'Kasa Bakiye',
+          title: t('rapor.kasaBakiye'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
@@ -202,7 +204,7 @@ export default function DrawerNavigator() {
         name="BankaBakiye"
         component={BankaBakiye}
         options={({ navigation }) => ({
-          title: 'Banka Bakiye',
+          title: t('rapor.bankaBakiye'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
@@ -210,30 +212,30 @@ export default function DrawerNavigator() {
         name="CariBakiye"
         component={CariBakiye}
         options={({ navigation }) => ({
-          title: 'Cari Bakiye',
+          title: t('rapor.cariBakiye'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
       <Drawer.Screen
         name="FiyatGor"
         component={FiyatGor}
-        options={{ title: 'Fiyat Gör' }}
+        options={{ title: t('menu.fiyatGor') }}
       />
       <Drawer.Screen
         name="BarkodEkleme"
         component={BarkodEkleme}
-        options={{ title: 'Barkod Ekleme' }}
+        options={{ title: t('menu.barkodEkleme') }}
       />
       <Drawer.Screen
         name="CariIletisim"
         component={CariIletisim}
-        options={{ title: 'Cari İletişim' }}
+        options={{ title: t('menu.cariIletisim') }}
       />
       <Drawer.Screen
         name="StokRapor"
         component={StokRapor}
         options={({ navigation, route }) => ({
-          title: (route.params as any)?.mod === 'fiyat' ? 'Stok Fiyat' : 'Stok Bakiye',
+          title: (route.params as any)?.mod === 'fiyat' ? t('rapor.stokFiyat') : t('rapor.stokBakiye'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
@@ -241,14 +243,14 @@ export default function DrawerNavigator() {
         name="CariSecimliRapor"
         component={CariSecimliRapor}
         options={({ navigation, route }) => ({
-          title: (route.params as any)?.baslik ?? 'Rapor',
+          title: (route.params as any)?.baslik ?? t('header.rapor'),
           headerLeft: () => <RaporGeriButonu navigation={navigation} />,
         })}
       />
       <Drawer.Screen
         name="Hakkinda"
         component={Hakkinda}
-        options={{ title: 'Hakkında' }}
+        options={{ title: t('menu.hakkinda') }}
       />
     </Drawer.Navigator>
   );

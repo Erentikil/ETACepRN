@@ -8,6 +8,7 @@ import {
 import { useAppStore } from '../../../store/appStore';
 import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../../utils/aktifSepetStorage';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useT } from '../../../i18n/I18nContext';
 import type { CariKartBilgileri, CariEvrak, SepetKalem } from '../../../models';
 import { EvrakTipi, AlimSatim } from '../../../models';
 import TeklifTab from './TeklifTab';
@@ -17,6 +18,7 @@ const CRM_PREFIX = 'CRM_';
 
 export default function CRMTeklif() {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket } = useAppStore();
 
   const [aktifTab, setAktifTab] = useState<'teklif' | 'revizyon'>('teklif');
@@ -58,7 +60,7 @@ export default function CRMTeklif() {
       evrakTipi: EvrakTipi.Fatura,
       alimSatim: AlimSatim.Satim,
       fisTipiBaslikNo: 0,
-      fisTipiAdi: 'CRM Teklif',
+      fisTipiAdi: t('crmTeklif.fisTipiAdi'),
       kalemler: sepetKalemleri,
     }, sirket, CRM_PREFIX);
   }, [sepetKalemleri, secilenCari, revizyonFisId]);
@@ -71,13 +73,13 @@ export default function CRMTeklif() {
           style={[styles.tabBtn, aktifTab === 'teklif' && styles.tabBtnAktif]}
           onPress={() => setAktifTab('teklif')}
         >
-          <Text style={[styles.tabText, aktifTab === 'teklif' && styles.tabTextAktif]}>Teklif</Text>
+          <Text style={[styles.tabText, aktifTab === 'teklif' && styles.tabTextAktif]}>{t('crmTeklif.teklif')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, aktifTab === 'revizyon' && styles.tabBtnAktif]}
           onPress={() => setAktifTab('revizyon')}
         >
-          <Text style={[styles.tabText, aktifTab === 'revizyon' && styles.tabTextAktif]}>Revizyon</Text>
+          <Text style={[styles.tabText, aktifTab === 'revizyon' && styles.tabTextAktif]}>{t('crmTeklif.revizyon')}</Text>
         </TouchableOpacity>
       </View>
 

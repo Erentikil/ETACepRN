@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
+import type { CeviriAnahtari } from '../../i18n/translations';
 import { toast } from '../../components/Toast';
 import type { DrawerParamList } from '../../navigation/types';
 
@@ -19,39 +21,40 @@ type Props = {
 
 interface RaporKarti {
   id: number;
-  baslik: string;
+  ceviriAnahtari: CeviriAnahtari;
   icon: keyof typeof Ionicons.glyphMap;
   renk: string;
 }
 
 const RAPORLAR: RaporKarti[] = [
-  { id: 0,  baslik: 'Satış Raporu',      icon: 'bar-chart-outline',       renk: '#2e4d85' },
-  { id: 1,  baslik: 'Cari Bakiye',       icon: 'wallet-outline',          renk: '#1a5d3f' },
-  { id: 2,  baslik: 'Cari Hareket',      icon: 'swap-horizontal-outline', renk: '#8a5a2b' },
-  { id: 3,  baslik: 'Stok Bakiye',       icon: 'cube-outline',            renk: '#4a2c6e' },
-  { id: 4,  baslik: 'Cari Ekstre',       icon: 'document-text-outline',   renk: '#1d5e5f' },
-  { id: 5,  baslik: 'Adres Listesi',     icon: 'location-outline',        renk: '#6b1e25' },
-  { id: 6,  baslik: 'Stok Fiyat',        icon: 'pricetag-outline',        renk: '#c9a227' },
-  { id: 7,  baslik: 'En Çok Borçlu',     icon: 'trending-down-outline',   renk: '#8b3a3a' },
-  { id: 8,  baslik: 'Çek Senet',         icon: 'receipt-outline',         renk: '#5a2e7c' },
-  { id: 9,  baslik: 'En Çok Alacak',     icon: 'trending-up-outline',     renk: '#2a6e4a' },
-  { id: 10, baslik: 'Kasa Bakiye',       icon: 'cash-outline',            renk: '#1e3a6b' },
-  { id: 11, baslik: 'Banka Bakiye',      icon: 'business-outline',        renk: '#2a3a8a' },
-  { id: 12, baslik: 'En Çok Satış',      icon: 'ribbon-outline',          renk: '#9e5a52' },
-  { id: 13, baslik: 'En Çok Ciro',       icon: 'trophy-outline',          renk: '#d4a34a' },
-  { id: 14, baslik: 'Alış Raporu',       icon: 'cart-outline',            renk: '#4a7567' },
-  { id: 15, baslik: 'Stoklu Ekstre',     icon: 'layers-outline',          renk: '#3a5e8a' },
-  { id: 16, baslik: 'Tahsilat Listesi',  icon: 'card-outline',            renk: '#b88566' },
-  { id: 17, baslik: 'Bek. Siparişler',   icon: 'time-outline',            renk: '#4a4a63' },
+  { id: 0,  ceviriAnahtari: 'rapor.satisRaporu',     icon: 'bar-chart-outline',       renk: '#2e4d85' },
+  { id: 1,  ceviriAnahtari: 'rapor.cariBakiye',      icon: 'wallet-outline',          renk: '#1a5d3f' },
+  { id: 2,  ceviriAnahtari: 'rapor.cariHareket',     icon: 'swap-horizontal-outline', renk: '#8a5a2b' },
+  { id: 3,  ceviriAnahtari: 'rapor.stokBakiye',      icon: 'cube-outline',            renk: '#4a2c6e' },
+  { id: 4,  ceviriAnahtari: 'rapor.cariEkstre',      icon: 'document-text-outline',   renk: '#1d5e5f' },
+  { id: 5,  ceviriAnahtari: 'rapor.adresListesi',    icon: 'location-outline',        renk: '#6b1e25' },
+  { id: 6,  ceviriAnahtari: 'rapor.stokFiyat',       icon: 'pricetag-outline',        renk: '#c9a227' },
+  { id: 7,  ceviriAnahtari: 'rapor.enCokBorclu',     icon: 'trending-down-outline',   renk: '#8b3a3a' },
+  { id: 8,  ceviriAnahtari: 'rapor.cekSenet',        icon: 'receipt-outline',         renk: '#5a2e7c' },
+  { id: 9,  ceviriAnahtari: 'rapor.enCokAlacak',     icon: 'trending-up-outline',     renk: '#2a6e4a' },
+  { id: 10, ceviriAnahtari: 'rapor.kasaBakiye',      icon: 'cash-outline',            renk: '#1e3a6b' },
+  { id: 11, ceviriAnahtari: 'rapor.bankaBakiye',     icon: 'business-outline',        renk: '#2a3a8a' },
+  { id: 12, ceviriAnahtari: 'rapor.enCokSatis',      icon: 'ribbon-outline',          renk: '#9e5a52' },
+  { id: 13, ceviriAnahtari: 'rapor.enCokCiro',       icon: 'trophy-outline',          renk: '#d4a34a' },
+  { id: 14, ceviriAnahtari: 'rapor.alisRaporu',      icon: 'cart-outline',            renk: '#4a7567' },
+  { id: 15, ceviriAnahtari: 'rapor.stokluEkstre',    icon: 'layers-outline',          renk: '#3a5e8a' },
+  { id: 16, ceviriAnahtari: 'rapor.tahsilatListesi', icon: 'card-outline',            renk: '#b88566' },
+  { id: 17, ceviriAnahtari: 'rapor.bekSiparisler',   icon: 'time-outline',            renk: '#4a4a63' },
 ];
 
 export default function RaporlarAnaSayfa({ navigation }: Props) {
   const Colors = useColors();
+  const t = useT();
   const [arama, setArama] = useState('');
 
   const filtrelenmis = arama.trim()
     ? RAPORLAR.filter((r) =>
-        r.baslik.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr'))
+        t(r.ceviriAnahtari).toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr'))
       )
     : RAPORLAR;
 
@@ -138,7 +141,7 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
         navigation.navigate('BekleyenSiparisler');
         break;
       default:
-        toast.info('Bu rapor yakında eklenecek.');
+        toast.info(t('rapor.yakindaEklenecek'));
     }
   };
 
@@ -152,7 +155,7 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
         <Ionicons name={item.icon} size={26} color={Colors.primary} />
       </View>
       <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
-        {item.baslik}
+        {t(item.ceviriAnahtari)}
       </Text>
     </TouchableOpacity>
   );
@@ -163,7 +166,7 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
         <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Rapor ara..."
+          placeholder={t('rapor.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={arama}
           onChangeText={setArama}

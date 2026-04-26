@@ -25,6 +25,7 @@ import { useAppStore } from '../../store/appStore';
 import { stokluCariEkstreBilgileriAl } from '../../api/stokluCariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import type { StokluCariEkstreBilgileri, CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -68,6 +69,7 @@ function miktarFormatla(n: number): string {
 
 export default function StokluCariEkstreListesi() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
@@ -147,7 +149,7 @@ export default function StokluCariEkstreListesi() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          toast.error(sonuc.mesaj || 'Ekstre alınamadı.');
+          toast.error(sonuc.mesaj || t('raporListe.ekstreAlinamadi'));
         }
       } catch (err: any) {
         const mesaj = err?.response?.data
@@ -208,7 +210,7 @@ export default function StokluCariEkstreListesi() {
     if (!pdfUri) return;
     await Sharing.shareAsync(pdfUri, {
       mimeType: 'application/pdf',
-      dialogTitle: 'Stoklu Cari Ekstre PDF',
+      dialogTitle: t('raporListe.stokluEkstrePdfTitle'),
     });
   };
 
@@ -223,9 +225,9 @@ export default function StokluCariEkstreListesi() {
 
       {/* Stok bilgisi */}
       <View style={styles.baslikSatir}>
-        <Text style={[styles.baslik, { flex: 4, textAlign: 'left', color: Colors.textSecondary }]}>Stok Cinsi</Text>
-        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Miktar</Text>
-        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Net Fiyat</Text>
+        <Text style={[styles.baslik, { flex: 4, textAlign: 'left', color: Colors.textSecondary }]}>{t('raporListe.stokCinsi')}</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.miktar')}</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.netFiyat')}</Text>
       </View>
       <View style={styles.degerSatir}>
         <Text style={[styles.deger, { flex: 4, textAlign: 'left', color: Colors.text }]} numberOfLines={1}>
@@ -237,9 +239,9 @@ export default function StokluCariEkstreListesi() {
 
       {/* Finans bilgisi */}
       <View style={styles.baslikSatir}>
-        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Borc</Text>
-        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Alacak</Text>
-        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>Bakiye</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.borc')}</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.alacak')}</Text>
+        <Text style={[styles.baslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.bakiye')}</Text>
       </View>
       <View style={styles.degerSatir}>
         <Text style={[styles.deger, styles.sag, { color: Colors.text }]}>
@@ -285,7 +287,7 @@ export default function StokluCariEkstreListesi() {
         >
           <Ionicons name="person-outline" size={18} color={Colors.textSecondary} />
           <Text style={[styles.cariText, { color: Colors.textSecondary }]} numberOfLines={1}>
-            Lütfen cari seçiniz...
+            {t('raporListe.cariSeciniz')}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
         </TouchableOpacity>
@@ -339,11 +341,11 @@ export default function StokluCariEkstreListesi() {
         <View style={styles.tarihModalOverlay}>
           <View style={[styles.tarihModalKutu, { backgroundColor: Colors.card }]}>
             <Text style={[styles.tarihModalBaslik, { color: Colors.text }]}>
-              Tarih Aralığı Seçiniz
+              {t('raporListe.tarihAraligiSeciniz')}
             </Text>
             <View style={styles.tarihSatir}>
               <View style={styles.tarihAlan}>
-                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Başlangıç</Text>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>{t('raporListe.baslangic')}</Text>
                 <TouchableOpacity
                   style={[
                     styles.tarihBtn,
@@ -358,7 +360,7 @@ export default function StokluCariEkstreListesi() {
                 </TouchableOpacity>
               </View>
               <View style={styles.tarihAlan}>
-                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Bitiş</Text>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>{t('raporListe.bitis')}</Text>
                 <TouchableOpacity
                   style={[
                     styles.tarihBtn,
@@ -408,13 +410,13 @@ export default function StokluCariEkstreListesi() {
                   setAramaMetni('');
                 }}
               >
-                <Text style={[styles.tarihModalBtnText, { color: Colors.textSecondary }]}>İptal</Text>
+                <Text style={[styles.tarihModalBtnText, { color: Colors.textSecondary }]}>{t('raporListe.iptal')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tarihModalBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
                 onPress={() => { setTarihPickerHedef(null); setTarihModalAcik(false); }}
               >
-                <Text style={[styles.tarihModalBtnText, { color: '#fff', fontWeight: '700' }]}>Tamam</Text>
+                <Text style={[styles.tarihModalBtnText, { color: '#fff', fontWeight: '700' }]}>{t('raporListe.tamam')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -427,7 +429,7 @@ export default function StokluCariEkstreListesi() {
           <Ionicons name="search" size={16} color={Colors.textSecondary} />
           <TextInput
             style={[styles.aramaInput, { color: Colors.text }]}
-            placeholder="Stok kodu veya cinsi ara"
+            placeholder={t('raporListe.stokluAramaPlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={aramaMetni}
             onChangeText={setAramaMetni}
@@ -444,12 +446,12 @@ export default function StokluCariEkstreListesi() {
       {!secilenCari ? (
         <View style={styles.merkez}>
           <Ionicons name="person-circle-outline" size={56} color={Colors.border} />
-          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Ekstre görmek için cari seçin</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>{t('raporListe.ekstreIcinCariSec')}</Text>
         </View>
       ) : yukleniyor ? (
         <View style={styles.merkez}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>{t('raporListe.yukleniyor')}</Text>
         </View>
       ) : (
         <FlatList
@@ -467,7 +469,7 @@ export default function StokluCariEkstreListesi() {
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
             ilkYuklemeYapildi
-              ? <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
+              ? <EmptyState icon="document-text-outline" baslik={t('raporListe.kayitBulunamadi')} aciklama={t('raporListe.donemKayitYok')} />
               : null
           }
         />

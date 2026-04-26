@@ -12,6 +12,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 
 interface Props {
   visible: boolean;
@@ -23,6 +24,7 @@ interface Props {
 
 export default function BarcodeScannerModal({ visible, onDetected, onClose, manuelOkuma = false, baslangicZoom = 0 }: Props) {
   const Colors = useColors();
+  const t = useT();
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const initialZoom = Math.min(Math.max(baslangicZoom, 0), 1);
@@ -99,19 +101,19 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
       <GestureHandlerRootView style={styles.ekran}>
         {!permission ? (
           <View style={styles.merkezle}>
-            <Text style={[styles.mesaj, { color: Colors.text }]}>Kamera izni kontrol ediliyor...</Text>
+            <Text style={[styles.mesaj, { color: Colors.text }]}>{t('modal.kameraIzniKontrol')}</Text>
           </View>
         ) : !permission.granted ? (
           <View style={[styles.merkezle, { backgroundColor: Colors.card }]}>
             <Ionicons name="camera-outline" size={64} color={Colors.textSecondary} />
             <Text style={[styles.mesaj, { color: Colors.text }]}>
-              Barkod okumak için kamera izni gerekli. Ayarlar'dan izin verebilirsiniz.
+              {t('modal.kameraIzniGerekli')}
             </Text>
             <TouchableOpacity
               style={[styles.izinBtn, { backgroundColor: Colors.primary }]}
               onPress={() => Linking.openSettings()}
             >
-              <Text style={styles.izinBtnText}>Ayarlara Git</Text>
+              <Text style={styles.izinBtnText}>{t('modal.ayarlaraGit')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -121,8 +123,8 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
               <TouchableOpacity onPress={onClose} style={styles.geriBtn}>
                 <Ionicons name="arrow-back" size={24} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.baslik}>Barkod Tara</Text>
-              <TouchableOpacity onPress={() => setTorchOn((t) => !t)} style={styles.fenBtn}>
+              <Text style={styles.baslik}>{t('modal.barkodTara')}</Text>
+              <TouchableOpacity onPress={() => setTorchOn((prev) => !prev)} style={styles.fenBtn}>
                 <Ionicons
                   name={torchOn ? 'flashlight' : 'flashlight-outline'}
                   size={24}
@@ -174,11 +176,11 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
 
             {/* Alt mesaj */}
             <View style={styles.altBar}>
-              <Text style={styles.altMesaj}>Barkodu cerceve icine hizalayin</Text>
+              <Text style={styles.altMesaj}>{t('modal.barkodHizala')}</Text>
               {manuelOkuma && (
                 <TouchableOpacity style={styles.manuelBtn} onPress={handleManuelOku}>
                   <Ionicons name="scan-outline" size={22} color="#fff" />
-                  <Text style={styles.manuelBtnText}>Oku</Text>
+                  <Text style={styles.manuelBtnText}>{t('modal.oku')}</Text>
                 </TouchableOpacity>
               )}
             </View>

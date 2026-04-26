@@ -28,6 +28,7 @@ import { useTarayiciAyarlari } from '../../../hooks/useTarayiciAyarlari';
 import StokInfoModal from '../../../components/StokInfoModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useT } from '../../../i18n/I18nContext';
 import { Config } from '../../../constants/Config';
 import { paraTL, miktarFormat } from '../../../utils/format';
 import { EvrakTipi, AlimSatim, type StokFiyatBilgileri, type CariFiyatBilgileri } from '../../../models';
@@ -46,14 +47,6 @@ import { toast } from '../../../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
-
-
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
 
 function sepetToplamHesapla(kalemler: SepetKalem[], ayarlar: SepetAyarlari): number {
   return sepetToplamlariniHesapla(kalemler, ayarlar).genelToplam;
@@ -87,7 +80,14 @@ export default function TeklifTab({
   setRevizyonMusteriId,
 }: Props) {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
   const navigation = useNavigation<NavProp>();
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
 
@@ -160,7 +160,7 @@ export default function TeklifTab({
         setStokYuklemeDurumu('tamamlandi');
       })
       .catch(() => {
-        toast.error('Stok listesi yüklenirken bir hata oluştu.');
+        toast.error(t('crmTeklif.stokListesiHata'));
         setStokYuklemeDurumu('hata');
       })
       .finally(() => setYukleniyor(false));
@@ -185,7 +185,7 @@ export default function TeklifTab({
     const veri = (veriOverride ?? aramaMetni).trim();
     if (!veri || !calisilanSirket) { setFiltreli(stokListesi); return; }
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('crmTeklif.cariSecUyari'));
       setAramaMetni('');
       return;
     }
@@ -198,24 +198,24 @@ export default function TeklifTab({
         if (sonuc.data.length === 1) {
           const stok = sonuc.data[0];
           if (miktarliGiris) { setModalUrunu(stok); modalAcilacak = true; }
-          else if (!secilenCari) toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
           else hizliEkle(stok);
         }
       } else {
-        toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+        toast.warning(t('crmTeklif.urunBulunamadi', { kod: veri }));
         setFiltreli([]);
       }
       setAramaMetni('');
       if (!modalAcilacak) setTimeout(() => aramaInputRef.current?.focus(), 100);
     } catch (e: any) {
-      toast.error(`Barkod araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
+      toast.error(t('crmTeklif.barkodAramaHata', { detay: e?.message ?? e }));
       setFiltreli([]);
     } finally {
       setYukleniyor(false);
     }
   }, [aramaMetni, calisilanSirket, stokListesi, miktarliGiris, secilenCari]);
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? t('aramaTipi.iceren');
 
   // Etkin fiyat no
   const etkinFiyatNo = (() => {
@@ -230,7 +230,7 @@ export default function TeklifTab({
   // Hizli ekle
   const hizliEkle = async (item: StokListesiBilgileri) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('crmTeklif.cariSecUyari'));
       return;
     }
     const birimler = item.birim2 ? item.birim2.split(';').map((b) => b.trim()).filter(Boolean) : [];
@@ -286,7 +286,7 @@ export default function TeklifTab({
   // Sepete ekleme
   const kalemEkle = (kalem: SepetKalem) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('crmTeklif.cariSecUyari'));
       return;
     }
     hafifTitresim();
@@ -336,7 +336,7 @@ export default function TeklifTab({
       evrakTipi: EvrakTipi.Fatura,
       alimSatim: AlimSatim.Satim,
       fisTipiBaslikNo: 0,
-      fisTipiAdi: 'CRM Teklif',
+      fisTipiAdi: t('crmTeklif.fisTipiAdi'),
       anaDepo: secilenAnaDepo,
       karsiDepo: secilenKarsiDepo,
       kalemler: sepetKalemleri,
@@ -378,7 +378,7 @@ export default function TeklifTab({
           setRevizyonFisId(null);
           setRevizyonMusteriId(0);
           setSepetKalemleri(prev => prev.map(k => ({ ...k, crmKalemId: undefined })));
-          toast.warning('Revizyon bağlantısı kesildi. Önceki teklifi Revizyon sekmesinden tekrar yükleyebilirsiniz.');
+          toast.warning(t('crmTeklif.revizyonKesildi'));
         }
         setSecilenCari(pending.cari);
         setPotansiyelCari(null);
@@ -396,7 +396,7 @@ export default function TeklifTab({
         renderRightActions={() => (
           <TouchableOpacity style={[styles.infoBtn, { backgroundColor: Colors.primary }]} onPress={() => setInfoStoku(item)}>
             <Ionicons name="information-circle-outline" size={24} color="#fff" />
-            <Text style={styles.infoBtnText}>Bilgi</Text>
+            <Text style={styles.infoBtnText}>{t('crmTeklif.bilgi')}</Text>
           </TouchableOpacity>
         )}
       >
@@ -424,11 +424,11 @@ export default function TeklifTab({
       <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <View style={styles.teklifBaslik}>
           <Ionicons name="document-text-outline" size={18} color="#fff" />
-          <Text style={styles.evrakTipiText}>Teklif</Text>
+          <Text style={styles.evrakTipiText}>{t('crmTeklif.teklif')}</Text>
         </View>
         <TouchableOpacity style={[styles.miktarBtn, miktarliGiris && { backgroundColor: Colors.accent }]} onPress={() => setMiktarliGiris(!miktarliGiris)}>
           <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color="#fff" />
-          <Text style={styles.miktarBtnText}>Miktarlı</Text>
+          <Text style={styles.miktarBtnText}>{t('crmTeklif.miktarli')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.barkodBtn} onPress={() => setScannerAcik(true)}>
           <Ionicons name="barcode-outline" size={24} color="#fff" />
@@ -448,7 +448,7 @@ export default function TeklifTab({
       >
         <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.textSecondary} />
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('crmTeklif.cariSeciniz')}
         </Text>
         {secilenCari ? (
           <TouchableOpacity
@@ -460,11 +460,11 @@ export default function TeklifTab({
               };
               if (sepetKalemlerRef.current.length > 0) {
                 Alert.alert(
-                  'Cari seçimini iptal et',
-                  'Sepetteki ürünler silinecek. Devam edilsin mi?',
+                  t('crmTeklif.cariSeciminiIptal'),
+                  t('crmTeklif.cariIptalMesaj'),
                   [
-                    { text: 'Vazgeç', style: 'cancel' },
-                    { text: 'Evet, İptal Et', style: 'destructive', onPress: temizle },
+                    { text: t('common.vazgec'), style: 'cancel' },
+                    { text: t('crmTeklif.evetIptalEt'), style: 'destructive', onPress: temizle },
                   ]
                 );
               } else {
@@ -488,7 +488,7 @@ export default function TeklifTab({
         <TextInput
           ref={aramaInputRef}
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı ara...'}
+          placeholder={aramaTipi === 4 ? t('crmTeklif.barkodPlaceholder') : t('crmTeklif.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -524,9 +524,9 @@ export default function TeklifTab({
 
       {/* Stok listesi baslik */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CİNS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FİYAT</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('crmTeklif.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('crmTeklif.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>{t('crmTeklif.fiyat')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -560,7 +560,7 @@ export default function TeklifTab({
               setStokYuklemeDurumu('tamamlandi');
             })
             .catch(() => {
-              toast.error('Stok listesi yüklenirken bir hata oluştu.');
+              toast.error(t('crmTeklif.stokListesiHata'));
               setStokYuklemeDurumu('hata');
             })
             .finally(() => setYukleniyor(false));
@@ -568,7 +568,7 @@ export default function TeklifTab({
         ListEmptyComponent={
           yukleniyor
             ? <SkeletonLoader satirSayisi={6} />
-            : <EmptyState icon="cube-outline" baslik="Stok bulunamadı" aciklama="Ürün listesi yüklenemedi veya boş" />
+            : <EmptyState icon="cube-outline" baslik={t('crmTeklif.stokBulunamadi')} aciklama={t('crmTeklif.stokBulunamadiAciklama')} />
         }
       />
 
@@ -579,8 +579,8 @@ export default function TeklifTab({
           { color: stokYuklemeDurumu === 'yukleniyor' ? '#F5A623' : stokYuklemeDurumu === 'tamamlandi' ? '#4CAF50' : '#f44336' },
         ]}>
           {stokYuklemeDurumu === 'yukleniyor'
-            ? `${filtreli.length}${stokSayisi != null ? ` / ${stokSayisi}` : ''} stok (yükleniyor...)`
-            : `${filtreli.length} / ${stokSayisi ?? filtreli.length} stok`}
+            ? t('crmTeklif.stokYukleniyor', { n: filtreli.length, toplam: stokSayisi != null ? ` / ${stokSayisi}` : '' })
+            : t('crmTeklif.stokTamam', { n: filtreli.length, toplam: stokSayisi ?? filtreli.length })}
         </Text>
       )}
 
@@ -597,7 +597,7 @@ export default function TeklifTab({
           disabled={sepetKalemleri.length === 0}
         >
           <Ionicons name="cart-outline" size={22} color="#fff" />
-          <Text style={styles.sepetBtnText}>SEPET ({paraTL(sepetToplam)})</Text>
+          <Text style={styles.sepetBtnText}>{t('crmTeklif.sepet')} ({paraTL(sepetToplam)})</Text>
           {sepetKalemleri.length > 0 && (
             <Animated.View style={[styles.sepetBadge, { backgroundColor: Colors.accent ?? '#ffa500' }, badgeAnimStyle]}>
               <Text style={styles.sepetBadgeText}>{sepetKalemleri.length}</Text>
@@ -618,26 +618,26 @@ export default function TeklifTab({
         onDetected={(barkod) => {
           setScannerAcik(false);
           if (!secilenCari) {
-            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            toast.warning(t('crmTeklif.cariSecUyari'));
             return;
           }
           hafifTitresim();
           const bulunan = stokListesi.find((s) => s.barkod === barkod);
           if (bulunan) {
             if (miktarliGiris) setModalUrunu(bulunan);
-            else if (!secilenCari) toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
             else hizliEkle(bulunan);
           } else {
             barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
               if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
                 const stok = sonuc.data[0];
                 if (miktarliGiris) setModalUrunu(stok);
-                else if (!secilenCari) toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+                else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
                 else hizliEkle(stok);
               } else {
-                toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+                toast.warning(t('crmTeklif.urunBulunamadi', { kod: barkod }));
               }
-            }).catch(() => toast.error('Barkod araması sırasında bir hata oluştu.'));
+            }).catch(() => toast.error(t('crmTeklif.barkodAramaHataKisa')));
           }
         }}
       />

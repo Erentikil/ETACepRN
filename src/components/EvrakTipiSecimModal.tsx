@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 
 interface Secenek {
   label: string;
@@ -25,13 +26,14 @@ interface Props {
 
 export default function EvrakTipiSecimModal({ visible, secenekler, secilenDeger, onSelect, onClose }: Props) {
   const Colors = useColors();
+  const t = useT();
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={[styles.kart, { backgroundColor: Colors.card }]}>
           <View style={styles.baslik}>
-            <Text style={[styles.baslikMetin, { color: Colors.primary }]}>Evrak Tipi Seçin</Text>
+            <Text style={[styles.baslikMetin, { color: Colors.primary }]}>{t('modal.evrakTipiSec')}</Text>
             <TouchableOpacity onPress={onClose} style={styles.kapatBtn}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
@@ -62,7 +64,7 @@ export default function EvrakTipiSecimModal({ visible, secenekler, secilenDeger,
           </ScrollView>
 
           <TouchableOpacity style={[styles.vazgecBtn, { borderTopColor: Colors.border }]} onPress={onClose} activeOpacity={0.7}>
-            <Text style={[styles.vazgecMetin, { color: Colors.textSecondary }]}>Vazgeç</Text>
+            <Text style={[styles.vazgecMetin, { color: Colors.textSecondary }]}>{t('common.vazgec')}</Text>
           </TouchableOpacity>
         </View>
       </View>

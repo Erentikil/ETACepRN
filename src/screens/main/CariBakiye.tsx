@@ -14,6 +14,7 @@ import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
 import { cariListesiniAl } from '../../api/hizliIslemlerApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import type { CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -24,6 +25,7 @@ function f(n: number) {
 
 export default function CariBakiye() {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
   const [liste, setListe] = useState<CariKartBilgileri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -41,10 +43,10 @@ export default function CariBakiye() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('bakiye.cariListesiAlinamadi'));
       }
     } catch (err: any) {
-      toast.error(err.message || 'Cari listesi yüklenirken hata oluştu.');
+      toast.error(err.message || t('bakiye.cariListesiHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -65,7 +67,7 @@ export default function CariBakiye() {
   }, [arama, liste]);
 
   const toplamBakiye = useMemo(
-    () => filtreli.reduce((t, c) => t + (c.bakiye ?? 0), 0),
+    () => filtreli.reduce((acc, c) => acc + (c.bakiye ?? 0), 0),
     [filtreli]
   );
 
@@ -80,7 +82,7 @@ export default function CariBakiye() {
         <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari kodu veya unvan ara..."
+          placeholder={t('bakiye.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={arama}
           onChangeText={setArama}
@@ -94,7 +96,7 @@ export default function CariBakiye() {
 
       {/* Toplam */}
       <View style={[styles.toplamRow, { backgroundColor: Colors.primary }]}>
-        <Text style={styles.toplamLabel}>Toplam Bakiye ({filtreli.length} cari)</Text>
+        <Text style={styles.toplamLabel}>{t('bakiye.toplamBakiye')} ({t('bakiye.cariSayisi', { n: filtreli.length })})</Text>
         <Text style={[styles.toplamDeger, toplamBakiye < 0 && { color: Colors.success }]}>
           {f(toplamBakiye)} TL
         </Text>
@@ -131,7 +133,7 @@ export default function CariBakiye() {
         ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <EmptyState icon="wallet-outline" baslik="Cari bulunamadı" aciklama="Bakiye bilgisi bulunmamaktadır" />
+          <EmptyState icon="wallet-outline" baslik={t('bakiye.cariBulunamadi')} aciklama={t('bakiye.cariBulunamadiAciklama')} />
         }
       />
     </View>

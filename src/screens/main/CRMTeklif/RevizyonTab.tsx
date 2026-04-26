@@ -17,6 +17,7 @@ import { useAppStore } from '../../../store/appStore';
 import { crmTeklifFisleriniOku, crmTeklifFisleriniMusteriyeGoreOku, crmTeklifHareketleriniOku } from '../../../api/crmTeklifApi';
 import type { CRMTeklifFisBilgileri, CRMTeklifHareketBilgileri, SepetKalem } from '../../../models';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useT } from '../../../i18n/I18nContext';
 import { paraTL } from '../../../utils/format';
 import EmptyState from '../../../components/EmptyState';
 import { toast } from '../../../components/Toast';
@@ -45,6 +46,7 @@ function formatTarihApi(d: Date): string {
 
 export default function RevizyonTab({ onTeklifSec }: Props) {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket } = useAppStore();
 
   const [fisler, setFisler] = useState<CRMTeklifFisBilgileri[]>([]);
@@ -69,11 +71,11 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
       if (sonuc.sonuc && sonuc.data) {
         setFisler(sonuc.data);
       } else {
-        if (!sessiz) toast.error(sonuc.mesaj || 'Teklif listesi alınamadı.');
+        if (!sessiz) toast.error(sonuc.mesaj || t('crmTeklif.teklifListesiAlinamadi'));
         setFisler([]);
       }
     } catch {
-      if (!sessiz) toast.error('Teklif listesi yüklenirken hata oluştu.');
+      if (!sessiz) toast.error(t('crmTeklif.teklifListesiHata'));
     } finally {
       setYukleniyor(false);
       setYenileniyor(false);
@@ -118,12 +120,12 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
           crmKalemId: h.id,
         }));
         onTeklifSec(fis, kalemler);
-        toast.success(`${kalemler.length} kalem sepete yüklendi.`);
+        toast.success(t('crmTeklif.kalemSepeteYuklendi', { n: kalemler.length }));
       } else {
-        toast.error(sonuc.mesaj || 'Teklif hareketleri alınamadı.');
+        toast.error(sonuc.mesaj || t('crmTeklif.hareketleriAlinamadi'));
       }
     } catch {
-      toast.error('Teklif hareketleri yüklenirken hata oluştu.');
+      toast.error(t('crmTeklif.hareketleriHata'));
     } finally {
       setSeciliId(null);
     }
@@ -176,7 +178,7 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari kodu ara..."
+          placeholder={t('crmTeklif.cariKoduAra')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -196,7 +198,7 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
           style={[styles.araBtn, { backgroundColor: Colors.primary }]}
           onPress={() => ara()}
         >
-          <Text style={styles.araBtnText}>Ara</Text>
+          <Text style={styles.araBtnText}>{t('crmTeklif.ara')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -228,7 +230,7 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
               style={[styles.pickerTamamBtn, { backgroundColor: Colors.primary }]}
               onPress={() => setPickerHedef(null)}
             >
-              <Text style={styles.pickerTamamText}>Tamam</Text>
+              <Text style={styles.pickerTamamText}>{t('crmTeklif.tamam')}</Text>
             </TouchableOpacity>
           )}
         </>
@@ -240,7 +242,7 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Teklifler yükleniyor...</Text>
+        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>{t('crmTeklif.tekliflerYukleniyor')}</Text>
       </View>
     );
   }
@@ -259,8 +261,8 @@ export default function RevizyonTab({ onTeklifSec }: Props) {
         ListEmptyComponent={
           <EmptyState
             icon="search-outline"
-            baslik="Sonuç Bulunamadı"
-            aciklama={aramaMetni ? `"${aramaMetni}" ile eşleşen teklif yok` : 'Teklif bulunamadı'}
+            baslik={t('crmTeklif.sonucBulunamadi')}
+            aciklama={aramaMetni ? t('crmTeklif.eslesenTeklifYok', { q: aramaMetni }) : t('crmTeklif.teklifBulunamadi')}
           />
         }
         refreshControl={

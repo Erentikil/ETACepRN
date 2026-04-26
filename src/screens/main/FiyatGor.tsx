@@ -19,6 +19,7 @@ import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { Config } from '../../constants/Config';
 import { paraTL, paraFormat, miktarFormat } from '../../utils/format';
 import type { StokListesiBilgileri, StokFiyatBilgileri } from '../../models';
@@ -39,6 +40,7 @@ const ARAMA_TIPLERI = [
 
 export default function FiyatGor() {
   const Colors = useColors();
+  const t = useT();
   const { yetkiBilgileri, fiyatTipListesi, calisilanSirket } = useAppStore();
 
 
@@ -93,7 +95,7 @@ export default function FiyatGor() {
       .finally(() => setFiyatYukleniyor(false));
   }, [secilenStok]);
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'Barkod';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? 'Barkod';
 
   // Arama — API'ye istek at
   const aramaYap = useCallback(async (veriOverride?: string) => {
@@ -113,7 +115,7 @@ export default function FiyatGor() {
             setSecilenStok(sonuc.data[0]);
           }
         } else {
-          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          toast.warning(t('stok.barkodBulunamadi', { q: veri }));
           setStokListesi([]);
         }
         // Barkod arama sonrası inputu temizle, modal açılmayacaksa focusla
@@ -129,12 +131,12 @@ export default function FiyatGor() {
             setSecilenStok(sonuc.data[0]);
           }
         } else {
-          toast.warning(`"${veri}" ile eşleşen ürün bulunamadı.`);
+          toast.warning(t('stok.bulunamadi', { q: veri }));
           setStokListesi([]);
         }
       }
     } catch (e: any) {
-      toast.error(`Arama sırasında bir hata oluştu.\n${e?.message ?? e}`);
+      toast.error(`${t('stok.aramaHatasi')}\n${e?.message ?? e}`);
       setStokListesi([]);
     } finally {
       setYukleniyor(false);
@@ -191,7 +193,7 @@ export default function FiyatGor() {
       <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <View style={styles.ustBarBilgi}>
           <Ionicons name="pricetag-outline" size={18} color={'#fff'} />
-          <Text style={styles.ustBarText}>Fiyat Gör</Text>
+          <Text style={styles.ustBarText}>{t('menu.fiyatGor')}</Text>
         </View>
         <TouchableOpacity
           style={styles.barkodBtn}
@@ -213,7 +215,7 @@ export default function FiyatGor() {
         <TextInput
           ref={aramaInputRef}
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı...'}
+          placeholder={aramaTipi === 4 ? t('stok.barkodGiriniz') : t('stok.koduVeyaAdi')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -293,8 +295,8 @@ export default function FiyatGor() {
           ) : (
             <EmptyState
               icon="search-outline"
-              baslik={aramaMetni.trim() ? 'Sonuç bulunamadı' : 'Ürün arayın'}
-              aciklama={aramaMetni.trim() ? 'Farklı bir arama kriteri deneyiniz' : 'Aramak için yukarıdaki arama çubuğunu kullanın'}
+              baslik={aramaMetni.trim() ? t('stok.sonucBulunamadi') : t('stok.urunArayin')}
+              aciklama={aramaMetni.trim() ? t('stok.farkliKriter') : t('stok.aramaCubugu')}
             />
           )
         }
@@ -307,7 +309,7 @@ export default function FiyatGor() {
           onPress={() => setScannerAcik(true)}
         >
           <Ionicons name="barcode-outline" size={24} color={'#fff'} />
-          <Text style={styles.altBarkodText}>Barkod Tara</Text>
+          <Text style={styles.altBarkodText}>{t('stok.barkodTara')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -370,7 +372,7 @@ export default function FiyatGor() {
             )}
 
             {/* Fiyat No combobox — sadece fiyati olan secenekler */}
-            <Text style={[styles.fiyatNoLabel, { color: Colors.text }]}>Fiyat Tipi</Text>
+            <Text style={[styles.fiyatNoLabel, { color: Colors.text }]}>{t('stok.fiyatTipi')}</Text>
             <TouchableOpacity
               style={[styles.fiyatNoSelector, { borderColor: Colors.primary, backgroundColor: Colors.inputBackground }]}
               onPress={() => setFiyatNoDropdownAcik(!fiyatNoDropdownAcik)}
@@ -378,7 +380,7 @@ export default function FiyatGor() {
               <Text style={[styles.fiyatNoSelectorText, { color: Colors.text }]}>
                 {seciliFiyatTipi
                   ? `${seciliFiyatTipi.fiyatNo} - ${seciliFiyatTipi.fiyatAdi} (${fiyatGoster(seciliFiyat?.tutar ?? 0, seciliFiyat?.dovizKodu)})`
-                  : 'Fiyat tipi seciniz...'}
+                  : t('ayarlar.fiyatTipiSeciniz')}
               </Text>
               <Ionicons name={fiyatNoDropdownAcik ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.primary} />
             </TouchableOpacity>
@@ -430,11 +432,11 @@ export default function FiyatGor() {
             {/* Stok bilgileri */}
             <View style={[styles.stokDetayRow, { backgroundColor: Colors.background }]}>
               <View style={styles.stokDetayItem}>
-                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Bakiye</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>{t('stok.bakiyeEtiket')}</Text>
                 <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{miktarFormat(secilenStok?.bakiye ?? 0)}</Text>
               </View>
               <View style={styles.stokDetayItem}>
-                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Birim</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>{t('stok.birimEtiket')}</Text>
                 <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{secilenStok?.birim2?.split(';')[0]?.trim() || secilenStok?.birim}</Text>
               </View>
               <View style={styles.stokDetayItem}>
@@ -462,11 +464,11 @@ export default function FiyatGor() {
                 setSecilenStok(sonuc.data[0]);
               }
             } else {
-              toast.warning(`"${barkod}" barkodlu urun bulunamadi.`);
+              toast.warning(t('stok.barkodBulunamadi', { q: barkod }));
               setStokListesi([]);
             }
           }).catch(() => {
-            toast.error('Barkod aramasi sirasinda bir hata olustu.');
+            toast.error(t('stok.aramaHatasi'));
           });
         }}
       />

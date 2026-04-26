@@ -22,6 +22,7 @@ import type { DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
 import { cariListesiniAl, adresBilgileriniAl } from '../../api/hizliIslemlerApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import type { CariKartBilgileri, AdresBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import { toast } from '../../components/Toast';
@@ -33,6 +34,7 @@ type NavProp = DrawerNavigationProp<DrawerParamList, 'CariIletisim'>;
 
 export default function CariIletisim() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
 
@@ -56,10 +58,10 @@ export default function CariIletisim() {
       if (sonuc.sonuc) {
         setTumCariListesi(sonuc.data);
       } else {
-        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('cariIletisim.listeAlinamadi'));
       }
     } catch {
-      toast.error('Cari listesi yüklenirken bir hata oluştu.');
+      toast.error(t('cariIletisim.listeYuklemeHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -81,7 +83,7 @@ export default function CariIletisim() {
       })
       .catch(() => {
         setAdresListesi([]);
-        toast.error('Adres bilgileri yüklenirken bir hata oluştu.');
+        toast.error(t('cariIletisim.adresYuklemeHata'));
       })
       .finally(() => setAdresYukleniyor(false));
   }, [secilenCari?.cariKodu, calisilanSirket]);
@@ -111,7 +113,7 @@ export default function CariIletisim() {
     hafifTitresim();
     const url = `tel:${normalizeTel(tel)}`;
     Linking.openURL(url).catch((err) => {
-      toast.error('Arama başlatılamadı: ' + (err?.message ?? 'bilinmeyen hata'));
+      toast.error(t('cariIletisim.aramaBaslatilamadi', { detay: err?.message ?? t('cariIletisim.bilinmeyenHata') }));
     });
   };
 
@@ -119,13 +121,13 @@ export default function CariIletisim() {
     hafifTitresim();
     const e164 = toE164TR(tel);
     if (e164.length < 10) {
-      toast.warning('Geçersiz telefon numarası');
+      toast.warning(t('cariIletisim.gecersizTelefon'));
       return;
     }
     const wa = `whatsapp://send?phone=${e164}`;
     Linking.openURL(wa).catch(() => {
       Linking.openURL(`https://wa.me/${e164}`).catch((err2) => {
-        toast.error('WhatsApp açılamadı: ' + (err2?.message ?? 'bilinmeyen hata'));
+        toast.error(t('cariIletisim.whatsappAcilamadi', { detay: err2?.message ?? t('cariIletisim.bilinmeyenHata') }));
       });
     });
   };
@@ -136,7 +138,7 @@ export default function CariIletisim() {
     const q = encodeURIComponent(adres.trim());
     const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
     Linking.openURL(url).catch((err) => {
-      toast.error('Harita açılamadı: ' + (err?.message ?? 'bilinmeyen hata'));
+      toast.error(t('cariIletisim.haritaAcilamadi', { detay: err?.message ?? t('cariIletisim.bilinmeyenHata') }));
     });
   };
 
@@ -186,7 +188,7 @@ export default function CariIletisim() {
           <View style={styles.iletisimBilgi}>
             <Text style={[styles.iletisimLabel, { color: Colors.textSecondary }]}>{label}</Text>
             <Text style={[styles.iletisimDeger, { color: Colors.text }]}>
-              {telVar ? tel : 'Telefon yok'}
+              {telVar ? tel : t('cariIletisim.telefonYok')}
             </Text>
           </View>
           {telVar ? (
@@ -226,9 +228,9 @@ export default function CariIletisim() {
       <View key={key} style={[styles.iletisimBlok, { borderTopWidth: 0 }]}>
         <View style={styles.iletisimBaslikRow}>
           <View style={styles.iletisimBilgi}>
-            <Text style={[styles.iletisimLabel, { color: Colors.textSecondary }]}>Adres</Text>
+            <Text style={[styles.iletisimLabel, { color: Colors.textSecondary }]}>{t('cariIletisim.adres')}</Text>
             <Text style={[styles.iletisimDeger, { color: Colors.text }]} numberOfLines={4}>
-              {adresVar ? tamAdres : 'Adres bilgisi yok'}
+              {adresVar ? tamAdres : t('cariIletisim.adresYok')}
             </Text>
           </View>
           {adresVar ? (
@@ -266,8 +268,8 @@ export default function CariIletisim() {
           </View>
         ) : null}
         {renderAdresSatir(tamAdres, `${base}-adr`)}
-        {renderTelefonSatir('Telefon 1', adres.telefon1, `${base}-t1`)}
-        {renderTelefonSatir('Telefon 2', adres.telefon2, `${base}-t2`)}
+        {renderTelefonSatir(t('cariIletisim.telefon1'), adres.telefon1, `${base}-t1`)}
+        {renderTelefonSatir(t('cariIletisim.telefon2'), adres.telefon2, `${base}-t2`)}
       </View>
     );
   };
@@ -278,7 +280,7 @@ export default function CariIletisim() {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari kodu, unvan veya telefon ara..."
+          placeholder={t('cariIletisim.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -309,8 +311,8 @@ export default function CariIletisim() {
           ListEmptyComponent={
             <EmptyState
               icon="people-outline"
-              baslik={aramaMetni ? 'Eşleşen cari bulunamadı' : 'Cari listesi boş'}
-              aciklama={aramaMetni ? 'Farklı bir arama kriteri deneyiniz' : 'Kayıtlı cari bulunmamaktadır'}
+              baslik={aramaMetni ? t('cariIletisim.eslesenYok') : t('cariIletisim.listeBos')}
+              aciklama={aramaMetni ? t('cariIletisim.farkliKriter') : t('cariIletisim.listeBosAciklama')}
             />
           }
         />
@@ -342,15 +344,15 @@ export default function CariIletisim() {
               <View style={styles.yuklemeAlani}>
                 <ActivityIndicator size="large" color={Colors.primary} />
                 <Text style={[styles.yuklemeText, { color: Colors.textSecondary }]}>
-                  Adres bilgileri yükleniyor...
+                  {t('cariIletisim.adresYukleniyor')}
                 </Text>
               </View>
             ) : adresListesi.length === 0 ? (
               <View style={styles.yuklemeAlani}>
                 <EmptyState
                   icon="location-outline"
-                  baslik="Kayıtlı adres bulunamadı"
-                  aciklama="Bu cariye ait adres ve iletişim bilgisi yok"
+                  baslik={t('cariIletisim.adresBulunamadi')}
+                  aciklama={t('cariIletisim.adresBulunamadiAciklama')}
                 />
               </View>
             ) : (

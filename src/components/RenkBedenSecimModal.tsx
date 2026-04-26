@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 import type { BarkodBilgileri, StokListesiBilgileri } from '../models';
 
 interface Props {
@@ -32,6 +33,7 @@ export default function RenkBedenSecimModal({
   onClose,
 }: Props) {
   const Colors = useColors();
+  const t = useT();
   const [arama, setArama] = useState('');
 
   const filtrelenmis = useMemo(() => {
@@ -96,7 +98,7 @@ export default function RenkBedenSecimModal({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: Colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.baslik, { color: Colors.primary }]}>Renk-Beden Secimi</Text>
+              <Text style={[styles.baslik, { color: Colors.primary }]}>{t('modal.renkBedenSecimi')}</Text>
               {stok && (
                 <Text style={[styles.stokBilgi, { color: Colors.textSecondary }]} numberOfLines={1}>
                   {stok.stokKodu} - {stok.stokCinsi}
@@ -113,7 +115,7 @@ export default function RenkBedenSecimModal({
             <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
             <TextInput
               style={[styles.aramaInput, { color: Colors.black }]}
-              placeholder="Renk, beden veya barkod ara..."
+              placeholder={t('modal.renkBedenAra')}
               placeholderTextColor={Colors.textSecondary}
               value={arama}
               onChangeText={setArama}
@@ -128,9 +130,9 @@ export default function RenkBedenSecimModal({
 
           {/* Baslik satiri */}
           <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-            <Text style={[styles.baslikText, { flex: 1.5 }]}>Renk</Text>
-            <Text style={[styles.baslikText, { flex: 1 }]}>Beden</Text>
-            <Text style={[styles.baslikText, { flex: 2, textAlign: 'right' }]}>Barkod</Text>
+            <Text style={[styles.baslikText, { flex: 1.5 }]}>{t('modal.renk')}</Text>
+            <Text style={[styles.baslikText, { flex: 1 }]}>{t('modal.beden')}</Text>
+            <Text style={[styles.baslikText, { flex: 2, textAlign: 'right' }]}>{t('modal.barkod')}</Text>
           </View>
 
           {/* Liste */}
@@ -159,7 +161,7 @@ export default function RenkBedenSecimModal({
             ListEmptyComponent={
               <View style={styles.bosListe}>
                 <Ionicons name="color-palette-outline" size={40} color={Colors.border} />
-                <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>Bu stok icin renk-beden kaydi bulunamadi</Text>
+                <Text style={[styles.bosMetin, { color: Colors.textSecondary }]}>{t('modal.renkBedenYok')}</Text>
               </View>
             }
           />

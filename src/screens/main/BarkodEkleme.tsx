@@ -20,6 +20,7 @@ import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { Config } from '../../constants/Config';
 import type { StokListesiBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -29,16 +30,17 @@ import { hafifTitresim } from '../../utils/haptics';
 
 import { toast } from '../../components/Toast';
 
-const ARAMA_TIPLERI = [
-  { label: 'Başlayan', value: 1 },
-  { label: 'Biten', value: 2 },
-  { label: 'İçeren', value: 3 },
-  { label: 'Barkod', value: 4 },
-];
-
 export default function BarkodEkleme() {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket } = useAppStore();
+
+  const ARAMA_TIPLERI = [
+    { label: t('aramaTipi.baslayan'), value: 1 },
+    { label: t('aramaTipi.biten'), value: 2 },
+    { label: t('aramaTipi.iceren'), value: 3 },
+    { label: t('aramaTipi.barkod'), value: 4 },
+  ];
 
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>([]);
@@ -108,7 +110,7 @@ export default function BarkodEkleme() {
         if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
           setStokListesi(sonuc.data);
         } else {
-          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          toast.warning(t('barkod.bulunamadi', { kod: veri }));
           setStokListesi([]);
         }
       } else {
@@ -116,12 +118,12 @@ export default function BarkodEkleme() {
         if (sonuc.sonuc) {
           setStokListesi(sonuc.data);
         } else {
-          toast.error(sonuc.mesaj || 'Stok araması başarısız.');
+          toast.error(sonuc.mesaj || t('barkod.aramaBasarisiz'));
           setStokListesi([]);
         }
       }
     } catch (e: any) {
-      toast.error(`Stok araması sırasında bir hata oluştu.\n${e?.message ?? e}`);
+      toast.error(t('barkod.aramaHata', { detay: e?.message ?? e }));
       setStokListesi([]);
     } finally {
       setYukleniyor(false);
@@ -137,7 +139,7 @@ export default function BarkodEkleme() {
     if (!secilenStok) return;
     const barkod = barkodDeger.trim();
     if (!barkod) {
-      toast.warning('Lütfen bir barkod giriniz.');
+      toast.warning(t('barkod.barkodGir'));
       return;
     }
     setKaydediliyor(true);
@@ -156,19 +158,19 @@ export default function BarkodEkleme() {
         calisilanSirket
       );
       if (sonuc.sonuc) {
-        toast.success('Barkod başarıyla kaydedildi.');
+        toast.success(t('barkod.barkodKaydedildi'));
         setBarkodDeger('');
       } else {
-        toast.error(sonuc.mesaj || 'Barkod kaydedilemedi.');
+        toast.error(sonuc.mesaj || t('barkod.kaydedilemedi'));
       }
     } catch (e: any) {
-      toast.error(`Barkod kaydedilirken bir hata oluştu.\n${e?.message ?? e}`);
+      toast.error(t('barkod.kaydederkenHata', { detay: e?.message ?? e }));
     } finally {
       setKaydediliyor(false);
     }
   };
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? t('aramaTipi.iceren');
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -201,7 +203,7 @@ export default function BarkodEkleme() {
       <View style={[styles.ustBar, { backgroundColor: Colors.primary }]}>
         <View style={styles.ustBarBilgi}>
           <Ionicons name="barcode-outline" size={18} color={'#fff'} />
-          <Text style={styles.ustBarText}>Barkod Ekleme</Text>
+          <Text style={styles.ustBarText}>{t('barkod.baslik')}</Text>
         </View>
       </View>
 
@@ -216,7 +218,7 @@ export default function BarkodEkleme() {
         </TouchableOpacity>
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder={aramaTipi === 4 ? 'Barkod giriniz...' : 'Stok kodu veya ürün adı...'}
+          placeholder={aramaTipi === 4 ? t('barkod.barkodGiriniz') : t('barkod.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -271,9 +273,9 @@ export default function BarkodEkleme() {
 
       {/* Liste baslik */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CINS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 0.6, textAlign: 'right' }]}>BIRIM</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('barkod.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('barkod.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 0.6, textAlign: 'right' }]}>{t('barkod.birimHeader')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -296,8 +298,8 @@ export default function BarkodEkleme() {
           ) : (
             <EmptyState
               icon="search-outline"
-              baslik={aramaMetni.trim() ? 'Sonuç bulunamadı' : 'Ürün arayın'}
-              aciklama={aramaMetni.trim() ? 'Farklı bir arama kriteri deneyiniz' : 'Aramak için yukarıdaki arama çubuğunu kullanın'}
+              baslik={aramaMetni.trim() ? t('barkod.sonucBulunamadi') : t('barkod.urunArayin')}
+              aciklama={aramaMetni.trim() ? t('barkod.farkliKriter') : t('barkod.urunArayinAciklama')}
             />
           )
         }
@@ -330,21 +332,21 @@ export default function BarkodEkleme() {
             {/* Stok bilgileri */}
             <View style={[styles.stokDetayRow, { backgroundColor: Colors.background }]}>
               <View style={styles.stokDetayItem}>
-                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Stok Kodu</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>{t('barkod.stokKodu')}</Text>
                 <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{secilenStok?.stokKodu}</Text>
               </View>
               <View style={styles.stokDetayItem}>
-                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>Birim</Text>
+                <Text style={[styles.stokDetayLabel, { color: Colors.textSecondary }]}>{t('barkod.birim')}</Text>
                 <Text style={[styles.stokDetayDeger, { color: Colors.text }]}>{secilenStok?.birim2?.split(';')[0]?.trim() || secilenStok?.birim}</Text>
               </View>
             </View>
 
             {/* Barkod girme alani */}
-            <Text style={[styles.barkodLabel, { color: Colors.text }]}>Barkod</Text>
+            <Text style={[styles.barkodLabel, { color: Colors.text }]}>{t('barkod.barkodEtiket')}</Text>
             <View style={styles.barkodInputRow}>
               <TextInput
                 style={[styles.barkodInput, { borderColor: Colors.primary, color: Colors.text, backgroundColor: Colors.inputBackground }]}
-                placeholder="Barkod giriniz..."
+                placeholder={t('barkod.barkodGiriniz')}
                 placeholderTextColor={Colors.textSecondary}
                 value={barkodDeger}
                 onChangeText={setBarkodDeger}
@@ -371,7 +373,7 @@ export default function BarkodEkleme() {
               ) : (
                 <>
                   <Ionicons name="save-outline" size={20} color={'#fff'} />
-                  <Text style={styles.kaydetBtnText}>Kaydet</Text>
+                  <Text style={styles.kaydetBtnText}>{t('barkod.kaydet')}</Text>
                 </>
               )}
             </TouchableOpacity>

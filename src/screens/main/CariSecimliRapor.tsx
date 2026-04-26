@@ -13,6 +13,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../../store/appStore';
 import { cariListesiniAl } from '../../api/hizliIslemlerApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import type { CariKartBilgileri } from '../../models';
 import type { DrawerParamList } from '../../navigation/types';
@@ -22,6 +23,7 @@ type RoutePropType = RouteProp<DrawerParamList, 'CariSecimliRapor'>;
 
 export default function CariSecimliRapor() {
   const Colors = useColors();
+  const t = useT();
   const route = useRoute<RoutePropType>();
   const navigation = useNavigation<any>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
@@ -44,10 +46,10 @@ export default function CariSecimliRapor() {
         if (sonuc.sonuc) {
           setListe(sonuc.data ?? []);
         } else {
-          toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+          toast.error(sonuc.mesaj || t('bakiye.cariListesiAlinamadi'));
         }
       } catch (err: any) {
-        toast.error(err.message || 'Cari listesi yüklenirken hata oluştu.');
+        toast.error(err.message || t('bakiye.cariListesiHata'));
       } finally {
         setYukleniyor(false);
       }
@@ -71,7 +73,7 @@ export default function CariSecimliRapor() {
       parametre1: cari.cariKodu,
       parametre2: '',
       parametre3: '',
-      baslik: `${baslik ?? 'Rapor'} - ${cari.cariUnvan}`,
+      baslik: `${baslik ?? t('raporListe.raporVarsayilan')} - ${cari.cariUnvan}`,
     });
   };
 
@@ -79,7 +81,7 @@ export default function CariSecimliRapor() {
     return (
       <View style={[styles.merkez, { backgroundColor: Colors.background }]}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
+        <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>{t('raporListe.yukleniyor')}</Text>
       </View>
     );
   }
@@ -90,7 +92,7 @@ export default function CariSecimliRapor() {
         <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari kodu veya unvan ara..."
+          placeholder={t('bakiye.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={arama}
           onChangeText={setArama}
@@ -104,7 +106,7 @@ export default function CariSecimliRapor() {
 
       <View style={[styles.bilgiRow, { backgroundColor: Colors.inputBackground }]}>
         <Ionicons name="information-circle-outline" size={16} color={Colors.accent} />
-        <Text style={[styles.bilgiText, { color: Colors.text }]}>Rapor görmek istediğiniz cariyi seçin</Text>
+        <Text style={[styles.bilgiText, { color: Colors.text }]}>{t('raporListe.cariSecRaporIcin')}</Text>
       </View>
 
       <FlatList
@@ -122,7 +124,7 @@ export default function CariSecimliRapor() {
         ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <EmptyState icon="people-outline" baslik="Cari bulunamadı" aciklama="Arama kriterlerine uygun cari bulunmamaktadır" />
+          <EmptyState icon="people-outline" baslik={t('raporListe.cariBulunamadi')} aciklama={t('raporListe.cariBulunamadiAciklama')} />
         }
       />
     </View>

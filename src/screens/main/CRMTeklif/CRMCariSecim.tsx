@@ -24,6 +24,7 @@ import { cariListesiniAl } from '../../../api/hizliIslemlerApi';
 import { crmMusteriListesiniOku, crmMusterisiniKaydet } from '../../../api/crmTeklifApi';
 import type { CariKartBilgileri, CRMMusteriBilgileri, CariEvrak } from '../../../models';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useT } from '../../../i18n/I18nContext';
 import { paraTL } from '../../../utils/format';
 import EmptyState from '../../../components/EmptyState';
 import SkeletonLoader from '../../../components/SkeletonLoader';
@@ -34,32 +35,33 @@ import { toast } from '../../../components/Toast';
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<RootStackParamList, 'CRMCariSecim'>;
 
-const FORM_ALANLARI: {
-  alan: keyof CariEvrak;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  keyboard?: 'phone-pad' | 'email-address' | 'numeric';
-}[] = [
-  { alan: 'cariKodu', label: 'Müşteri Kodu *', icon: 'barcode-outline' },
-  { alan: 'cariUnvan', label: 'Müşteri Unvanı *', icon: 'business-outline' },
-  { alan: 'yetkili', label: 'Yetkili', icon: 'person-outline' },
-  { alan: 'telefon1', label: 'Telefon', icon: 'call-outline', keyboard: 'phone-pad' },
-  { alan: 'eposta1', label: 'E-Posta', icon: 'mail-outline', keyboard: 'email-address' },
-  { alan: 'vergiDairesi', label: 'Vergi Dairesi', icon: 'reader-outline' },
-  { alan: 'vergiNumarasi', label: 'Vergi Numarası', icon: 'document-text-outline' },
-  { alan: 'tcKimlikNo', label: 'TC Kimlik No', icon: 'id-card-outline', keyboard: 'numeric' },
-  { alan: 'adres1', label: 'Adres 1', icon: 'location-outline' },
-  { alan: 'adres2', label: 'Adres 2', icon: 'location-outline' },
-  { alan: 'il', label: 'İl', icon: 'map-outline' },
-  { alan: 'ilce', label: 'İlçe', icon: 'navigate-outline' },
-  { alan: 'ulke', label: 'Ülke', icon: 'globe-outline' },
-];
-
 export default function CRMCariSecim() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+
+  const FORM_ALANLARI: {
+    alan: keyof CariEvrak;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    keyboard?: 'phone-pad' | 'email-address' | 'numeric';
+  }[] = [
+    { alan: 'cariKodu', label: t('crmTeklif.formMusteriKodu'), icon: 'barcode-outline' },
+    { alan: 'cariUnvan', label: t('crmTeklif.formMusteriUnvani'), icon: 'business-outline' },
+    { alan: 'yetkili', label: t('crmTeklif.formYetkili'), icon: 'person-outline' },
+    { alan: 'telefon1', label: t('crmTeklif.formTelefon'), icon: 'call-outline', keyboard: 'phone-pad' },
+    { alan: 'eposta1', label: t('crmTeklif.formEPosta'), icon: 'mail-outline', keyboard: 'email-address' },
+    { alan: 'vergiDairesi', label: t('crmTeklif.formVergiDairesi'), icon: 'reader-outline' },
+    { alan: 'vergiNumarasi', label: t('crmTeklif.formVergiNumarasi'), icon: 'document-text-outline' },
+    { alan: 'tcKimlikNo', label: t('crmTeklif.formTcKimlik'), icon: 'id-card-outline', keyboard: 'numeric' },
+    { alan: 'adres1', label: t('crmTeklif.formAdres1'), icon: 'location-outline' },
+    { alan: 'adres2', label: t('crmTeklif.formAdres2'), icon: 'location-outline' },
+    { alan: 'il', label: t('crmTeklif.formIl'), icon: 'map-outline' },
+    { alan: 'ilce', label: t('crmTeklif.formIlce'), icon: 'navigate-outline' },
+    { alan: 'ulke', label: t('crmTeklif.formUlke'), icon: 'globe-outline' },
+  ];
 
   const [sekme, setSekme] = useState<'cariler' | 'potansiyel'>('cariler');
   const [aramaMetni, setAramaMetni] = useState('');
@@ -77,27 +79,27 @@ export default function CRMCariSecim() {
 
   const yeniMusteriKaydet = async () => {
     if (!yeniMusteri.cariKodu.trim()) {
-      toast.warning('Müşteri kodu boş bırakılamaz.');
+      toast.warning(t('crmTeklif.musteriKoduBos'));
       return;
     }
     if (!yeniMusteri.cariUnvan.trim()) {
-      toast.warning('Müşteri unvanı boş bırakılamaz.');
+      toast.warning(t('crmTeklif.musteriUnvaniBos'));
       return;
     }
     setKayitYapiliyor(true);
     try {
       const sonuc = await crmMusterisiniKaydet(yeniMusteri, calisilanSirket);
       if (sonuc.sonuc) {
-        toast.success(sonuc.mesaj || 'Müşteri kaydedildi.');
+        toast.success(sonuc.mesaj || t('crmTeklif.musteriKaydedildi'));
         setYeniModalGoster(false);
         setYeniMusteri({ ...bosCariEvrak });
         // Potansiyel listesini yenile
         crmMusteriYukle();
       } else {
-        toast.error(sonuc.mesaj || 'Müşteri kaydedilemedi.');
+        toast.error(sonuc.mesaj || t('crmTeklif.musteriKaydedilemedi'));
       }
     } catch {
-      toast.error('Müşteri kaydedilirken bir hata oluştu.');
+      toast.error(t('crmTeklif.musteriKayitHata'));
     } finally {
       setKayitYapiliyor(false);
     }
@@ -116,7 +118,7 @@ export default function CRMCariSecim() {
           }}
         >
           <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.headerYeniText}>Yeni</Text>
+          <Text style={styles.headerYeniText}>{t('crmTeklif.yeniBtn')}</Text>
         </TouchableOpacity>
       ),
     });
@@ -138,10 +140,10 @@ export default function CRMCariSecim() {
       if (sonuc.sonuc) {
         setCariListesi(sonuc.data);
       } else {
-        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('crmTeklif.cariListesiAlinamadi'));
       }
     } catch {
-      toast.error('Cari listesi yüklenirken bir hata oluştu.');
+      toast.error(t('crmTeklif.cariListesiHata'));
     } finally {
       setCariYukleniyor(false);
     }
@@ -172,10 +174,10 @@ export default function CRMCariSecim() {
       if (sonuc.sonuc) {
         setCrmMusteriListesi(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'CRM müşteri listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('crmTeklif.crmListesiAlinamadi'));
       }
     } catch {
-      toast.error('CRM müşteri listesi yüklenirken bir hata oluştu.');
+      toast.error(t('crmTeklif.crmListesiHata'));
     } finally {
       setCrmYukleniyor(false);
     }
@@ -213,20 +215,20 @@ export default function CRMCariSecim() {
 
     if (revizyonModu) {
       Alert.alert(
-        'Revizyondan Çık',
-        'Cariyi değiştirirseniz bu revizyon bağlantısı kesilir ve yeni bir teklif olarak kaydedilir. Emin misiniz?',
+        t('crmTeklif.revizyondanCik'),
+        t('crmTeklif.revizyondanCikMesaj'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Evet, Devam Et', style: 'destructive', onPress: onayla },
+          { text: t('crmTeklif.vazgec'), style: 'cancel' },
+          { text: t('crmTeklif.evetDevam'), style: 'destructive', onPress: onayla },
         ]
       );
     } else if (sepetDolu) {
       Alert.alert(
-        'Cari Değiştir',
-        'Sepette ürünler var. Cariyi değiştirmek istediğinize emin misiniz?',
+        t('crmTeklif.cariDegistir'),
+        t('crmTeklif.cariDegistirMesaj'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Değiştir', style: 'destructive', onPress: onayla },
+          { text: t('crmTeklif.vazgec'), style: 'cancel' },
+          { text: t('crmTeklif.degistir'), style: 'destructive', onPress: onayla },
         ]
       );
     } else {
@@ -294,14 +296,14 @@ export default function CRMCariSecim() {
           onPress={() => setSekme('cariler')}
         >
           <Ionicons name="person-outline" size={16} color={sekme === 'cariler' ? Colors.primary : Colors.textSecondary} />
-          <Text style={[styles.sekmeText, { color: Colors.textSecondary }, sekme === 'cariler' && { color: Colors.primary }]}>Cariler</Text>
+          <Text style={[styles.sekmeText, { color: Colors.textSecondary }, sekme === 'cariler' && { color: Colors.primary }]}>{t('crmTeklif.cariler')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.sekmeBtn, sekme === 'potansiyel' && { borderBottomColor: Colors.primary }]}
           onPress={() => setSekme('potansiyel')}
         >
           <Ionicons name="people-outline" size={16} color={sekme === 'potansiyel' ? Colors.primary : Colors.textSecondary} />
-          <Text style={[styles.sekmeText, { color: Colors.textSecondary }, sekme === 'potansiyel' && { color: Colors.primary }]}>Potansiyel Cariler</Text>
+          <Text style={[styles.sekmeText, { color: Colors.textSecondary }, sekme === 'potansiyel' && { color: Colors.primary }]}>{t('crmTeklif.potansiyelCariler')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -310,7 +312,7 @@ export default function CRMCariSecim() {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder={sekme === 'cariler' ? 'Cari kodu veya unvan filtrele...' : 'Müşteri kodu veya unvan filtrele...'}
+          placeholder={sekme === 'cariler' ? t('crmTeklif.cariFiltrePlaceholder') : t('crmTeklif.musteriFiltrePlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -338,8 +340,8 @@ export default function CRMCariSecim() {
           ListEmptyComponent={
             <EmptyState
               icon="people-outline"
-              baslik={aramaMetni ? 'Eşleşen cari bulunamadı' : 'Cari listesi boş'}
-              aciklama={aramaMetni ? 'Farklı bir arama kriteri deneyiniz' : 'Kayıtlı cari bulunmamaktadır'}
+              baslik={aramaMetni ? t('crmTeklif.eslesenCariYok') : t('crmTeklif.cariListesiBos')}
+              aciklama={aramaMetni ? t('crmTeklif.farkliKriter') : t('crmTeklif.kayitliCariYok')}
             />
           }
         />
@@ -355,8 +357,8 @@ export default function CRMCariSecim() {
           ListEmptyComponent={
             <EmptyState
               icon="people-outline"
-              baslik={aramaMetni ? 'Eşleşen müşteri bulunamadı' : 'Potansiyel müşteri listesi boş'}
-              aciklama={aramaMetni ? 'Farklı bir arama kriteri deneyiniz' : 'Kayıtlı CRM müşterisi bulunmamaktadır'}
+              baslik={aramaMetni ? t('crmTeklif.eslesenMusteriYok') : t('crmTeklif.potansiyelListeBos')}
+              aciklama={aramaMetni ? t('crmTeklif.farkliKriter') : t('crmTeklif.kayitliCrmYok')}
             />
           }
         />
@@ -375,7 +377,7 @@ export default function CRMCariSecim() {
         >
           <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
             <View style={[styles.modalBaslik, { borderBottomColor: Colors.border }]}>
-              <Text style={[styles.modalBaslikText, { color: Colors.text }]}>Yeni Potansiyel Müşteri</Text>
+              <Text style={[styles.modalBaslikText, { color: Colors.text }]}>{t('crmTeklif.yeniMusteriBaslik')}</Text>
               <TouchableOpacity onPress={() => setYeniModalGoster(false)}>
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
@@ -402,7 +404,7 @@ export default function CRMCariSecim() {
                 style={[styles.iptalButon, { borderColor: Colors.border }]}
                 onPress={() => setYeniModalGoster(false)}
               >
-                <Text style={[styles.iptalText, { color: Colors.text }]}>İptal</Text>
+                <Text style={[styles.iptalText, { color: Colors.text }]}>{t('crmTeklif.iptal')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.kaydetButon, { backgroundColor: Colors.primary }, kayitYapiliyor && { opacity: 0.6 }]}
@@ -414,7 +416,7 @@ export default function CRMCariSecim() {
                 ) : (
                   <>
                     <Ionicons name="checkmark" size={20} color="#fff" />
-                    <Text style={styles.kaydetText}>Kaydet</Text>
+                    <Text style={styles.kaydetText}>{t('crmTeklif.kaydet')}</Text>
                   </>
                 )}
               </TouchableOpacity>

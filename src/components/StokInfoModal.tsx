@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stokEkBilgileriAl, sonSatisFiyatlariniAl } from '../api/hizliIslemlerApi';
 import type { StokKartEkBilgileri, SonSatisFiyatBilgileri } from '../models';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 import { paraFormat, miktarFormat } from '../utils/format';
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 
 export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cariKodu, onClose }: Props) {
   const Colors = useColors();
+  const t = useT();
   const [yukleniyor, setYukleniyor] = useState(false);
   const [bilgi, setBilgi] = useState<StokKartEkBilgileri | null>(null);
   const [hata, setHata] = useState<string | null>(null);
@@ -44,10 +46,10 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
         if (sonuc.sonuc && sonuc.data) {
           setBilgi(sonuc.data);
         } else {
-          setHata(sonuc.mesaj || 'Bilgi alinamadi.');
+          setHata(sonuc.mesaj || t('modal.bilgiAlinamadi'));
         }
       })
-      .catch(() => setHata('Baglanti hatasi.'))
+      .catch(() => setHata(t('common.baglantiHatasi')))
       .finally(() => setYukleniyor(false));
   }, [stokKodu]);
 
@@ -62,10 +64,10 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
       if (sonuc.sonuc && sonuc.data) {
         setFiyatListesi(sonuc.data);
       } else {
-        setFiyatHata(sonuc.mesaj || 'Fiyat bilgisi alinamadi.');
+        setFiyatHata(sonuc.mesaj || t('modal.fiyatBilgisiAlinamadi'));
       }
     } catch {
-      setFiyatHata('Baglanti hatasi.');
+      setFiyatHata(t('common.baglantiHatasi'));
     } finally {
       setFiyatYukleniyor(false);
     }
@@ -95,7 +97,7 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
           {yukleniyor ? (
             <View style={styles.merkezle}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Bilgiler yukleniyor...</Text>
+              <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>{t('modal.bilgilerYukleniyor')}</Text>
             </View>
           ) : hata ? (
             <View style={styles.merkezle}>
@@ -105,7 +107,7 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
           ) : bilgi ? (
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Genel Bakiye */}
-              <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Bakiye Bilgileri</Text>
+              <Text style={[styles.bolumBaslik, { color: Colors.text }]}>{t('modal.bakiyeBilgileri')}</Text>
               <View style={[styles.bilgiKart, { backgroundColor: Colors.inputBackground }]}>
                 <SatirItem etiket="Bakiye" deger={bilgi.skbb.bakiye} colors={Colors} />
                 <SatirItem etiket="Muhtemel Bakiye" deger={bilgi.skbb.muhtemelBakiye} colors={Colors} />
@@ -121,7 +123,7 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
               {/* Depo Bazli Bakiyeler */}
               {bilgi.skdbbListe.length > 0 && (
                 <>
-                  <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Depo Bakiyeleri</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.text }]}>{t('modal.depoBakiyeleri')}</Text>
                   <View style={[styles.bilgiKart, { backgroundColor: Colors.inputBackground }]}>
                     {bilgi.skdbbListe.map((d, i) => (
                       <View key={i} style={[styles.satir, i < bilgi.skdbbListe.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border }]}>
@@ -145,7 +147,7 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
       <Modal visible={fiyatModalAcik} animationType="fade" transparent onRequestClose={() => setFiyatModalAcik(false)}>
         <View style={styles.fiyatOverlay}>
           <View style={[styles.fiyatKart, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.fiyatBaslikText, { color: Colors.text }]}>Son Satış Fiyatları</Text>
+            <Text style={[styles.fiyatBaslikText, { color: Colors.text }]}>{t('modal.sonSatisFiyatlari')}</Text>
             <Text style={[styles.fiyatAltBaslik, { color: Colors.textSecondary }]} numberOfLines={1}>{stokCinsi}</Text>
 
             {fiyatYukleniyor ? (
@@ -160,14 +162,14 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
             ) : fiyatListesi.length === 0 ? (
               <View style={styles.fiyatMerkez}>
                 <Ionicons name="pricetags-outline" size={40} color={Colors.textSecondary} />
-                <Text style={[styles.fiyatMerkezText, { color: Colors.textSecondary }]}>Son satış fiyatı bulunamadı.</Text>
+                <Text style={[styles.fiyatMerkezText, { color: Colors.textSecondary }]}>{t('modal.sonSatisYok')}</Text>
               </View>
             ) : (
               <>
                 <View style={[styles.fiyatKolonBaslik, { borderBottomColor: Colors.border }]}>
-                  <Text style={[styles.fiyatKolonText, { color: Colors.primary }]}>Tarih</Text>
-                  <Text style={[styles.fiyatKolonText, styles.fiyatMerkezHizala, { color: Colors.primary }]}>Miktar</Text>
-                  <Text style={[styles.fiyatKolonText, styles.fiyatSagHizala, { color: Colors.primary }]}>Fiyat</Text>
+                  <Text style={[styles.fiyatKolonText, { color: Colors.primary }]}>{t('modal.tarih')}</Text>
+                  <Text style={[styles.fiyatKolonText, styles.fiyatMerkezHizala, { color: Colors.primary }]}>{t('common.miktar')}</Text>
+                  <Text style={[styles.fiyatKolonText, styles.fiyatSagHizala, { color: Colors.primary }]}>{t('common.fiyat')}</Text>
                 </View>
                 <ScrollView showsVerticalScrollIndicator={false} style={styles.fiyatScrollView}>
                   {fiyatListesi.map((f, i) => (
@@ -185,7 +187,7 @@ export default function StokInfoModal({ stokKodu, stokCinsi, veriTabaniAdi, cari
               style={[styles.fiyatVazgecBtn, { backgroundColor: Colors.primary }]}
               onPress={() => setFiyatModalAcik(false)}
             >
-              <Text style={styles.fiyatVazgecText}>Vazgeç</Text>
+              <Text style={styles.fiyatVazgecText}>{t('common.vazgec')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -19,6 +19,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { useColors, useTheme } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
@@ -42,6 +43,7 @@ type Props = {
 export default function LoginSayfasi({ navigation }: Props) {
   const Colors = useColors();
   const { isDark } = useTheme();
+  const t = useT();
   const [kullaniciKodu, setKullaniciKodu] = useState('');
   const [sifre, setSifre] = useState('');
   const [sifreGoster, setSifreGoster] = useState(false);
@@ -105,11 +107,11 @@ export default function LoginSayfasi({ navigation }: Props) {
 
   const handleGiris = async () => {
     if (!kullaniciKodu.trim()) {
-      setHata('Kullanıcı kodu giriniz.');
+      setHata(t('login.kullaniciKoduGir'));
       return;
     }
     if (!sifre.trim()) {
-      setHata('Şifre giriniz.');
+      setHata(t('login.sifreGir'));
       return;
     }
 
@@ -125,7 +127,10 @@ export default function LoginSayfasi({ navigation }: Props) {
 
       if (versiyonBilgi?.versiyonTipi !== Config.BEKLENEN_SUNUCU_VERSIYONU) {
         setHata(
-          `Sunucu versiyonu uyumsuz. Beklenen: ${Config.BEKLENEN_SUNUCU_VERSIYONU}, dönen: ${versiyonBilgi?.versiyonTipi ?? 'yok'}.`,
+          t('login.sunucuVersiyonUyumsuz', {
+            beklenen: Config.BEKLENEN_SUNUCU_VERSIYONU,
+            donen: versiyonBilgi?.versiyonTipi ?? '-',
+          }),
         );
         return;
       }
@@ -134,18 +139,18 @@ export default function LoginSayfasi({ navigation }: Props) {
 
       if (!versiyonSonuc.sonuc) {
         if (versiyonBilgi.kalanGunSayisi <= 0) {
-          toast.error('Lisansınızın süresi dolmuştur. Lütfen yenileyin.');
+          toast.error(t('login.lisansBitti'));
           return;
         }
         if (versiyonBilgi.kalanGunSayisi <= 10) {
-          toast.warning(`Lisansınızın bitmesine ${versiyonBilgi.kalanGunSayisi} gün kaldı.`);
+          toast.warning(t('login.lisansBitiyor', { gun: versiyonBilgi.kalanGunSayisi }));
         }
       }
 
       // 1. Yetki bilgilerini al
       const yetkiSonuc = await yetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi);
       if (!yetkiSonuc.sonuc) {
-        setHata(yetkiSonuc.mesaj || 'Kullanıcı adı veya şifre hatalı.');
+        setHata(yetkiSonuc.mesaj || t('login.hataliBilgi'));
         return;
       }
       setYetkiBilgileri(yetkiSonuc.data);
@@ -235,7 +240,7 @@ export default function LoginSayfasi({ navigation }: Props) {
       const sunucuMesaj = sunucuData && typeof sunucuData === 'object' && 'mesaj' in sunucuData
         ? (sunucuData as { mesaj: string }).mesaj
         : null;
-      const mesaj = sunucuMesaj || axiosErr?.message || 'Bir hata oluştu.';
+      const mesaj = sunucuMesaj || axiosErr?.message || t('login.birHataOlustu');
       const statusPrefix = axiosErr?.response?.status ? `[${axiosErr.response.status}] ` : '';
       setHata(`${statusPrefix}${mesaj}`);
     } finally {
@@ -275,14 +280,14 @@ export default function LoginSayfasi({ navigation }: Props) {
 
           {/* Kullanıcı Kodu */}
           <View style={styles.fieldContainer}>
-            <Text style={[styles.label, { color: Colors.primary }]}>Kullanıcı kodu</Text>
+            <Text style={[styles.label, { color: Colors.primary }]}>{t('login.kullaniciKodu')}</Text>
             <View style={[styles.inputWrapper, { backgroundColor: Colors.inputBackground, borderColor: Colors.border }]}>
               <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: Colors.text }]}
                 value={kullaniciKodu}
                 onChangeText={setKullaniciKodu}
-                placeholder="Kullanıcı kodunuzu girin"
+                placeholder={t('login.kullaniciKoduPlaceholder')}
                 placeholderTextColor={Colors.textSecondary}
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -293,14 +298,14 @@ export default function LoginSayfasi({ navigation }: Props) {
 
           {/* Şifre */}
           <View style={styles.fieldContainer}>
-            <Text style={[styles.label, { color: Colors.primary }]}>Şifre</Text>
+            <Text style={[styles.label, { color: Colors.primary }]}>{t('login.sifre')}</Text>
             <View style={[styles.inputWrapper, { backgroundColor: Colors.inputBackground, borderColor: Colors.border }]}>
               <Ionicons name="lock-closed-outline" size={18} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, styles.flex, { color: Colors.text }]}
                 value={sifre}
                 onChangeText={setSifre}
-                placeholder="Şifrenizi girin"
+                placeholder={t('login.sifrePlaceholder')}
                 placeholderTextColor={Colors.textSecondary}
                 secureTextEntry={!sifreGoster}
                 autoCorrect={false}
@@ -329,7 +334,7 @@ export default function LoginSayfasi({ navigation }: Props) {
               thumbColor={Colors.white}
               ios_backgroundColor={Colors.border}
             />
-            <Text style={[styles.rememberText, { color: Colors.textSecondary }]}>Beni hatırla</Text>
+            <Text style={[styles.rememberText, { color: Colors.textSecondary }]}>{t('login.beniHatirla')}</Text>
           </View>
 
           {/* Hata Mesajı */}
@@ -342,7 +347,7 @@ export default function LoginSayfasi({ navigation }: Props) {
 
           {/* Giriş Butonu */}
           <ThemedButton
-            baslik="Giriş yap"
+            baslik={t('login.giris')}
             onPress={handleGiris}
             yukleniyor={yukleniyor}
             style={styles.loginButton}
@@ -355,12 +360,12 @@ export default function LoginSayfasi({ navigation }: Props) {
             activeOpacity={0.6}
           >
             <Ionicons name="chevron-down-outline" size={14} color={Colors.textSecondary} />
-            <Text style={[styles.settingsText, { color: Colors.textSecondary }]}>Bağlantı ayarları</Text>
+            <Text style={[styles.settingsText, { color: Colors.textSecondary }]}>{t('login.baglantiAyarlari')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <LoadingIndicator visible={yukleniyor} mesaj="Giriş yapılıyor..." />
+      <LoadingIndicator visible={yukleniyor} mesaj={t('login.girisYapiliyor')} />
     </SafeAreaView>
   );
 }

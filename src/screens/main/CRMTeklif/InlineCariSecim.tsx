@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../../store/appStore';
 import { cariListesiniAl } from '../../../api/hizliIslemlerApi';
 import { Colors } from '../../../constants/Colors';
+import { useT } from '../../../i18n/I18nContext';
 import { paraTL } from '../../../utils/format';
 import type { CariKartBilgileri, CariEvrak } from '../../../models';
 import EmptyState from '../../../components/EmptyState';
@@ -30,30 +31,31 @@ interface Props {
   sepetDolu: boolean;
 }
 
-const FORM_ALANLARI: {
-  alan: keyof CariEvrak;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  keyboard?: 'phone-pad' | 'email-address' | 'numeric';
-}[] = [
-  { alan: 'cariKodu', label: 'Cari Kodu *', icon: 'barcode-outline' },
-  { alan: 'cariUnvan', label: 'Cari Unvan *', icon: 'business-outline' },
-  { alan: 'yetkili', label: 'Yetkili', icon: 'person-outline' },
-  { alan: 'telefon1', label: 'Telefon', icon: 'call-outline', keyboard: 'phone-pad' },
-  { alan: 'eposta1', label: 'E-Posta', icon: 'mail-outline', keyboard: 'email-address' },
-  { alan: 'vergiDairesi', label: 'Vergi Dairesi', icon: 'reader-outline' },
-  { alan: 'vergiNumarasi', label: 'Vergi Numarası', icon: 'document-text-outline' },
-  { alan: 'tcKimlikNo', label: 'TC Kimlik No', icon: 'id-card-outline', keyboard: 'numeric' },
-  { alan: 'adres1', label: 'Adres 1', icon: 'location-outline' },
-  { alan: 'adres2', label: 'Adres 2', icon: 'location-outline' },
-  { alan: 'il', label: 'İl', icon: 'map-outline' },
-  { alan: 'ilce', label: 'İlçe', icon: 'navigate-outline' },
-  { alan: 'ulke', label: 'Ülke', icon: 'globe-outline' },
-  { alan: 'postaKodu', label: 'Posta Kodu', icon: 'mail-open-outline' },
-];
-
 export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: Props) {
+  const t = useT();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+
+  const FORM_ALANLARI: {
+    alan: keyof CariEvrak;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    keyboard?: 'phone-pad' | 'email-address' | 'numeric';
+  }[] = [
+    { alan: 'cariKodu', label: t('crmTeklif.formCariKodu'), icon: 'barcode-outline' },
+    { alan: 'cariUnvan', label: t('crmTeklif.formCariUnvan'), icon: 'business-outline' },
+    { alan: 'yetkili', label: t('crmTeklif.formYetkili'), icon: 'person-outline' },
+    { alan: 'telefon1', label: t('crmTeklif.formTelefon'), icon: 'call-outline', keyboard: 'phone-pad' },
+    { alan: 'eposta1', label: t('crmTeklif.formEPosta'), icon: 'mail-outline', keyboard: 'email-address' },
+    { alan: 'vergiDairesi', label: t('crmTeklif.formVergiDairesi'), icon: 'reader-outline' },
+    { alan: 'vergiNumarasi', label: t('crmTeklif.formVergiNumarasi'), icon: 'document-text-outline' },
+    { alan: 'tcKimlikNo', label: t('crmTeklif.formTcKimlik'), icon: 'id-card-outline', keyboard: 'numeric' },
+    { alan: 'adres1', label: t('crmTeklif.formAdres1'), icon: 'location-outline' },
+    { alan: 'adres2', label: t('crmTeklif.formAdres2'), icon: 'location-outline' },
+    { alan: 'il', label: t('crmTeklif.formIl'), icon: 'map-outline' },
+    { alan: 'ilce', label: t('crmTeklif.formIlce'), icon: 'navigate-outline' },
+    { alan: 'ulke', label: t('crmTeklif.formUlke'), icon: 'globe-outline' },
+    { alan: 'postaKodu', label: t('crmTeklif.formPostaKodu'), icon: 'mail-open-outline' },
+  ];
 
   const [genisletilmis, setGenisletilmis] = useState(!secilenCari);
   const [sekme, setSekme] = useState<'cari' | 'potansiyel'>('cari');
@@ -90,10 +92,10 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
       if (sonuc.sonuc) {
         setTumCariListesi(sonuc.data);
       } else {
-        toast.error(sonuc.mesaj || 'Cari listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('crmTeklif.cariListesiAlinamadi'));
       }
     } catch {
-      toast.error('Cari listesi yüklenirken bir hata oluştu.');
+      toast.error(t('crmTeklif.cariListesiHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -121,11 +123,11 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
     };
     if (sepetDolu) {
       Alert.alert(
-        'Cari Değiştir',
-        'Sepette ürünler var. Cariyi değiştirmek istediğinize emin misiniz?',
+        t('crmTeklif.cariDegistir'),
+        t('crmTeklif.cariDegistirMesaj'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Değiştir', style: 'destructive', onPress: onayla },
+          { text: t('crmTeklif.vazgec'), style: 'cancel' },
+          { text: t('crmTeklif.degistir'), style: 'destructive', onPress: onayla },
         ]
       );
     } else {
@@ -135,11 +137,11 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
 
   const potansiyelCariSec = () => {
     if (!potansiyelForm.cariKodu.trim()) {
-      toast.warning('Cari kodu boş bırakılamaz.');
+      toast.warning(t('crmTeklif.cariKoduBos'));
       return;
     }
     if (!potansiyelForm.cariUnvan.trim()) {
-      toast.warning('Cari unvan boş bırakılamaz.');
+      toast.warning(t('crmTeklif.cariUnvanBos'));
       return;
     }
     const cari: CariKartBilgileri = {
@@ -162,7 +164,7 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
           onPress={() => setGenisletilmis(true)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.degistirText}>Değiştir</Text>
+          <Text style={styles.degistirText}>{t('crmTeklif.degistirBtn')}</Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -176,13 +178,13 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
           style={[styles.sekmeBtn, sekme === 'cari' && styles.sekmeBtnAktif]}
           onPress={() => setSekme('cari')}
         >
-          <Text style={[styles.sekmeText, sekme === 'cari' && styles.sekmeTextAktif]}>Cari Kart</Text>
+          <Text style={[styles.sekmeText, sekme === 'cari' && styles.sekmeTextAktif]}>{t('crmTeklif.cariKart')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.sekmeBtn, sekme === 'potansiyel' && styles.sekmeBtnAktif]}
           onPress={() => setSekme('potansiyel')}
         >
-          <Text style={[styles.sekmeText, sekme === 'potansiyel' && styles.sekmeTextAktif]}>Potansiyel Cari</Text>
+          <Text style={[styles.sekmeText, sekme === 'potansiyel' && styles.sekmeTextAktif]}>{t('crmTeklif.potansiyelCari')}</Text>
         </TouchableOpacity>
         {secilenCari && (
           <TouchableOpacity
@@ -202,7 +204,7 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
             <Ionicons name="search-outline" size={18} color={Colors.gray} />
             <TextInput
               style={styles.aramaInput}
-              placeholder="Cari kodu veya unvan filtrele..."
+              placeholder={t('crmTeklif.cariFiltrePlaceholder')}
               placeholderTextColor={Colors.gray}
               value={aramaMetni}
               onChangeText={setAramaMetni}
@@ -247,8 +249,8 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
               ListEmptyComponent={
                 <EmptyState
                   icon="people-outline"
-                  baslik={aramaMetni ? 'Eşleşen cari bulunamadı' : 'Cari listesi boş'}
-                  aciklama={aramaMetni ? 'Farklı bir arama kriteri deneyiniz' : ''}
+                  baslik={aramaMetni ? t('crmTeklif.eslesenCariYok') : t('crmTeklif.cariListesiBos')}
+                  aciklama={aramaMetni ? t('crmTeklif.farkliKriter') : ''}
                 />
               }
             />
@@ -276,7 +278,7 @@ export default function InlineCariSecim({ secilenCari, onCariSec, sepetDolu }: P
             ))}
             <TouchableOpacity style={styles.potansiyelSecBtn} onPress={potansiyelCariSec}>
               <Ionicons name="checkmark" size={20} color={Colors.white} />
-              <Text style={styles.potansiyelSecText}>Seç</Text>
+              <Text style={styles.potansiyelSecText}>{t('crmTeklif.sec')}</Text>
             </TouchableOpacity>
             <View style={{ height: 16 }} />
           </ScrollView>

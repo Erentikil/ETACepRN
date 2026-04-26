@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors, useTheme } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { Config } from '../../constants/Config';
 import { useAppStore } from '../../store/appStore';
 
 export default function Hakkinda() {
   const Colors = useColors();
+  const t = useT();
   const { isDark } = useTheme();
   const { versiyon: versiyonBilgi } = useAppStore();
 
@@ -103,7 +105,7 @@ export default function Hakkinda() {
 
       {/* Versiyon */}
       <Text style={[styles.versiyon, { color: Colors.error }]}>
-        ETA Mobil Ver:{versiyon}
+        {t('hakkinda.versiyon')}:{versiyon}
       </Text>
     </ScrollView>
   );

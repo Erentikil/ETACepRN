@@ -13,6 +13,7 @@ import { depoKartlariniAl } from '../api/hizliIslemlerApi';
 import { useAppStore } from '../store/appStore';
 import type { FisTipiItem, DepoKarti } from '../models';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DropdownSecim from './DropdownSecim';
 
@@ -51,6 +52,7 @@ export default function FisTipiDepoSecimModal({
   onClose,
 }: Props) {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const { ftBaslikListesi } = useAppStore();
 
@@ -119,7 +121,7 @@ export default function FisTipiDepoSecimModal({
           {/* Baslik */}
           <View style={styles.baslik}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.baslikUst, { color: Colors.textSecondary }]}>Evrak Ayarlari</Text>
+              <Text style={[styles.baslikUst, { color: Colors.textSecondary }]}>{t('modal.evrakAyarlari')}</Text>
               <Text style={[styles.baslikAlt, { color: Colors.primary }]}>{evrakLabel}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.kapatBtn}>
@@ -130,20 +132,20 @@ export default function FisTipiDepoSecimModal({
           {yukleniyor ? (
             <View style={styles.yukleniyorKap}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>Yukleniyor...</Text>
+              <Text style={[styles.yukleniyorText, { color: Colors.textSecondary }]}>{t('common.yukleniyor')}</Text>
             </View>
           ) : (
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled>
               {/* Fis Tipi */}
               {fisTipleri.length > 0 && (
                 <View style={[styles.satirGrup, fisTipiReadOnly && styles.readOnlyGrup]}>
-                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>FIS TIPI</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>{t('modal.fisTipi')}</Text>
                   {fisTipiReadOnly ? (
                     <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
                       <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)
                           ? `${seciliFisTipiKodu} - ${fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)!.fisTipiAdi}`
-                          : 'Fis tipi secilmedi'}
+                          : t('modal.fisTipiSecilmedi')}
                       </Text>
                     </View>
                   ) : (
@@ -153,7 +155,7 @@ export default function FisTipiDepoSecimModal({
                         label: `${ft.fisTipiKodu} - ${ft.fisTipiAdi}`,
                         value: String(ft.fisTipiKodu),
                       }))}
-                      placeholder="Fis tipi seciniz..."
+                      placeholder={t('modal.fisTipiSeciniz')}
                       onChange={setSeciliFisTipiKodu}
                     />
                   )}
@@ -163,13 +165,13 @@ export default function FisTipiDepoSecimModal({
               {/* Ana Depo */}
               {depolar.length > 0 && (
                 <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
-                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>ANA DEPO</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>{t('modal.anaDepo')}</Text>
                   {depoReadOnly ? (
                     <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
                       <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {depolar.find((d) => d.depoKod === secilenAnaDepo)
                           ? `${depolar.find((d) => d.depoKod === secilenAnaDepo)!.depoAdi || ''} (${secilenAnaDepo})`
-                          : secilenAnaDepo || 'Depo secilmedi'}
+                          : secilenAnaDepo || t('modal.depoSecilmedi')}
                       </Text>
                     </View>
                   ) : (
@@ -179,7 +181,7 @@ export default function FisTipiDepoSecimModal({
                         label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
                         value: d.depoKod,
                       }))}
-                      placeholder="Depo seciniz..."
+                      placeholder={t('modal.depoSeciniz')}
                       onChange={setSecilenAnaDepo}
                     />
                   )}
@@ -190,13 +192,13 @@ export default function FisTipiDepoSecimModal({
               {depolar.length > 0 && evrakTipiStr === 'Stok' &&
                 fisTipleri.find((ft) => String(ft.fisTipiKodu) === seciliFisTipiKodu)?.fisTipiOzelligi === 'Depo' && (
                 <View style={[styles.satirGrup, depoReadOnly && styles.readOnlyGrup]}>
-                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>KARSI DEPO</Text>
+                  <Text style={[styles.bolumBaslik, { color: Colors.textSecondary }]}>{t('modal.karsiDepo')}</Text>
                   {depoReadOnly ? (
                     <View style={[styles.readOnlyDeger, { borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}>
                       <Text style={[styles.readOnlyText, { color: Colors.textSecondary }]}>
                         {depolar.find((d) => d.depoKod === secilenKarsiDepo)
                           ? `${depolar.find((d) => d.depoKod === secilenKarsiDepo)!.depoAdi || ''} (${secilenKarsiDepo})`
-                          : secilenKarsiDepo || 'Depo secilmedi'}
+                          : secilenKarsiDepo || t('modal.depoSecilmedi')}
                       </Text>
                     </View>
                   ) : (
@@ -206,7 +208,7 @@ export default function FisTipiDepoSecimModal({
                         label: d.depoAdi ? `${d.depoAdi} (${d.depoKod})` : d.depoKod,
                         value: d.depoKod,
                       }))}
-                      placeholder="Depo seciniz..."
+                      placeholder={t('modal.depoSeciniz')}
                       onChange={setSecilenKarsiDepo}
                     />
                   )}
@@ -219,7 +221,7 @@ export default function FisTipiDepoSecimModal({
 
           <TouchableOpacity style={[styles.onaylaBtn, { backgroundColor: Colors.primary }]} onPress={handleConfirm} disabled={yukleniyor}>
             <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-            <Text style={styles.onaylaBtnText}>ONAYLA</Text>
+            <Text style={styles.onaylaBtnText}>{t('modal.onayla')}</Text>
           </TouchableOpacity>
         </View>
       </View>

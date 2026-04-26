@@ -34,6 +34,7 @@ import { evrakPdfAl } from '../../api/raporApi';
 import UrunMiktariBelirleModal from '../../components/UrunMiktariBelirleModal';
 import DropdownSecim from '../../components/DropdownSecim';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { paraFormat, paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim } from '../../models';
 import type { SepetKalem, SepetRBKalem, SepetBaslik, StokListesiBilgileri, AdresBilgileri, KDVKisimTablosu, KurBilgileri } from '../../models';
@@ -108,6 +109,7 @@ function rbToSepetKalem(rbk: SepetRBKalem): SepetKalem {
 
 export default function SepetListesi() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -202,13 +204,13 @@ export default function SepetListesi() {
 
   // Belge tipi seçenekleri
   const belgeTipleri = (() => {
-    const arr = [{ label: 'Normal', value: 'normal' }];
+    const arr = [{ label: t('sepetListesi.belgeNormal'), value: 'normal' }];
     if (sepet.evrakTipi === EvrakTipi.Fatura) {
-      if (yetkiBilgileri?.efaturaKayitYetkisi) arr.push({ label: 'E-Evrak', value: 'eevrak' });
-      arr.push({ label: 'Diğer', value: 'diger' });
+      if (yetkiBilgileri?.efaturaKayitYetkisi) arr.push({ label: t('sepetListesi.belgeEEvrak'), value: 'eevrak' });
+      arr.push({ label: t('sepetListesi.belgeDiger'), value: 'diger' });
     } else if (sepet.evrakTipi === EvrakTipi.Irsaliye) {
-      if (yetkiBilgileri?.eirsaliyeKayitYetkisi) arr.push({ label: 'E-Evrak', value: 'eevrak' });
-      arr.push({ label: 'Diğer', value: 'diger' });
+      if (yetkiBilgileri?.eirsaliyeKayitYetkisi) arr.push({ label: t('sepetListesi.belgeEEvrak'), value: 'eevrak' });
+      arr.push({ label: t('sepetListesi.belgeDiger'), value: 'diger' });
     }
     return arr;
   })();
@@ -255,7 +257,7 @@ export default function SepetListesi() {
   }, [genelIndirimYuzde, genelIndirimTutar, kdvDurum, secilenKdvOrani]);
 
   // Toplamlar (kdvOrani === -1 olan kalemler için secilenKdvOrani utility içinde uygulanır)
-  const t = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar, secilenKdvOrani);
+  const toplamlar = hesapla(sepet.kalemler, kdvDurum, genelIndirimYuzde, genelIndirimTutar, secilenKdvOrani);
 
   // Adres yükle
   useEffect(() => {
@@ -296,16 +298,16 @@ export default function SepetListesi() {
     const yuzde = parseFloat(indirimInput.replace(',', '.'));
     const tutar = parseFloat(indirimTutarInput.replace(',', '.'));
     if (!isNaN(tutar) && tutar > 0) {
-      const kalemSonrasiToplam = t.malToplam - t.kalemIndirimlerToplam;
+      const kalemSonrasiToplam = toplamlar.malToplam - toplamlar.kalemIndirimlerToplam;
       if (tutar > kalemSonrasiToplam) {
-        toast.warning('İndirim tutarı sepet toplamından fazla olamaz.');
+        toast.warning(t('sepetListesi.indirimTutarFazla'));
         return;
       }
       setGenelIndirimTutar(tutar);
       setGenelIndirimYuzde(0);
     } else if (!isNaN(yuzde) && yuzde > 0) {
       if (yuzde > 100) {
-        toast.warning('İndirim yüzdesi %100\'den fazla olamaz.');
+        toast.warning(t('sepetListesi.indirimYuzdeFazla'));
         return;
       }
       setGenelIndirimYuzde(yuzde);
@@ -413,11 +415,11 @@ export default function SepetListesi() {
 
   const handleKaydet = async () => {
     if (sepet.kalemler.length === 0) {
-      toast.warning('Sepet boş.');
+      toast.warning(t('sepetListesi.bos'));
       return;
     }
     if (!sepet.cariKodu.trim()) {
-      toast.warning('Lütfen cari seçiniz.');
+      toast.warning(t('sepetListesi.cariSec'));
       return;
     }
     setKaydetYukleniyor(true);
@@ -589,7 +591,7 @@ export default function SepetListesi() {
               evrakEkrani: route.params.evrakEkrani ?? 'ALSAT',
               onaylamaDurumu: 6,
               onaylayan: saticiKodu,
-              onaylamaNotu: 'Kullanıcı tarafından kaydedildi',
+              onaylamaNotu: t('sepetListesi.kullaniciKaydetti'),
               referansNo: !isNaN(rbRefNo) && rbRefNo > 0 ? rbRefNo : 0,
             };
             onayKaydet(sepet, sepet.kalemler, onayOpts, calisilanSirket);
@@ -634,7 +636,7 @@ export default function SepetListesi() {
               evrakEkrani: route.params.evrakEkrani ?? 'ALSAT',
               onaylamaDurumu: 6,
               onaylayan: saticiKodu,
-              onaylamaNotu: 'Kullanıcı tarafından kaydedildi',
+              onaylamaNotu: t('sepetListesi.kullaniciKaydetti'),
               referansNo: !isNaN(evrakRefNo) && evrakRefNo > 0 ? evrakRefNo : 0,
             };
             onayKaydet(sepet, sepet.kalemler, onayOpts, calisilanSirket);
@@ -663,9 +665,9 @@ export default function SepetListesi() {
         }
         setEvrakKaydedildi(true);
         evrakKaydedildiRef.current = true;
-        toast.success(sonuc.mesaj || (isCRMMode ? 'Teklif kaydedildi.' : 'Evrak kaydedildi.'));
+        toast.success(sonuc.mesaj || (isCRMMode ? t('sepetListesi.teklifKaydedildi') : t('sepetListesi.evrakKaydedildi')));
       } else {
-        toast.error(sonuc.mesaj || (isCRMMode ? 'Teklif kaydedilemedi.' : 'Evrak kaydedilemedi.'));
+        toast.error(sonuc.mesaj || (isCRMMode ? t('sepetListesi.teklifKaydedilemedi') : t('sepetListesi.evrakKaydedilemedi')));
       }
     } catch (e: any) {
       const mesaj =
@@ -673,17 +675,17 @@ export default function SepetListesi() {
         e?.response?.data ||
         e?.message ||
         String(e);
-      toast.error(`Evrak kaydedilirken bir hata oluştu:\n\n${mesaj}`);
+      toast.error(t('sepetListesi.evrakKayitHata', { detay: mesaj }));
     } finally {
       setKaydetYukleniyor(false);
     }
   };
 
   const handleTemizle = () => {
-    Alert.alert('Sepeti Temizle', 'Tüm kalemler silinecek. Emin misiniz?', [
-      { text: 'İptal', style: 'cancel' },
+    Alert.alert(t('sepetListesi.sepetiTemizle'), t('sepetListesi.sepetiTemizleOnay'), [
+      { text: t('sepetListesi.iptal'), style: 'cancel' },
       {
-        text: 'Temizle',
+        text: t('sepetListesi.temizle'),
         style: 'destructive',
         onPress: () => {
           if (isRBMode) {
@@ -701,27 +703,27 @@ export default function SepetListesi() {
 
   const handleTaslakKaydet = async () => {
     if (sepet.kalemler.length === 0) {
-      toast.warning('Sepet boş.');
+      toast.warning(t('sepetListesi.bos'));
       return;
     }
     if (!sepet.cariKodu) {
-      toast.warning('Taslak kaydedebilmek için lütfen cari seçiniz.');
+      toast.warning(t('sepetListesi.taslakCariSec'));
       return;
     }
     setTaslakYukleniyor(true);
     try {
-      await taslakKaydet(sepet, t.genelToplam, calisilanSirket);
+      await taslakKaydet(sepet, toplamlar.genelToplam, calisilanSirket);
       if (isRBMode) {
         route.params.onRBKalemlerGuncellendi?.([]);
       } else {
         route.params.onKalemlerGuncellendi?.([]);
       }
       aktifSepetTemizle(calisilanSirket);
-      Alert.alert('Başarılı', 'Evrak taslak olarak kaydedildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() },
+      Alert.alert(t('sepetListesi.taslakBasarili'), t('sepetListesi.taslakKaydedildi'), [
+        { text: t('sepetListesi.tamam'), onPress: () => navigation.goBack() },
       ]);
     } catch {
-      toast.error('Taslak kaydedilemedi.');
+      toast.error(t('sepetListesi.taslakKaydedilemedi'));
     } finally {
       setTaslakYukleniyor(false);
     }
@@ -742,11 +744,11 @@ export default function SepetListesi() {
   const handlePdfGoster = async () => {
     if (isCRMMode) {
       if (!kaydedilenCrmTeklifId) {
-        toast.error('Teklif daha kaydedilmemiş, PDF alınamaz.');
+        toast.error(t('sepetListesi.teklifPdfHenuzKaydedilmedi'));
         return;
       }
     } else if (!kaydedilenRefNo) {
-      toast.error('Evrak daha kaydedilmemiş, PDF alınamaz.');
+      toast.error(t('sepetListesi.pdfHenuzKaydedilmedi'));
       return;
     }
 
@@ -766,7 +768,7 @@ export default function SepetListesi() {
       } else {
         if (sepet.alimSatim === AlimSatim.Alim) {
           setPdfModalAcik(false);
-          toast.error('Alım işlemlerinde PDF dosyası alınamaz.');
+          toast.error(t('sepetListesi.alimPdfYok'));
           return;
         }
         let evrakTipiStr = '';
@@ -796,7 +798,7 @@ export default function SepetListesi() {
       setPdfDosyaUri(dosyaYolu);
     } catch (err: any) {
       setPdfModalAcik(false);
-      toast.error(err?.message || 'PDF alınamadı.');
+      toast.error(err?.message || t('sepetListesi.pdfAlinamadi'));
     } finally {
       setPdfYukleniyor(false);
     }
@@ -807,7 +809,7 @@ export default function SepetListesi() {
     try {
       await Sharing.shareAsync(pdfDosyaUri, { mimeType: 'application/pdf' });
     } catch {
-      toast.error('PDF paylaşılamadı.');
+      toast.error(t('sepetListesi.pdfPaylasilamadi'));
     }
   };
 
@@ -815,31 +817,31 @@ export default function SepetListesi() {
 
   const handleEntegratorGonder = async () => {
     if (sepet.alimSatim === AlimSatim.Alim) {
-      toast.error('Alım evraklarında entegratöre gönderme yapılamaz.');
+      toast.error(t('sepetListesi.entegratorAlim'));
       return;
     }
     if (sepet.evrakTipi === EvrakTipi.Siparis || sepet.evrakTipi === EvrakTipi.Stok) {
-      toast.error('Sipariş ya da stok evraklarında entegratöre gönderme yapılamaz.');
+      toast.error(t('sepetListesi.entegratorTip'));
       return;
     }
     if (!kaydedilenRefNo) {
-      toast.error('Evrak kaydedilmeden entegratöre gönderme yapılamaz.');
+      toast.error(t('sepetListesi.entegratorKaydedilmemis'));
       return;
     }
     if (!yetkiBilgileri?.eevrakKaydetmeYetkisi) {
-      toast.error('E-Evrak yazma izni olmadığından entegratöre gönderilemez.');
+      toast.error(t('sepetListesi.entegratorEEvrakIzni'));
       return;
     }
     if (!yetkiBilgileri?.efaturaKayitYetkisi && sepet.evrakTipi === EvrakTipi.Fatura) {
-      toast.error('E-Fatura yazma izni olmadığından entegratöre gönderilemez.');
+      toast.error(t('sepetListesi.entegratorEFaturaIzni'));
       return;
     }
     if (!yetkiBilgileri?.eirsaliyeKayitYetkisi && sepet.evrakTipi === EvrakTipi.Irsaliye) {
-      toast.error('E-İrsaliye yazma izni olmadığından entegratöre gönderilemez.');
+      toast.error(t('sepetListesi.entegratorEIrsaliyeIzni'));
       return;
     }
     if (!yetkiBilgileri?.entegratoreYollaYetkisi) {
-      toast.error('Entegratöre gönderme yetkisi bulunmamaktadır.');
+      toast.error(t('sepetListesi.entegratorYetki'));
       return;
     }
     const evrakTipiStr = sepet.evrakTipi === EvrakTipi.Fatura ? 'Fatura' : 'Irsaliye';
@@ -847,23 +849,23 @@ export default function SepetListesi() {
     try {
       const sonuc = await entegratoreYolla(kaydedilenRefNo, evrakTipiStr, calisilanSirket);
       if (sonuc.sonuc) {
-        toast.success(sonuc.mesaj || 'Başarıyla gönderildi.');
+        toast.success(sonuc.mesaj || t('sepetListesi.entegratorBasarili'));
       } else {
-        toast.error(sonuc.mesaj || 'Gönderilemedi.');
+        toast.error(sonuc.mesaj || t('sepetListesi.entegratorBasarisiz'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Entegratöre gönderilirken bir hata oluştu.');
+      toast.error(e?.message || t('sepetListesi.entegratorHata'));
     } finally {
       setEntegratorYukleniyor(false);
     }
   };
 
   const yuzerMenuItems = [
-    { label: 'Kaydet', icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleKaydet(); }, disabled: kaydetYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 },
-    ...(!isCRMMode ? [{ label: 'Entegratöre Gönder', icon: 'send-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleEntegratorGonder(); }, disabled: entegratorYukleniyor || sepet.kalemler.length === 0 }] : []),
-    { label: 'PDF Göster', icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: sepet.kalemler.length === 0 },
-    ...(!isCRMMode ? [{ label: 'Taslak Kaydet', icon: 'bookmark-outline' as const, color: Colors.accent, onPress: () => { toggleYuzerMenu(false); handleTaslakKaydet(); }, disabled: taslakYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 || isOnayliReadOnly }] : []),
-    { label: 'Temizle', icon: 'trash-outline' as const, color: Colors.error, onPress: () => { toggleYuzerMenu(false); handleTemizle(); }, disabled: sepet.kalemler.length === 0 },
+    { label: t('sepetListesi.kaydet'), icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleKaydet(); }, disabled: kaydetYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 },
+    ...(!isCRMMode ? [{ label: t('sepetListesi.entegratoreGonder'), icon: 'send-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handleEntegratorGonder(); }, disabled: entegratorYukleniyor || sepet.kalemler.length === 0 }] : []),
+    { label: t('sepetListesi.pdfGoster'), icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: sepet.kalemler.length === 0 },
+    ...(!isCRMMode ? [{ label: t('sepetListesi.taslakKaydet'), icon: 'bookmark-outline' as const, color: Colors.accent, onPress: () => { toggleYuzerMenu(false); handleTaslakKaydet(); }, disabled: taslakYukleniyor || evrakKaydedildi || sepet.kalemler.length === 0 || isOnayliReadOnly }] : []),
+    { label: t('sepetListesi.temizle'), icon: 'trash-outline' as const, color: Colors.error, onPress: () => { toggleYuzerMenu(false); handleTemizle(); }, disabled: sepet.kalemler.length === 0 },
   ];
 
   // ─── Render helpers ──────────────────────────────────────────────────────────
@@ -906,7 +908,7 @@ export default function SepetListesi() {
   const renderFisBilgileri = () => (
     <View style={styles.expanderContainer}>
       {renderExpanderBaslik(
-        isCRMMode ? 'Teklif Bilgileri' : `Evrak Fiş Bilgileri (${evrakAdi})`,
+        isCRMMode ? t('sepetListesi.teklifBilgileri') : t('sepetListesi.evrakFisBilgileri', { ad: evrakAdi }),
         fisAcik,
         () => setFisAcik(!fisAcik)
       )}
@@ -914,23 +916,23 @@ export default function SepetListesi() {
         <View style={[styles.fisIcerik, { backgroundColor: Colors.card }]}>
           {/* Cari Ünvanı */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Cari Ünvanı</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.cariUnvani')}</Text>
             <Text style={[styles.fisValueRed, { color: Colors.error }]} numberOfLines={2}>
-              {sepet.cariUnvan || 'Lütfen cari seçiniz'}
+              {sepet.cariUnvan || t('sepetListesi.cariSeciniz')}
             </Text>
           </View>
 
           {/* KDV Oranı + Dahil Checkbox */}
           <View style={[styles.kdvSatir, { zIndex: 30 }]}>
             <View style={[styles.kdvDropdown, isOnayliReadOnly && { pointerEvents: 'none', opacity: 0.5 }]}>
-              <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>KDV Oranı</Text>
+              <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.kdvOrani')}</Text>
               <DropdownSecim
                 value={String(secilenKdvKisimNo)}
                 options={kdvKisimListesi.map((k) => ({
                   label: `${k.kdvKisimAciklama || k.kdvAdi || ''} (%${k.kdvKisimOran ?? k.kdvOrani ?? 0})`,
                   value: String(k.kdvKisimNo ?? k.kdvKodu ?? 0),
                 }))}
-                placeholder="KDV Seçiniz..."
+                placeholder={t('sepetListesi.kdvSeciniz')}
                 onChange={(val) => setSecilenKdvKisimNo(Number(val))}
                 maxListHeight={180}
               />
@@ -945,18 +947,18 @@ export default function SepetListesi() {
                 size={22}
                 color={kdvDurum === 1 ? Colors.primary : Colors.textSecondary}
               />
-              <Text style={[styles.kdvCheckboxLabel, { color: Colors.text }]}>KDV Dahil</Text>
+              <Text style={[styles.kdvCheckboxLabel, { color: Colors.text }]}>{t('sepetListesi.kdvDahil')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Belge Tipi */}
           <View style={styles.fisRowCol}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Belge Tipi</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.belgeTipi')}</Text>
             <View style={[styles.belgeTipiDropdown, isOnayliReadOnly && { pointerEvents: 'none', opacity: 0.5 }]}>
               <DropdownSecim
                 value={belgeTipiDeger}
                 options={belgeTipleri}
-                placeholder="Seçiniz..."
+                placeholder={t('sepetListesi.seciniz')}
                 onChange={setBelgeTipiDeger}
                 maxListHeight={150}
               />
@@ -968,39 +970,39 @@ export default function SepetListesi() {
 
           {/* Mal Toplam */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Mal Toplam</Text>
-            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.malToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.malToplam')}</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(toplamlar.malToplam)}</Text>
           </View>
 
           {/* Genel İsk. */}
           <TouchableOpacity style={styles.fisRow} onPress={isOnayliReadOnly ? undefined : indirimDegistir}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Genel İsk.</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.genelIsk')}</Text>
             {genelIndirimTutar > 0 ? (
-              <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>Tutar: {paraFormat(genelIndirimTutar)}</Text>
+              <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>{t('sepetListesi.tutar')} {paraFormat(genelIndirimTutar)}</Text>
             ) : (
               <>
                 <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>% {paraFormat(genelIndirimYuzde)}</Text>
-                <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>{paraFormat(t.genelIndirimTutar)}</Text>
+                <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>{paraFormat(toplamlar.genelIndirimTutar)}</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Kalem İsk. */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Kalem İsk.</Text>
-            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.kalemIndirimlerToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.kalemIsk')}</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(toplamlar.kalemIndirimlerToplam)}</Text>
           </View>
 
           {/* KDV Toplam */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>KDV Toplam</Text>
-            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.kdvToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.kdvToplam')}</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(toplamlar.kdvToplam)}</Text>
           </View>
 
           {/* Genel Top. */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Genel Top.</Text>
-            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(t.genelToplam)}</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.genelTop')}</Text>
+            <Text style={[styles.fisValue, { color: Colors.text }]}>{paraFormat(toplamlar.genelToplam)}</Text>
           </View>
 
           {/* Ayırıcı */}
@@ -1008,24 +1010,24 @@ export default function SepetListesi() {
 
           {/* Döviz */}
           <TouchableOpacity style={styles.fisRow} onPress={isOnayliReadOnly ? undefined : () => setDovizModalAcik(true)}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Döviz Kodu</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.dovizKodu')}</Text>
             <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>
-              {secilenKur ? secilenKur.dovizKodu : 'Seçiniz...'}
+              {secilenKur ? secilenKur.dovizKodu : t('sepetListesi.seciniz')}
             </Text>
-            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>Döviz Türü</Text>
+            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>{t('sepetListesi.dovizTuru')}</Text>
             <Text style={[styles.fisValueAccent, { color: Colors.primary }]}>
               {secilenKur ? secilenKur.dovizTuru : ''}
             </Text>
           </TouchableOpacity>
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Döviz Kuru</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.dovizKuru')}</Text>
             <Text style={[styles.fisValue, { color: Colors.text }]}>
               {secilenKur ? secilenKur.dovizKuru.toFixed(5).replace('.', ',') : '0,00000'}
             </Text>
-            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>Döviz Toplam</Text>
+            <Text style={[styles.fisLabelSmall, { color: Colors.textSecondary }]}>{t('sepetListesi.dovizToplam')}</Text>
             <Text style={[styles.fisValue, { color: Colors.text }]}>
               {secilenKur && secilenKur.dovizKuru > 0
-                ? paraFormat(t.genelToplam / secilenKur.dovizKuru)
+                ? paraFormat(toplamlar.genelToplam / secilenKur.dovizKuru)
                 : '0,00'}
             </Text>
           </View>
@@ -1035,7 +1037,7 @@ export default function SepetListesi() {
 
           {/* Açıklama 1 */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 1</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.aciklama1')}</Text>
             <TextInput
               style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               defaultValue={aciklama1Ref.current}
@@ -1047,7 +1049,7 @@ export default function SepetListesi() {
 
           {/* Açıklama 2 */}
           <View style={styles.fisRow}>
-            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>Açıklama 2</Text>
+            <Text style={[styles.fisLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.aciklama2')}</Text>
             <TextInput
               style={[styles.fisInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
               defaultValue={aciklama2Ref.current}
@@ -1071,42 +1073,42 @@ export default function SepetListesi() {
     >
       {/* Adres No + Yetkili */}
       <View style={styles.adresRow}>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres No</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.adresNo')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.adresNo}</Text>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Yetkili</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.yetkili')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.yetkili}</Text>
       </View>
       {/* Adres 1-3 */}
       {adres.adres1 ? (
         <View style={styles.adresRow}>
-          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 1</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.adres1')}</Text>
           <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres1}</Text>
         </View>
       ) : null}
       {adres.adres2 ? (
         <View style={styles.adresRow}>
-          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 2</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.adres2')}</Text>
           <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres2}</Text>
         </View>
       ) : null}
       {adres.adres3 ? (
         <View style={styles.adresRow}>
-          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Adres 3</Text>
+          <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.adres3')}</Text>
           <Text style={[styles.adresValue, { color: Colors.text }]}>{adres.adres3}</Text>
         </View>
       ) : null}
       {/* İl + İlçe */}
       <View style={styles.adresRow}>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>İl</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.il')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.il}</Text>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>İlçe</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.ilce')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.ilce}</Text>
       </View>
       {/* Vergi */}
       <View style={styles.adresRow}>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Vergi{'\n'}Dairesi</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.vergiDairesi')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.vergiDairesi}</Text>
-        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>Vergi{'\n'}Numarası</Text>
+        <Text style={[styles.adresLabel, { color: Colors.textSecondary }]}>{t('sepetListesi.vergiNumarasi')}</Text>
         <Text style={[styles.adresValueAccent, { color: Colors.primary }]}>{adres.vergiNumarasi}</Text>
       </View>
     </TouchableOpacity>
@@ -1116,8 +1118,8 @@ export default function SepetListesi() {
     <View style={styles.expanderContainer}>
       {renderExpanderBaslik(
         secilenAdresNo > 0
-          ? `Adresler (Adres No: ${secilenAdresNo})`
-          : 'Adresler',
+          ? t('sepetListesi.adreslerNo', { n: secilenAdresNo })
+          : t('sepetListesi.adresler'),
         adreslerAcik,
         () => setAdreslerAcik(!adreslerAcik)
       )}
@@ -1126,7 +1128,7 @@ export default function SepetListesi() {
           {adresler.length > 0 ? (
             adresler.map(renderAdresKarti)
           ) : (
-            <Text style={[styles.bosAdresText, { color: Colors.textSecondary }]}>Adres bilgisi bulunamadı</Text>
+            <Text style={[styles.bosAdresText, { color: Colors.textSecondary }]}>{t('sepetListesi.adresBulunamadi')}</Text>
           )}
         </View>
       )}
@@ -1137,7 +1139,7 @@ export default function SepetListesi() {
     <View style={[styles.headerInfo, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
       <View style={styles.headerRow}>
         <Ionicons name="document-text-outline" size={18} color={Colors.primary} />
-        <Text style={[styles.headerEvrakBold, { color: Colors.primary }]}>{isCRMMode ? 'CRM Teklif' : evrakAdi}</Text>
+        <Text style={[styles.headerEvrakBold, { color: Colors.primary }]}>{isCRMMode ? t('sepetListesi.crmTeklif') : evrakAdi}</Text>
       </View>
       {sepet.fisTipiBaslikNo > 0 && (
         <View style={styles.headerRow}>
@@ -1156,7 +1158,7 @@ export default function SepetListesi() {
       {isOnayliReadOnly && (
         <View style={styles.onayBanner}>
           <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-          <Text style={styles.onayBannerText}>Bu evrak onaylanmıştır. İçerik değiştirilemez.</Text>
+          <Text style={styles.onayBannerText}>{t('sepetListesi.onayBanner')}</Text>
         </View>
       )}
       {renderFisBilgileri()}
@@ -1203,9 +1205,9 @@ export default function SepetListesi() {
                 <TouchableOpacity
                   style={styles.kartAksiyonBtn}
                   onPress={() => {
-                    Alert.alert('Sil', `${item.stokKodu} silinsin mi?`, [
-                      { text: 'İptal', style: 'cancel' },
-                      { text: 'Sil', style: 'destructive', onPress: () => kalemSil(item.stokKodu, index) },
+                    Alert.alert(t('sepetListesi.sil'), t('sepetListesi.silOnay', { kod: item.stokKodu }), [
+                      { text: t('sepetListesi.iptal'), style: 'cancel' },
+                      { text: t('sepetListesi.sil'), style: 'destructive', onPress: () => kalemSil(item.stokKodu, index) },
                     ]);
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -1250,7 +1252,7 @@ export default function SepetListesi() {
           {/* KDV bilgisi + Toplam fiyat */}
           <View style={styles.kartAltSatir}>
             <Text style={[styles.kartKdvBilgi, { color: Colors.textSecondary }]}>
-              KDV Hariç: {paraFormat(netAfterGenel)} ₺   KDV %{efektifKdv}: {paraFormat(kdvTutari)} ₺
+              {t('sepetListesi.kdvHaric')}: {paraFormat(netAfterGenel)} ₺   {t('onayDuzenleme.kdv')} %{efektifKdv}: {paraFormat(kdvTutari)} ₺
             </Text>
             <Text style={[styles.kartToplam, { color: Colors.primary }]}>{paraFormat(toplam)} ₺</Text>
           </View>
@@ -1260,21 +1262,21 @@ export default function SepetListesi() {
   };
 
   const renderOzetKarti = () => {
-    const kdvHaricToplam = t.malToplam - t.kalemIndirimlerToplam - t.genelIndirimTutar;
+    const kdvHaricToplam = toplamlar.malToplam - toplamlar.kalemIndirimlerToplam - toplamlar.genelIndirimTutar;
     return (
       <View style={[styles.ozetKart, { backgroundColor: Colors.card }]}>
         <View style={styles.ozetSatir}>
-          <Text style={[styles.ozetLabel, { color: Colors.text }]}>KDV Hariç Toplam</Text>
+          <Text style={[styles.ozetLabel, { color: Colors.text }]}>{t('sepetListesi.kdvHaricToplam')}</Text>
           <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(kdvHaricToplam)} ₺</Text>
         </View>
         <View style={styles.ozetSatir}>
-          <Text style={[styles.ozetLabel, { color: Colors.text }]}>KDV Toplam</Text>
-          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(t.kdvToplam)} ₺</Text>
+          <Text style={[styles.ozetLabel, { color: Colors.text }]}>{t('sepetListesi.kdvToplam')}</Text>
+          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(toplamlar.kdvToplam)} ₺</Text>
         </View>
         <View style={[styles.ozetAyirac, { backgroundColor: Colors.border }]} />
         <View style={styles.ozetSatir}>
-          <Text style={[styles.ozetGenelLabel, { color: Colors.primary }]}>GENEL TOPLAM</Text>
-          <Text style={[styles.ozetGenelDeger, { color: Colors.primary }]}>{paraFormat(t.genelToplam)} ₺</Text>
+          <Text style={[styles.ozetGenelLabel, { color: Colors.primary }]}>{t('sepetListesi.genelToplam')}</Text>
+          <Text style={[styles.ozetGenelDeger, { color: Colors.primary }]}>{paraFormat(toplamlar.genelToplam)} ₺</Text>
         </View>
       </View>
     );
@@ -1292,7 +1294,7 @@ export default function SepetListesi() {
         contentContainerStyle={styles.listePadding}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <EmptyState icon="cart-outline" baslik="Sepet boş" aciklama="Ürün eklemek için stok listesine dönün" />
+          <EmptyState icon="cart-outline" baslik={t('sepetListesi.bos')} aciklama={t('sepetListesi.bosAciklama')} />
         }
       />
 
@@ -1321,8 +1323,8 @@ export default function SepetListesi() {
         <Modal visible transparent animationType="fade" onRequestClose={() => setIndirimModalAcik(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalKutu, { backgroundColor: Colors.card }]}>
-              <Text style={[styles.modalBaslik, { color: Colors.text }]}>Genel İskonto</Text>
-              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Yüzde</Text>
+              <Text style={[styles.modalBaslik, { color: Colors.text }]}>{t('sepetListesi.genelIskonto')}</Text>
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>{t('sepetListesi.yuzde')}</Text>
               <TextInput
                 style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
                 value={indirimInput}
@@ -1335,7 +1337,7 @@ export default function SepetListesi() {
                 autoFocus
                 selectTextOnFocus
               />
-              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Tutar</Text>
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>{t('sepetListesi.tutarBaslik')}</Text>
               <TextInput
                 style={[styles.modalInput, { color: Colors.text, borderColor: Colors.border, backgroundColor: Colors.inputBackground }]}
                 value={indirimTutarInput}
@@ -1349,10 +1351,10 @@ export default function SepetListesi() {
               />
               <View style={styles.modalBtnRow}>
                 <TouchableOpacity onPress={() => setIndirimModalAcik(false)}>
-                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>İptal</Text>
+                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>{t('sepetListesi.iptal')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={indirimOnayla}>
-                  <Text style={[styles.modalTamam, { color: Colors.primary }]}>Tamam</Text>
+                  <Text style={[styles.modalTamam, { color: Colors.primary }]}>{t('sepetListesi.tamam')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1364,9 +1366,9 @@ export default function SepetListesi() {
       <Modal visible={dovizModalAcik} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.dovizModalKutu, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.modalBaslik, { color: Colors.text }]}>Döviz Seçimi</Text>
+            <Text style={[styles.modalBaslik, { color: Colors.text }]}>{t('sepetListesi.dovizSecimi')}</Text>
             {kurListesi.length === 0 ? (
-              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>Kur bilgisi bulunamadı</Text>
+              <Text style={[styles.modalAlt, { color: Colors.textSecondary }]}>{t('sepetListesi.kurBulunamadi')}</Text>
             ) : (
               <FlatList
                 data={kurListesi}
@@ -1398,11 +1400,11 @@ export default function SepetListesi() {
             <View style={styles.modalBtnRow}>
               {secilenKur && (
                 <TouchableOpacity onPress={() => { setSecilenKur(null); setDovizModalAcik(false); }}>
-                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>Temizle</Text>
+                  <Text style={[styles.modalIptal, { color: Colors.textSecondary }]}>{t('sepetListesi.temizle')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => setDovizModalAcik(false)}>
-                <Text style={[styles.modalTamam, { color: Colors.primary }]}>Kapat</Text>
+                <Text style={[styles.modalTamam, { color: Colors.primary }]}>{t('sepetListesi.kapat')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1413,7 +1415,7 @@ export default function SepetListesi() {
       <View style={[styles.altBar, { backgroundColor: Colors.card, borderTopColor: Colors.border, paddingBottom: insets.bottom + 12, marginBottom: 0 }]}>
         <Ionicons name="cart-outline" size={18} color={Colors.primary} />
         <Text style={[styles.altBarText, { color: Colors.text }]}>
-          {sepet.kalemler.length} satır · Miktar {t.toplamMiktar}
+          {t('sepetListesi.satirMiktar', { n: sepet.kalemler.length, miktar: toplamlar.toplamMiktar })}
         </Text>
       </View>
 
@@ -1457,7 +1459,7 @@ export default function SepetListesi() {
             <TouchableOpacity onPress={() => setPdfModalAcik(false)}>
               <Ionicons name="close" size={28} color={Colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>{isCRMMode ? 'Teklif' : evrakAdi}</Text>
+            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>{isCRMMode ? t('crmTeklif.teklif') : evrakAdi}</Text>
             <TouchableOpacity onPress={handlePdfPaylas} disabled={!pdfDosyaUri}>
               <Ionicons name="share-outline" size={24} color={pdfDosyaUri ? Colors.primary : Colors.textSecondary} />
             </TouchableOpacity>
@@ -1465,7 +1467,7 @@ export default function SepetListesi() {
           {pdfYukleniyor ? (
             <View style={styles.pdfMerkez}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
+              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>{t('sepetListesi.pdfYukleniyor')}</Text>
             </View>
           ) : pdfDosyaUri ? (
             <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />

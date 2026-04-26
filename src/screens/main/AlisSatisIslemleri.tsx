@@ -30,6 +30,7 @@ import type { FisTipiDepoSecimSonuc } from '../../components/FisTipiDepoSecimMod
 import EvrakTipiSecimModal from '../../components/EvrakTipiSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { Config } from '../../constants/Config';
 import { paraTL, miktarFormat } from '../../utils/format';
 import { EvrakTipi, AlimSatim, type StokFiyatBilgileri, type CariFiyatBilgileri } from '../../models';
@@ -94,6 +95,7 @@ function sepetToplamHesapla(kalemler: SepetKalem[], ayarlar: SepetAyarlari): num
 
 export default function AlisSatisIslemleri() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -394,7 +396,7 @@ export default function AlisSatisIslemleri() {
     try {
       if (aramaTipi === 4) {
         if (!secilenCari) {
-          toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          toast.warning(t('stok.cariSecmedenEklenemez'));
           setAramaMetni('');
           setYukleniyor(false);
           return;
@@ -407,7 +409,7 @@ export default function AlisSatisIslemleri() {
           if (sonuc.data.length === 1) {
             const stok = sonuc.data[0];
             if (!secilenCari) {
-              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+              toast.warning(t('stok.cariSecmedenEklenemez'));
             } else if (miktarliGiris) {
               setModalUrunu(stok);
               modalAcilacak = true;
@@ -499,7 +501,7 @@ export default function AlisSatisIslemleri() {
   // Hızlı sepete ekle
   const hizliEkle = async (item: StokListesiBilgileri) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
     }
     const carpan = item.carpan || 1;
@@ -649,7 +651,7 @@ export default function AlisSatisIslemleri() {
   };
 
   // Arama tipi seçimi
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? 'İçeren';
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -660,7 +662,7 @@ export default function AlisSatisIslemleri() {
           onPress={() => setInfoStoku(item)}
         >
           <Ionicons name="information-circle-outline" size={24} color="#fff" />
-          <Text style={styles.infoBtnText}>Bilgi</Text>
+          <Text style={styles.infoBtnText}>{t('stok.bilgiButon')}</Text>
         </TouchableOpacity>
       )}
     >
@@ -710,7 +712,7 @@ export default function AlisSatisIslemleri() {
           onPress={() => setMiktarliGiris(!miktarliGiris)}
         >
           <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color="#fff" />
-          <Text style={styles.miktarBtnText}>Miktarlı</Text>
+          <Text style={styles.miktarBtnText}>{t('stok.miktarli')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.barkodBtn}
@@ -733,7 +735,7 @@ export default function AlisSatisIslemleri() {
           color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('stok.cariSeciniz')}
         </Text>
         {secilenCari ? (
           <TouchableOpacity
@@ -745,11 +747,11 @@ export default function AlisSatisIslemleri() {
               };
               if (sepetKalemlerRef.current.length > 0) {
                 Alert.alert(
-                  'Cari seçimini iptal et',
-                  'Sepetteki ürünler silinecek. Devam edilsin mi?',
+                  t('stok.cariIptalBaslik'),
+                  t('stok.cariIptalAciklama'),
                   [
-                    { text: 'Vazgeç', style: 'cancel' },
-                    { text: 'Evet, İptal Et', style: 'destructive', onPress: temizle },
+                    { text: t('common.vazgec'), style: 'cancel' },
+                    { text: t('stok.evetIptalEt'), style: 'destructive', onPress: temizle },
                   ]
                 );
               } else {
@@ -776,7 +778,7 @@ export default function AlisSatisIslemleri() {
         <TextInput
           ref={aramaInputRef}
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Stok kodu, ürün adı veya barkod..."
+          placeholder={t('stok.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -831,9 +833,9 @@ export default function AlisSatisIslemleri() {
 
       {/* Stok listesi başlık */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CİNS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FİYAT</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('stok.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('stok.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>{t('stok.fiyatBaslik')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -928,7 +930,7 @@ export default function AlisSatisIslemleri() {
           barkodSonrasiTemizlik.current = true;
           setAramaMetni('');
           if (!secilenCari) {
-            toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+            toast.warning(t('stok.cariSecmedenEklenemez'));
             return;
           }
           hafifTitresim();
@@ -946,7 +948,7 @@ export default function AlisSatisIslemleri() {
               setStokListesi([]);
             }
           }).catch((err) => {
-            toast.error('Barkod araması sırasında bir hata oluştu.');
+            toast.error(t('stok.aramaHatasi'));
           });
         }}
       />

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../store/appStore';
 import { useColors } from '../contexts/ThemeContext';
+import { useT } from '../i18n/I18nContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Config } from '../constants/Config';
 import type { RootStackParamList } from '../navigation/types';
@@ -28,6 +29,7 @@ interface MenuItem {
 
 export default function DrawerMenu({ navigation, state }: DrawerContentComponentProps) {
   const Colors = useColors();
+  const t = useT();
   const aktifRoute = state.routes[state.index]?.name;
   const insets = useSafeAreaInsets();
   const { menuYetkiBilgileri, yetkiBilgileri, calisilanSirket, cikisYap } =
@@ -36,119 +38,119 @@ export default function DrawerMenu({ navigation, state }: DrawerContentComponent
   const tumMenuOgeleri: MenuItem[] = [
     {
       id: 'anaSayfa',
-      baslik: 'Ana Sayfa',
+      baslik: t('menu.anaSayfa'),
       icon: 'home-outline',
       ekran: 'AnaSayfa',
       yetki: true,
     },
     {
       id: 'hizliV2',
-      baslik: 'Alış/Satış',
+      baslik: t('menu.alisSatis'),
       icon: 'flash-outline',
       ekran: 'HizliIslemlerV2',
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
       id: 'cariIletisim',
-      baslik: 'Cari İletişim',
+      baslik: t('menu.cariIletisim'),
       icon: 'location-outline',
       ekran: 'CariIletisim',
       yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
     },
     {
       id: 'alimSatim',
-      baslik: 'Evrak Oluştur',
+      baslik: t('menu.evrakOlustur'),
       icon: 'swap-horizontal-outline',
       ekran: 'AlisSatisIslemleri',
       yetki: menuYetkiBilgileri?.evrakDuzenle ?? false,
     },
     {
       id: 'fiyatGor',
-      baslik: 'Fiyat Gör',
+      baslik: t('menu.fiyatGor'),
       icon: 'pricetag-outline',
       ekran: 'FiyatGor',
       yetki: menuYetkiBilgileri?.fiyatGor ?? false,
     },
     {
       id: 'barkodEkleme',
-      baslik: 'Barkod Ekleme',
+      baslik: t('menu.barkodEkleme'),
       icon: 'barcode-outline',
       ekran: 'BarkodEkleme',
       yetki: menuYetkiBilgileri?.barkodEkle ?? false,
     },
     {
       id: 'renkBeden',
-      baslik: 'Renk-Beden İşlemleri',
+      baslik: t('menu.renkBeden'),
       icon: 'color-palette-outline',
       ekran: 'RenkBedenIslemleri',
       yetki: menuYetkiBilgileri?.renkBedenIslemleri ?? false,
     },
     {
       id: 'siparisKapama',
-      baslik: 'Sipariş Kapama',
+      baslik: t('menu.siparisKapama'),
       icon: 'checkmark-circle-outline',
       ekran: 'SiparisKapama',
       yetki: menuYetkiBilgileri?.siparisKapama ?? false,
     },
     {
       id: 'tahsilat',
-      baslik: 'Tahsilat İşlemleri',
+      baslik: t('menu.tahsilat'),
       icon: 'cash-outline',
       ekran: 'Tahsilatlar',
       yetki: menuYetkiBilgileri?.tahsilatlar ?? false,
     },
     {
       id: 'raporlar',
-      baslik: 'Raporlar',
+      baslik: t('menu.raporlar'),
       icon: 'bar-chart-outline',
       ekran: 'Raporlar',
       yetki: menuYetkiBilgileri?.raporlar ?? false,
     },
     {
       id: 'bekleyenEvraklar',
-      baslik: 'Bekleyen Evraklar',
+      baslik: t('menu.bekleyenEvraklar'),
       icon: 'document-text-outline',
       ekran: 'BekleyenEvraklar',
       yetki: menuYetkiBilgileri?.bekleyenEvraklar ?? false,
     },
     {
       id: 'ziyaret',
-      baslik: 'CRM Teklif',
+      baslik: t('menu.crmTeklif'),
       icon: 'people-outline',
       ekran: 'ZiyaretIslemleri',
       yetki: menuYetkiBilgileri?.crm ?? false,
     },
     {
       id: 'onay',
-      baslik: 'Onay İşlemleri',
+      baslik: t('menu.onayIslemleri'),
       icon: 'shield-checkmark-outline',
       ekran: 'OnayIslemleri',
       yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
     },
     {
       id: 'kontrolPaneli',
-      baslik: 'Kontrol Paneli',
+      baslik: t('menu.kontrolPaneli'),
       icon: 'grid-outline',
       ekran: 'Panel',
       yetki: menuYetkiBilgileri?.kontrolPanel ?? false,
     },
     {
       id: 'kur',
-      baslik: 'Kur Bilgileri',
+      baslik: t('menu.kurBilgileri'),
       icon: 'trending-up-outline',
       ekran: 'KurBilgileri',
       yetki: menuYetkiBilgileri?.kurBilgileri ?? false,
     },
     {
       id: 'ayarlar',
-      baslik: 'Ayarlar',
+      baslik: t('menu.ayarlar'),
       icon: 'settings-outline',
       ekran: 'Ayarlar',
       yetki: menuYetkiBilgileri?.ayarlar ?? true,
     },
     {
       id: 'hakkinda',
-      baslik: 'Hakkında',
+      baslik: t('menu.hakkinda'),
       icon: 'information-circle-outline',
       ekran: 'Hakkinda',
       yetki: true,
@@ -157,10 +159,10 @@ export default function DrawerMenu({ navigation, state }: DrawerContentComponent
   const menuOgeleri = tumMenuOgeleri.filter((m) => m.yetki);
 
   const handleCikis = () => {
-    Alert.alert('Çıkış', 'Uygulamadan çıkmak istiyor musunuz?', [
-      { text: 'İptal', style: 'cancel' },
+    Alert.alert(t('menu.cikis'), t('menu.cikisOnay'), [
+      { text: t('common.iptal'), style: 'cancel' },
       {
-        text: 'Çıkış',
+        text: t('menu.cikis'),
         style: 'destructive',
         onPress: async () => {
           const beniHatirla = await AsyncStorage.getItem(Config.STORAGE_KEYS.BENI_HATIRLA);
@@ -222,7 +224,7 @@ export default function DrawerMenu({ navigation, state }: DrawerContentComponent
       {/* Çıkış */}
       <TouchableOpacity style={[styles.cikisBtn, { paddingBottom: 18 + insets.bottom }]} onPress={handleCikis}>
         <Ionicons name="log-out-outline" size={22} color={Colors.drawerText} />
-        <Text style={[styles.menuText, { color: Colors.drawerText }]}>Çıkış</Text>
+        <Text style={[styles.menuText, { color: Colors.drawerText }]}>{t('menu.cikis')}</Text>
       </TouchableOpacity>
     </View>
   );

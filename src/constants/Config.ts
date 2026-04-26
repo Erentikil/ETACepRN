@@ -31,6 +31,7 @@ export const Config = {
     RENK_PALETI: 'renkPaleti',
     FONT_BOYUTU: 'fontBoyutu',
     UYUMLULUK: 'uyumluluk',
+    DIL: 'dil',
     CIHAZ_ID: 'cihazId',
     CIHAZ_ADI: 'cihazAdi',
     ANA_SAYFA_KART_SIRASI: 'anaSayfaKartSirasi',

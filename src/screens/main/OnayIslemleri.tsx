@@ -15,6 +15,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import { paraTL } from '../../utils/format';
 import { useAppStore } from '../../store/appStore';
@@ -73,6 +74,7 @@ function snbToSepetKalem(snb: SepetNormalBilgileri): SepetKalem {
 
 export default function OnayIslemleri() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<DrawerNavigationProp<DrawerParamList>>();
   const { yetkiBilgileri, calisilanSirket } = useAppStore();
   const isAdmin = yetkiBilgileri?.admin ?? false;
@@ -95,10 +97,10 @@ export default function OnayIslemleri() {
         setBolumler(grupla(liste));
         setAcikGruplar(new Set());
       } else {
-        toast.error(sonuc.mesaj || 'Onay listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('onay.listeAlinamadi'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setYukleniyor(false);
     }
@@ -132,7 +134,7 @@ export default function OnayIslemleri() {
     try {
       const sonuc = await onayEvraginiAl(item.guidId, calisilanSirket);
       if (!sonuc.data) {
-        toast.error(sonuc.mesaj || 'Evrak detayı alınamadı.');
+        toast.error(sonuc.mesaj || t('onay.evrakDetayiAlinamadi'));
         return;
       }
       const evrak = sonuc.data;
@@ -160,7 +162,7 @@ export default function OnayIslemleri() {
       };
       navigation.navigate('HizliIslemlerV2', { taslakEvrak: taslak });
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setIslemYapiliyor(false);
     }
@@ -179,17 +181,17 @@ export default function OnayIslemleri() {
         calisilanSirket
       );
       if (!sonuc.sonuc) {
-        toast.error(sonuc.mesaj || 'İşlem gerçekleştirilemedi.');
+        toast.error(sonuc.mesaj || t('onay.islemBasarisiz'));
         return;
       }
-      toast.success('Evrak başarıyla silindi.');
+      toast.success(t('onay.evrakSilindi'));
       const yeniListe = tumListe.filter((i) => i.guidId !== item.guidId);
       setTumListe(yeniListe);
       const q = aramaMetni.toLowerCase().trim();
       const filtrelenmis = q ? yeniListe.filter((i) => i.cariUnvani.toLowerCase().includes(q)) : yeniListe;
       setBolumler(grupla(filtrelenmis));
     } catch (e: any) {
-      toast.error(e?.message || 'Bağlantı hatası.');
+      toast.error(e?.message || t('common.baglantiHatasi'));
     } finally {
       setIslemYapiliyor(false);
     }
@@ -199,32 +201,32 @@ export default function OnayIslemleri() {
     const onaylamaDurumu = item.onaylamaDurumu ?? item.onayDurumu ?? 0;
     if ([0, 3, 4].includes(onaylamaDurumu)) {
       Alert.alert(
-        'Evrak Sil',
-        'Seçilmiş evrak kayıtlardan silinecektir. Emin misiniz?',
+        t('onay.evrakSilBaslik'),
+        t('onay.evrakSilOnay'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
+          { text: t('common.vazgec'), style: 'cancel' },
           {
-            text: 'Tamam',
+            text: t('common.tamam'),
             style: 'destructive',
             onPress: () =>
               durumGuncelle(
                 item, 8,
-                '(Müşteri tarafından evrak iptal edildi.) ' + item.not
+                t('onay.musteriIptalNot') + item.not
               ),
           },
         ]
       );
     } else if ([2, 5, 6].includes(onaylamaDurumu)) {
       Alert.alert(
-        'Listeden Çıkar',
-        'Seçili evrak listeden çıkarılacaktır. Emin misiniz?',
+        t('onay.listedenCikarBaslik'),
+        t('onay.listedenCikarOnay'),
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Tamam', style: 'destructive', onPress: () => durumGuncelle(item, 7, item.not) },
+          { text: t('common.vazgec'), style: 'cancel' },
+          { text: t('common.tamam'), style: 'destructive', onPress: () => durumGuncelle(item, 7, item.not) },
         ]
       );
     } else {
-      toast.error('Seçili evrak listeden çıkarılamaz.');
+      toast.error(t('onay.cikarilamaz'));
     }
   };
 
@@ -239,7 +241,7 @@ export default function OnayIslemleri() {
       renderRightActions={() => (
         <TouchableOpacity style={styles.silBtn} onPress={() => silmeIste(item)}>
           <Ionicons name="trash-outline" size={22} color="#fff" />
-          <Text style={styles.silBtnText}>Sil</Text>
+          <Text style={styles.silBtnText}>{t('onay.sil')}</Text>
         </TouchableOpacity>
       )}
     >
@@ -263,22 +265,22 @@ export default function OnayIslemleri() {
         <View style={styles.kartAlt}>
           <View style={styles.kartAltSol}>
             <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Kullanıcı: </Text>
+              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.kullanici')}: </Text>
               {item.kullaniciKodu}
             </Text>
             {item.sirketAdi ? (
               <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-                <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Şirket: </Text>
+                <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.sirket')}: </Text>
                 {item.sirketAdi}
               </Text>
             ) : null}
             <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Tarih: </Text>
+              <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.tarih')}: </Text>
               {formatTarih(item.tarih)}
             </Text>
             {item.onaylayan ? (
               <Text style={[styles.bilgiKucuk, { color: Colors.textSecondary }]}>
-                <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>Onaylayan: </Text>
+                <Text style={[styles.bilgiEtiket, { color: Colors.text }]}>{t('onay.onaylayan')}: </Text>
                 {item.onaylayan}
               </Text>
             ) : null}
@@ -317,7 +319,7 @@ export default function OnayIslemleri() {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
         <TextInput
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Cari ünvana göre ara..."
+          placeholder={t('onay.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={aramaUygula}
@@ -332,7 +334,7 @@ export default function OnayIslemleri() {
       {isAdmin && (
         <View style={styles.adminBar}>
           <Ionicons name="shield-checkmark-outline" size={14} color="#fff" />
-          <Text style={styles.adminBarText}>Admin görünümü — tüm kullanıcılar</Text>
+          <Text style={styles.adminBarText}>{t('onay.adminGorunumu')}</Text>
         </View>
       )}
 
@@ -349,8 +351,8 @@ export default function OnayIslemleri() {
         {bolumler.length === 0 ? (
           <EmptyState
             icon="checkmark-done-circle-outline"
-            baslik="Onay listesi boş"
-            aciklama="Bekleyen onay işlemi bulunmamaktadır"
+            baslik={t('onay.listeBos')}
+            aciklama={t('onay.listeBosAciklama')}
           />
         ) : (
           bolumler.map((bolum) => {

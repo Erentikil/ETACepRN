@@ -24,6 +24,7 @@ import { useAppStore } from '../../store/appStore';
 import { cariEkstreBilgileriAl } from '../../api/cariEkstreApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import type { CariEkstreBilgileri, CariKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -65,6 +66,7 @@ function sayiFormatla(n: number): string {
 
 export default function CariEkstreListesi() {
   const Colors = useColors();
+  const t = useT();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, pendingCari, clearPendingCari } = useAppStore();
@@ -123,7 +125,7 @@ export default function CariEkstreListesi() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'Ekstre alınamadı.');
+        toast.error(sonuc.mesaj || t('raporListe.ekstreAlinamadi'));
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
@@ -175,7 +177,7 @@ export default function CariEkstreListesi() {
     if (!pdfUri) return;
     await Sharing.shareAsync(pdfUri, {
       mimeType: 'application/pdf',
-      dialogTitle: 'Cari Ekstre PDF',
+      dialogTitle: t('raporListe.cariEkstrePdfTitle'),
     });
   };
 
@@ -187,8 +189,8 @@ export default function CariEkstreListesi() {
   };
 
   // Özet hesapla
-  const toplamBorc = liste.reduce((t, k) => t + k.borc, 0);
-  const toplamAlacak = liste.reduce((t, k) => t + k.alacak, 0);
+  const toplamBorc = liste.reduce((acc, k) => acc + k.borc, 0);
+  const toplamAlacak = liste.reduce((acc, k) => acc + k.alacak, 0);
   const sonBakiye = liste.length > 0 ? liste[liste.length - 1].bakiye : 0;
 
   const renderKalem = ({ item }: { item: CariEkstreBilgileri }) => (
@@ -203,9 +205,9 @@ export default function CariEkstreListesi() {
       </View>
       {/* Satır 2: başlıklar */}
       <View style={styles.kalemBaslikSatir}>
-        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Borç</Text>
-        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Alacak</Text>
-        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>Bakiye</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.borc')}</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.alacak')}</Text>
+        <Text style={[styles.kalemBaslik, styles.sag, { color: Colors.textSecondary }]}>{t('raporListe.bakiye')}</Text>
       </View>
       {/* Satır 3: değerler */}
       <View style={styles.kalemDegerSatir}>
@@ -258,7 +260,7 @@ export default function CariEkstreListesi() {
         >
           <Ionicons name="person-outline" size={18} color={Colors.textSecondary} />
           <Text style={[styles.cariText, { color: Colors.textSecondary }]} numberOfLines={1}>
-            Lütfen cari seçiniz...
+            {t('raporListe.cariSeciniz')}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
         </TouchableOpacity>
@@ -310,11 +312,11 @@ export default function CariEkstreListesi() {
         <View style={styles.tarihModalOverlay}>
           <View style={[styles.tarihModalKutu, { backgroundColor: Colors.card }]}>
             <Text style={[styles.tarihModalBaslik, { color: Colors.text }]}>
-              Tarih Aralığı Seçiniz
+              {t('raporListe.tarihAraligiSeciniz')}
             </Text>
             <View style={styles.tarihSatir}>
               <View style={styles.tarihAlan}>
-                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Başlangıç</Text>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>{t('raporListe.baslangic')}</Text>
                 <TouchableOpacity
                   style={[
                     styles.tarihBtn,
@@ -329,7 +331,7 @@ export default function CariEkstreListesi() {
                 </TouchableOpacity>
               </View>
               <View style={styles.tarihAlan}>
-                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>Bitiş</Text>
+                <Text style={[styles.tarihEtiket, { color: Colors.textSecondary }]}>{t('raporListe.bitis')}</Text>
                 <TouchableOpacity
                   style={[
                     styles.tarihBtn,
@@ -377,13 +379,13 @@ export default function CariEkstreListesi() {
                   setListe([]);
                 }}
               >
-                <Text style={[styles.tarihModalBtnText, { color: Colors.textSecondary }]}>İptal</Text>
+                <Text style={[styles.tarihModalBtnText, { color: Colors.textSecondary }]}>{t('raporListe.iptal')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tarihModalBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
                 onPress={() => { setTarihPickerHedef(null); setTarihModalAcik(false); }}
               >
-                <Text style={[styles.tarihModalBtnText, { color: '#fff', fontWeight: '700' }]}>Tamam</Text>
+                <Text style={[styles.tarihModalBtnText, { color: '#fff', fontWeight: '700' }]}>{t('raporListe.tamam')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -394,21 +396,21 @@ export default function CariEkstreListesi() {
       {liste.length > 0 && (
         <View style={[styles.ozetBar, { backgroundColor: Colors.card, borderBottomColor: Colors.border }]}>
           <View style={styles.ozetKalem}>
-            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Toplam Borç</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>{t('raporListe.toplamBorc')}</Text>
             <Text style={[styles.ozetDeger, { color: Colors.error }]}>
               {sayiFormatla(toplamBorc)}
             </Text>
           </View>
           <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
           <View style={styles.ozetKalem}>
-            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Toplam Alacak</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>{t('raporListe.toplamAlacak')}</Text>
             <Text style={[styles.ozetDeger, { color: Colors.success }]}>
               {sayiFormatla(toplamAlacak)}
             </Text>
           </View>
           <View style={[styles.ozetAyrac, { backgroundColor: Colors.border }]} />
           <View style={styles.ozetKalem}>
-            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>Son Bakiye</Text>
+            <Text style={[styles.ozetBaslik, { color: Colors.textSecondary }]}>{t('raporListe.sonBakiye')}</Text>
             <Text
               style={[
                 styles.ozetDeger,
@@ -425,12 +427,12 @@ export default function CariEkstreListesi() {
       {!secilenCari ? (
         <View style={styles.beklemeEkran}>
           <Ionicons name="person-circle-outline" size={56} color={Colors.border} />
-          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>Ekstre görmek için cari seçin</Text>
+          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>{t('raporListe.ekstreIcinCariSec')}</Text>
         </View>
       ) : yukleniyor ? (
         <View style={styles.beklemeEkran}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
+          <Text style={[styles.beklemeMetin, { color: Colors.textSecondary }]}>{t('raporListe.yukleniyor')}</Text>
         </View>
       ) : (
         <FlatList
@@ -448,7 +450,7 @@ export default function CariEkstreListesi() {
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
             ilkYuklemeYapildi
-              ? <EmptyState icon="document-text-outline" baslik="Kayıt bulunamadı" aciklama="Bu dönemde ekstre kaydı bulunmamaktadır" />
+              ? <EmptyState icon="document-text-outline" baslik={t('raporListe.kayitBulunamadi')} aciklama={t('raporListe.donemKayitYok')} />
               : null
           }
         />

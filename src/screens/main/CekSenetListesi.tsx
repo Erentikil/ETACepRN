@@ -20,6 +20,7 @@ import { useAppStore } from '../../store/appStore';
 import { cekSenetListesiniAl } from '../../api/cekSenetApi';
 import { raporPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import type { CekSenetBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
@@ -30,6 +31,7 @@ function sayiFormatla(n: number): string {
 
 export default function CekSenetListesi() {
   const Colors = useColors();
+  const t = useT();
   const { calisilanSirket } = useAppStore();
 
   const [liste, setListe] = useState<CekSenetBilgileri[]>([]);
@@ -60,7 +62,7 @@ export default function CekSenetListesi() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        toast.warning(sonuc.mesaj || 'Veri alınamadı.');
+        toast.warning(sonuc.mesaj || t('raporListe.veriAlinamadi'));
       }
     } catch (err: any) {
       const mesaj = err?.response?.data
@@ -103,7 +105,7 @@ export default function CekSenetListesi() {
     if (!pdfUri) return;
     await Sharing.shareAsync(pdfUri, {
       mimeType: 'application/pdf',
-      dialogTitle: 'Çek Senet PDF',
+      dialogTitle: t('raporListe.cekSenetPdfTitle'),
     });
   };
 
@@ -121,7 +123,7 @@ export default function CekSenetListesi() {
       </View>
       <View style={styles.satirSag}>
         <Text style={[styles.tutar, { color: Colors.error }]}>{sayiFormatla(item.tutar)}</Text>
-        <Text style={[styles.sayi, { color: Colors.textSecondary }]}>{item.cekSenetSayisi} evrak</Text>
+        <Text style={[styles.sayi, { color: Colors.textSecondary }]}>{t('raporListe.cekSenetEvrak', { n: item.cekSenetSayisi })}</Text>
       </View>
       {pdfYukleniyor && secilenKalem?.pozisyon === item.pozisyon ? (
         <ActivityIndicator size={18} color={Colors.primary} style={styles.satirIkon} />
@@ -158,7 +160,7 @@ export default function CekSenetListesi() {
         <Ionicons name="search" size={18} color="#fff" style={styles.aramaIkon} />
         <TextInput
           style={styles.aramaInput}
-          placeholder="Pozisyonda ara"
+          placeholder={t('raporListe.cekSenetAramaPlaceholder')}
           placeholderTextColor="rgba(255,255,255,0.6)"
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -174,7 +176,7 @@ export default function CekSenetListesi() {
       {yukleniyor ? (
         <View style={styles.merkez}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>Yükleniyor...</Text>
+          <Text style={[styles.merkezMetin, { color: Colors.textSecondary }]}>{t('raporListe.yukleniyor')}</Text>
         </View>
       ) : (
         <FlatList
@@ -191,7 +193,7 @@ export default function CekSenetListesi() {
           }
           ItemSeparatorComponent={() => <View style={styles.ayirac} />}
           ListEmptyComponent={
-            <EmptyState icon="receipt-outline" baslik="Kayıt bulunamadı" aciklama="Çek/senet kaydı bulunmamaktadır" />
+            <EmptyState icon="receipt-outline" baslik={t('raporListe.kayitBulunamadi')} aciklama={t('raporListe.cekSenetBulunamadi')} />
           }
         />
       )}

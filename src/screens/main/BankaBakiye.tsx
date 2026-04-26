@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
 import { bankaKartListesiniAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { useT } from '../../i18n/I18nContext';
 import type { BankaKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -21,6 +22,7 @@ function f(n: number) {
 }
 
 export default function BankaBakiye() {
+  const t = useT();
   const { calisilanSirket } = useAppStore();
   const [liste, setListe] = useState<BankaKartBilgileri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -32,10 +34,10 @@ export default function BankaBakiye() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'Banka listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('bakiye.bankaListesiAlinamadi'));
       }
     } catch (err: any) {
-      toast.error(err.message || 'Banka listesi yüklenirken hata oluştu.');
+      toast.error(err.message || t('bakiye.bankaListesiHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -88,7 +90,7 @@ export default function BankaBakiye() {
         )}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <EmptyState icon="business-outline" baslik="Banka kaydı bulunamadı" aciklama="Kayıtlı banka hesabı bulunmamaktadır" />
+          <EmptyState icon="business-outline" baslik={t('bakiye.bankaBulunamadi')} aciklama={t('bakiye.bankaBulunamadiAciklama')} />
         }
       />
     </View>

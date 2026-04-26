@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/appStore';
 import { toast } from '../../components/Toast';
 import { kasaKartListesiniAl } from '../../api/raporApi';
 import { Colors } from '../../constants/Colors';
+import { useT } from '../../i18n/I18nContext';
 import type { KasaKartBilgileri } from '../../models';
 import EmptyState from '../../components/EmptyState';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -21,6 +22,7 @@ function f(n: number) {
 }
 
 export default function KasaBakiye() {
+  const t = useT();
   const { calisilanSirket } = useAppStore();
   const [liste, setListe] = useState<KasaKartBilgileri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -32,10 +34,10 @@ export default function KasaBakiye() {
       if (sonuc.sonuc) {
         setListe(sonuc.data ?? []);
       } else {
-        toast.error(sonuc.mesaj || 'Kasa listesi alınamadı.');
+        toast.error(sonuc.mesaj || t('bakiye.kasaListesiAlinamadi'));
       }
     } catch (err: any) {
-      toast.error(err.message || 'Kasa listesi yüklenirken hata oluştu.');
+      toast.error(err.message || t('bakiye.kasaListesiHata'));
     } finally {
       setYukleniyor(false);
     }
@@ -88,7 +90,7 @@ export default function KasaBakiye() {
         )}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          <EmptyState icon="cash-outline" baslik="Kasa kaydı bulunamadı" aciklama="Kayıtlı kasa hesabı bulunmamaktadır" />
+          <EmptyState icon="cash-outline" baslik={t('bakiye.kasaBulunamadi')} aciklama={t('bakiye.kasaBulunamadiAciklama')} />
         }
       />
     </View>

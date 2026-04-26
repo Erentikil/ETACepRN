@@ -12,6 +12,8 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store/appStore';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
+import type { CeviriAnahtari } from '../../i18n/translations';
 import { Config } from '../../constants/Config';
 import type { DrawerParamList } from '../../navigation/types';
 import { aktifSepetAl } from '../../utils/aktifSepetStorage';
@@ -26,7 +28,7 @@ type Props = {
 
 interface HizliErisimKarti {
   id: string;
-  baslik: string;
+  ceviriAnahtari: CeviriAnahtari;
   icon: keyof typeof Ionicons.glyphMap;
   ekran: keyof DrawerParamList;
   renk: string;
@@ -37,6 +39,7 @@ const KART_YUKSEKLIGI = 118;
 
 export default function AnaSayfa({ navigation }: Props) {
   const Colors = useColors();
+  const t = useT();
   const { yetkiBilgileri, menuYetkiBilgileri, calisilanSirket, onLineCalisma } =
     useAppStore();
 
@@ -50,110 +53,26 @@ export default function AnaSayfa({ navigation }: Props) {
     aktifSepetAl(calisilanSirket).then((sepet) => {
       if (!sepet || sepet.kalemler.length === 0) return;
       Alert.alert(
-        'Yarım Kalmış İşlem',
-        `Alış/Satış sepetinizde ${sepet.kalemler.length} kalem bulunuyor.`,
-        [{ text: 'Tamam' }]
+        t('anaSayfa.yarimKalmisBaslik'),
+        t('anaSayfa.yarimKalmisMesaj', { n: sepet.kalemler.length }),
+        [{ text: t('common.tamam') }]
       );
     });
   }, [calisilanSirket]);
 
   const tumHizliErisimler: HizliErisimKarti[] = [
-    {
-      id: 'hizli',
-      baslik: 'Alış/Satış',
-      icon: 'flash-outline',
-      ekran: 'HizliIslemlerV2',
-      renk: '#1a5d3f',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
-    },
-    {
-      id: 'cariIletisim',
-      baslik: 'Cari İletişim',
-      icon: 'location-outline',
-      ekran: 'CariIletisim',
-      renk: '#1e3a6b',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
-    },
-    {
-      id: 'fiyatGor',
-      baslik: 'Fiyat Gör',
-      icon: 'pricetag-outline',
-      ekran: 'FiyatGor',
-      renk: '#c9a227',
-      yetki: menuYetkiBilgileri?.fiyatGor ?? false,
-    },
-    {
-      id: 'siparisKapama',
-      baslik: 'Sipariş Kapama',
-      icon: 'checkmark-circle-outline',
-      ekran: 'SiparisKapama',
-      renk: '#4a2c6e',
-      yetki: menuYetkiBilgileri?.siparisKapama ?? false,
-    },
-    {
-      id: 'ziyaret',
-      baslik: 'CRM Teklif',
-      icon: 'people-outline',
-      ekran: 'ZiyaretIslemleri',
-      renk: '#1d5e5f',
-      yetki: menuYetkiBilgileri?.crm ?? false,
-    },
-    {
-      id: 'alimSatim',
-      baslik: 'Evrak Oluştur',
-      icon: 'swap-horizontal-outline',
-      ekran: 'AlisSatisIslemleri',
-      renk: '#172a4e',
-      yetki: menuYetkiBilgileri?.evrakDuzenle ?? false,
-    },
-    {
-      id: 'tahsilat',
-      baslik: 'Tahsilat',
-      icon: 'cash-outline',
-      ekran: 'Tahsilatlar',
-      renk: '#8a5a2b',
-      yetki: menuYetkiBilgileri?.tahsilatlar ?? false,
-    },
-    {
-      id: 'raporlar',
-      baslik: 'Raporlar',
-      icon: 'bar-chart-outline',
-      ekran: 'Raporlar',
-      renk: '#6b1e25',
-      yetki: menuYetkiBilgileri?.raporlar ?? false,
-    },
-    {
-      id: 'barkodEkleme',
-      baslik: 'Barkod Ekleme',
-      icon: 'barcode-outline',
-      ekran: 'BarkodEkleme',
-      renk: '#8a4520',
-      yetki: menuYetkiBilgileri?.barkodEkle ?? false,
-    },
-    {
-      id: 'bekleyenEvrak',
-      baslik: 'Bekleyen Evraklar',
-      icon: 'document-text-outline',
-      ekran: 'BekleyenEvraklar',
-      renk: '#2a2a2a',
-      yetki: menuYetkiBilgileri?.bekleyenEvraklar ?? false,
-    },
-    {
-      id: 'renkBeden',
-      baslik: 'Renk-Beden',
-      icon: 'color-palette-outline',
-      ekran: 'RenkBedenIslemleri',
-      renk: '#9e5a52',
-      yetki: menuYetkiBilgileri?.renkBedenIslemleri ?? false,
-    },
-    {
-      id: 'onay',
-      baslik: 'Onay İşlemleri',
-      icon: 'shield-checkmark-outline',
-      ekran: 'OnayIslemleri',
-      renk: '#6b553a',
-      yetki: menuYetkiBilgileri?.onayIslemleri ?? false,
-    },
+    { id: 'hizli',         ceviriAnahtari: 'menu.alisSatis',       icon: 'flash-outline',             ekran: 'HizliIslemlerV2',     renk: '#1a5d3f', yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false },
+    { id: 'cariIletisim',  ceviriAnahtari: 'menu.cariIletisim',    icon: 'location-outline',          ekran: 'CariIletisim',        renk: '#1e3a6b', yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false },
+    { id: 'fiyatGor',      ceviriAnahtari: 'menu.fiyatGor',        icon: 'pricetag-outline',          ekran: 'FiyatGor',            renk: '#c9a227', yetki: menuYetkiBilgileri?.fiyatGor ?? false },
+    { id: 'siparisKapama', ceviriAnahtari: 'menu.siparisKapama',   icon: 'checkmark-circle-outline',  ekran: 'SiparisKapama',       renk: '#4a2c6e', yetki: menuYetkiBilgileri?.siparisKapama ?? false },
+    { id: 'ziyaret',       ceviriAnahtari: 'menu.crmTeklif',       icon: 'people-outline',            ekran: 'ZiyaretIslemleri',    renk: '#1d5e5f', yetki: menuYetkiBilgileri?.crm ?? false },
+    { id: 'alimSatim',     ceviriAnahtari: 'menu.evrakOlustur',    icon: 'swap-horizontal-outline',   ekran: 'AlisSatisIslemleri',  renk: '#172a4e', yetki: menuYetkiBilgileri?.evrakDuzenle ?? false },
+    { id: 'tahsilat',      ceviriAnahtari: 'anaSayfa.tahsilatKisa', icon: 'cash-outline',             ekran: 'Tahsilatlar',         renk: '#8a5a2b', yetki: menuYetkiBilgileri?.tahsilatlar ?? false },
+    { id: 'raporlar',      ceviriAnahtari: 'menu.raporlar',        icon: 'bar-chart-outline',         ekran: 'Raporlar',            renk: '#6b1e25', yetki: menuYetkiBilgileri?.raporlar ?? false },
+    { id: 'barkodEkleme',  ceviriAnahtari: 'menu.barkodEkleme',    icon: 'barcode-outline',           ekran: 'BarkodEkleme',        renk: '#8a4520', yetki: menuYetkiBilgileri?.barkodEkle ?? false },
+    { id: 'bekleyenEvrak', ceviriAnahtari: 'menu.bekleyenEvraklar', icon: 'document-text-outline',    ekran: 'BekleyenEvraklar',    renk: '#2a2a2a', yetki: menuYetkiBilgileri?.bekleyenEvraklar ?? false },
+    { id: 'renkBeden',     ceviriAnahtari: 'anaSayfa.renkBedenKisa', icon: 'color-palette-outline',   ekran: 'RenkBedenIslemleri',  renk: '#9e5a52', yetki: menuYetkiBilgileri?.renkBedenIslemleri ?? false },
+    { id: 'onay',          ceviriAnahtari: 'menu.onayIslemleri',   icon: 'shield-checkmark-outline',  ekran: 'OnayIslemleri',       renk: '#6b553a', yetki: menuYetkiBilgileri?.onayIslemleri ?? false },
   ];
 
   const varsayilanIdSirasi = tumHizliErisimler.map((k) => k.id);
@@ -208,7 +127,7 @@ export default function AnaSayfa({ navigation }: Props) {
         <Ionicons name={item.icon} size={26} color="#fff" />
       </View>
       <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
-        {item.baslik}
+        {t(item.ceviriAnahtari)}
       </Text>
     </TouchableOpacity>
   );
@@ -220,7 +139,7 @@ export default function AnaSayfa({ navigation }: Props) {
         <View style={styles.durumSol}>
           <View style={[styles.durumNokta, { backgroundColor: onLineCalisma ? '#4caf50' : Colors.accent }]} />
           <Text style={[styles.durumText, { color: Colors.text }]}>
-            {onLineCalisma ? 'Online' : 'Hibrit'}
+            {onLineCalisma ? t('anaSayfa.online') : t('anaSayfa.hibrit')}
           </Text>
         </View>
       </View>
@@ -232,9 +151,9 @@ export default function AnaSayfa({ navigation }: Props) {
             <Ionicons name="person-circle-outline" size={48} color={Colors.primary} />
           </View>
           <View style={styles.karsilamaMetin}>
-            <Text style={[styles.hosgeldin, { color: Colors.textSecondary }]}>Hoş geldiniz</Text>
+            <Text style={[styles.hosgeldin, { color: Colors.textSecondary }]}>{t('anaSayfa.hosgeldiniz')}</Text>
             <Text style={[styles.kullaniciAdi, { color: Colors.primary }]}>
-              {yetkiBilgileri?.kullaniciKodu ?? 'Kullanıcı'}
+              {yetkiBilgileri?.kullaniciKodu ?? t('anaSayfa.kullanici')}
             </Text>
             {calisilanSirket ? (
               <Text style={[styles.sirketAdi, { color: Colors.text }]} numberOfLines={1}>
@@ -253,7 +172,7 @@ export default function AnaSayfa({ navigation }: Props) {
         {/* Hızlı Erişim Kartları */}
         {sirayiYukledi && gorunurKartlar.length > 0 ? (
           <>
-            <Text style={[styles.bolumBaslik, { color: Colors.text }]}>Hızlı Erişim</Text>
+            <Text style={[styles.bolumBaslik, { color: Colors.text }]}>{t('anaSayfa.hizliErisim')}</Text>
             <View style={styles.gridWrap}>
               <SortableGrid
                 data={gorunurKartlar}
@@ -268,7 +187,7 @@ export default function AnaSayfa({ navigation }: Props) {
           <View style={styles.bosMesaj}>
             <Ionicons name="information-circle-outline" size={48} color={Colors.gray} />
             <Text style={[styles.bosMesajText, { color: Colors.textSecondary }]}>
-              Erişim izniniz olan modül bulunmuyor.{'\n'}Yöneticinizle iletişime geçin.
+              {t('anaSayfa.modulYok')}
             </Text>
           </View>
         ) : null}

@@ -31,6 +31,7 @@ import EvrakTipiSecimModal from '../../components/EvrakTipiSecimModal';
 import RenkBedenSecimModal from '../../components/RenkBedenSecimModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '../../contexts/ThemeContext';
+import { useT } from '../../i18n/I18nContext';
 import { toast } from '../../components/Toast';
 import { Config } from '../../constants/Config';
 import { paraTL, miktarFormat } from '../../utils/format';
@@ -106,6 +107,7 @@ let savedRBState: {
 
 export default function RenkBedenIslemleri() {
   const Colors = useColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -333,7 +335,7 @@ export default function RenkBedenIslemleri() {
     try {
       if (aramaTipi === 4) {
         if (!secilenCari) {
-          toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+          toast.warning(t('stok.cariSecmedenEklenemez'));
           setAramaMetni('');
           setYukleniyor(false);
           return;
@@ -345,14 +347,14 @@ export default function RenkBedenIslemleri() {
           if (sonuc.data.length === 1) {
             const stok = sonuc.data[0];
             if (!secilenCari) {
-              toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+              toast.warning(t('stok.cariSecmedenEklenemez'));
             } else {
               stokSecildi(stok);
               modalAcilacak = true;
             }
           }
         } else {
-          toast.warning(`"${veri}" barkodlu ürün bulunamadı.`);
+          toast.warning(t('stok.barkodBulunamadi', { q: veri }));
           setFiltreli([]);
         }
         // Barkod arama sonrası inputu temizle ve focusla (modal açılacaksa onClose'da yapılacak)
@@ -423,7 +425,7 @@ export default function RenkBedenIslemleri() {
   // Stok tıklandığında
   const stokSecildi = (item: StokListesiBilgileri) => {
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
     }
     // Barkod veya stok listesinde varyant var mı?
@@ -535,7 +537,7 @@ export default function RenkBedenIslemleri() {
   const barkodIsle = (barkod: string) => {
     hafifTitresim();
     if (!secilenCari) {
-      toast.warning('Sepete ürün eklemeden önce lütfen cari seçiniz.');
+      toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
     }
 
@@ -559,7 +561,7 @@ export default function RenkBedenIslemleri() {
       return;
     }
 
-    toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
+    toast.warning(t('stok.barkodBulunamadi', { q: barkod }));
   };
 
   const barkodTarandi = (barkod: string) => {
@@ -567,7 +569,7 @@ export default function RenkBedenIslemleri() {
     barkodIsle(barkod);
   };
 
-  const aramaTipiLabel = ARAMA_TIPLERI.find((t) => t.value === aramaTipi)?.label ?? 'İçeren';
+  const aramaTipiLabel = ARAMA_TIPLERI.find((at) => at.value === aramaTipi)?.label ?? 'İçeren';
 
   const cariIndirimYuzde = secilenCari?.indirimYuzde ?? 0;
 
@@ -638,7 +640,7 @@ export default function RenkBedenIslemleri() {
             onPress={() => setInfoStoku(item)}
           >
             <Ionicons name="information-circle-outline" size={24} color="#fff" />
-            <Text style={styles.infoBtnText}>Bilgi</Text>
+            <Text style={styles.infoBtnText}>{t('stok.bilgiButon')}</Text>
           </TouchableOpacity>
         )}
       >
@@ -684,7 +686,7 @@ export default function RenkBedenIslemleri() {
           onPress={() => setMiktarliGiris(!miktarliGiris)}
         >
           <Ionicons name={miktarliGiris ? 'checkbox' : 'square-outline'} size={16} color="#fff" />
-          <Text style={styles.miktarBtnText}>Miktarlı</Text>
+          <Text style={styles.miktarBtnText}>{t('stok.miktarli')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.barkodBtn}
@@ -716,7 +718,7 @@ export default function RenkBedenIslemleri() {
           color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
         <Text style={[styles.cariText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Lütfen cari seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('stok.cariSeciniz')}
         </Text>
         {secilenCari ? (
           <TouchableOpacity
@@ -728,11 +730,11 @@ export default function RenkBedenIslemleri() {
               };
               if (sepetKalemlerRef.current.length > 0) {
                 Alert.alert(
-                  'Cari seçimini iptal et',
-                  'Sepetteki ürünler silinecek. Devam edilsin mi?',
+                  t('stok.cariIptalBaslik'),
+                  t('stok.cariIptalAciklama'),
                   [
-                    { text: 'Vazgeç', style: 'cancel' },
-                    { text: 'Evet, İptal Et', style: 'destructive', onPress: temizle },
+                    { text: t('common.vazgec'), style: 'cancel' },
+                    { text: t('stok.evetIptalEt'), style: 'destructive', onPress: temizle },
                   ]
                 );
               } else {
@@ -759,7 +761,7 @@ export default function RenkBedenIslemleri() {
         <TextInput
           ref={aramaInputRef}
           style={[styles.aramaInput, { color: Colors.text }]}
-          placeholder="Stok kodu, ürün adı veya barkod..."
+          placeholder={t('stok.aramaPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={aramaMetni}
           onChangeText={setAramaMetni}
@@ -814,9 +816,9 @@ export default function RenkBedenIslemleri() {
 
       {/* Liste başlık */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CİNS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FİYAT</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('stok.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('stok.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>{t('stok.fiyatBaslik')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -833,7 +835,7 @@ export default function RenkBedenIslemleri() {
           yukleniyor ? (
             <SkeletonLoader satirSayisi={6} />
           ) : (
-            <EmptyState icon="cube-outline" baslik="Stok bulunamadı" aciklama="Ürün listesi yüklenemedi veya boş" />
+            <EmptyState icon="cube-outline" baslik={t('stok.listeBosBaslik')} aciklama={t('stok.listeBosAciklama')} />
           )
         }
       />
