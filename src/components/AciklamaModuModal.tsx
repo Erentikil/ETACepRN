@@ -56,11 +56,11 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
     const miktarSayi = parseFloat(miktar) || 0;
     const fiyatSayi = parseFloat(birimFiyat) || 0;
     if (miktarSayi <= 0) {
-      toast.warning('Miktar 0\'dan buyuk olmali.');
+      toast.warning('Miktar 0\'dan büyük olmalı.');
       return;
     }
     if (!stokCinsi.trim()) {
-      toast.warning('Aciklama (Stok Cinsi) bos birakilamaz.');
+      toast.warning('Açıklama (Stok Cinsi) boş bırakılamaz.');
       return;
     }
 
@@ -109,7 +109,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
       >
         <View style={[styles.kart, { backgroundColor: Colors.card }]}>
           <View style={[styles.baslik, { borderBottomColor: Colors.border }]}>
-            <Text style={[styles.baslikText, { color: Colors.text }]}>Serbest Kalem Girisi</Text>
+            <Text style={[styles.baslikText, { color: Colors.text }]}>Serbest Kalem Girişi</Text>
             <TouchableOpacity onPress={handleKapat}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
@@ -128,12 +128,12 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
             </View>
 
             <View style={styles.satir}>
-              <Text style={[styles.label, { color: Colors.textSecondary }]}>Stok Cinsi / Aciklama *</Text>
+              <Text style={[styles.label, { color: Colors.textSecondary }]}>Stok Cinsi / Açıklama *</Text>
               <TextInput
                 style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
                 value={stokCinsi}
                 onChangeText={setStokCinsi}
-                placeholder="Urun aciklamasi..."
+                placeholder="Ürün açıklaması..."
                 placeholderTextColor={Colors.textSecondary}
               />
             </View>
@@ -180,7 +180,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
                 />
               </View>
               <View style={styles.kucukAlani}>
-                <Text style={[styles.label, { color: Colors.textSecondary }]}>Ind.1 %</Text>
+                <Text style={[styles.label, { color: Colors.textSecondary }]}>İnd. 1 %</Text>
                 <TextInput
                   style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
                   value={ind1}
@@ -189,7 +189,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
                 />
               </View>
               <View style={styles.kucukAlani}>
-                <Text style={[styles.label, { color: Colors.textSecondary }]}>Ind.2 %</Text>
+                <Text style={[styles.label, { color: Colors.textSecondary }]}>İnd. 2 %</Text>
                 <TextInput
                   style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
                   value={ind2}
@@ -199,7 +199,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
               </View>
               {ind3Goster && (
                 <View style={styles.kucukAlani}>
-                  <Text style={[styles.label, { color: Colors.textSecondary }]}>Ind.3 %</Text>
+                  <Text style={[styles.label, { color: Colors.textSecondary }]}>İnd. 3 %</Text>
                   <TextInput
                     style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
                     value={ind3}
@@ -226,7 +226,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
             {/* Toplam */}
             <View style={[styles.toplamKutu, { backgroundColor: `${Colors.primary}08` }]}>
               <View style={styles.toplamSatir}>
-                <Text style={[styles.toplamLabel, { color: Colors.text }]}>KDV Haric:</Text>
+                <Text style={[styles.toplamLabel, { color: Colors.text }]}>KDV Hariç:</Text>
                 <Text style={[styles.toplamDeger, { color: Colors.text }]}>{kdvHaricTutar.toFixed(2)}</Text>
               </View>
               {kdvDurum !== 1 && (
@@ -247,7 +247,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
 
           <View style={[styles.altButonlar, { borderTopColor: Colors.border }]}>
             <TouchableOpacity style={[styles.iptalBtn, { borderColor: Colors.border }]} onPress={handleKapat}>
-              <Text style={[styles.iptalText, { color: Colors.text }]}>Vazgec</Text>
+              <Text style={[styles.iptalText, { color: Colors.text }]}>Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.ekleBtn, { backgroundColor: Colors.primary }]} onPress={handleEkle}>
               <Ionicons name="checkmark" size={20} color="#fff" />
