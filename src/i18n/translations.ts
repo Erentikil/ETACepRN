@@ -335,6 +335,10 @@ export const translations = {
     'siparis.pdfAlinamadi': 'PDF alınamadı.',
     'siparis.pdfPaylasilamadi': 'PDF paylaşılamadı.',
     'siparis.fisTipiSeciniz': 'Fiş tipi seçiniz...',
+    'siparis.cariUnvaniSeciniz': 'Cari ünvanı seçiniz...',
+    'siparis.fisTipiSecBaslik': 'Fiş Tipi Seçiniz',
+    'siparis.araBtn': 'Ara',
+    'siparis.fisBulunamadiAciklama': 'Cari veya evrak numarası ile arama yapınız',
     'siparis.evrakNoGiriniz': 'Evrak numarası giriniz...',
 
     // ========== Tahsilat ==========
@@ -380,6 +384,19 @@ export const translations = {
     'tahsilat.duzIlce': 'Düz. İlçe',
     'tahsilat.islemTipiSecBaslik': 'İşlem Tipi Seçin',
     'tahsilat.vazgec': 'Vazgeç',
+    'tahsilat.cariSecildiTiklayin': 'Cari seçildi — değiştirmek için tıklayın',
+    'tahsilat.cariSeciniz': 'Lütfen cari seçiniz...',
+    'tahsilat.islemler': 'İşlemler',
+    'tahsilat.islemlerBaslik': 'İşlemler · {ad}',
+    'tahsilat.kaydet': 'Kaydet',
+    'tahsilat.pdfGoster': 'PDF Göster',
+    'tahsilat.temizle': 'Temizle',
+    'tahsilat.cariKodEtiket': 'Cari Kod',
+    'tahsilat.unvanEtiket': 'Ünvan',
+    'tahsilat.yetkiliEtiket': 'Yetkili',
+    'tahsilat.bakiyeEtiket': 'Bakiye',
+    'tahsilat.kasaSecBaslik': 'Kasa Seçin',
+    'tahsilat.pdfYukleniyor': 'PDF yükleniyor...',
 
     // ========== Bekleyen Evraklar / Siparişler ==========
     'bekleyen.evrakBulunamadi': 'Bekleyen evrak bulunamadı',
@@ -1254,6 +1271,10 @@ export const translations = {
     'siparis.pdfAlinamadi': 'Could not get PDF.',
     'siparis.pdfPaylasilamadi': 'Could not share PDF.',
     'siparis.fisTipiSeciniz': 'Select document type...',
+    'siparis.cariUnvaniSeciniz': 'Select customer name...',
+    'siparis.fisTipiSecBaslik': 'Select Receipt Type',
+    'siparis.araBtn': 'Search',
+    'siparis.fisBulunamadiAciklama': 'Search by customer or document number',
     'siparis.evrakNoGiriniz': 'Enter document number...',
 
     // ========== Collection ==========
@@ -1299,6 +1320,19 @@ export const translations = {
     'tahsilat.duzIlce': 'Issuer District',
     'tahsilat.islemTipiSecBaslik': 'Select Operation Type',
     'tahsilat.vazgec': 'Cancel',
+    'tahsilat.cariSecildiTiklayin': 'Customer selected — tap to change',
+    'tahsilat.cariSeciniz': 'Please select a customer...',
+    'tahsilat.islemler': 'Operations',
+    'tahsilat.islemlerBaslik': 'Operations · {ad}',
+    'tahsilat.kaydet': 'Save',
+    'tahsilat.pdfGoster': 'Show PDF',
+    'tahsilat.temizle': 'Clear',
+    'tahsilat.cariKodEtiket': 'Customer Code',
+    'tahsilat.unvanEtiket': 'Name',
+    'tahsilat.yetkiliEtiket': 'Authorized',
+    'tahsilat.bakiyeEtiket': 'Balance',
+    'tahsilat.kasaSecBaslik': 'Select Cash Account',
+    'tahsilat.pdfYukleniyor': 'Loading PDF...',
 
     // ========== Pending Documents / Orders ==========
     'bekleyen.evrakBulunamadi': 'No pending document',

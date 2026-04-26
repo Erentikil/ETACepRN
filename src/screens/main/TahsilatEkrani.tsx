@@ -48,18 +48,6 @@ type IslemMenuItem =
   | { turu: 'navigasyon'; ekran: string; baslik: string; icon: keyof typeof Ionicons.glyphMap; params?: object }
   | { turu: 'pdf'; baslik: string; icon: keyof typeof Ionicons.glyphMap; dizaynAdi: string; evrakTipi: string };
 
-const ISLEM_MENUSU: IslemMenuItem[] = [
-  { turu: 'navigasyon', ekran: 'CariEkstreListesi', baslik: 'Cari Ekstre', icon: 'document-text-outline' },
-  { turu: 'navigasyon', ekran: 'StokluCariEkstreListesi', baslik: 'Stoklu Ekstre', icon: 'list-outline' },
-  { turu: 'navigasyon', ekran: 'BekleyenSiparisler', baslik: 'Bekleyen Siparişler', icon: 'time-outline' },
-  { turu: 'pdf', baslik: 'Tahsilat Listesi', icon: 'receipt-outline', dizaynAdi: 'Mobil_TahsilatDetayDizayn.repx', evrakTipi: 'TahsilatDetay' },
-  { turu: 'pdf', baslik: 'Adresler', icon: 'location-outline', dizaynAdi: 'Mobil_CariAdresDizayn.repx', evrakTipi: 'CariAdres' },
-  { turu: 'tahsilat', tip: 'cari', baslik: 'Cari Tahsilat', icon: 'cash-outline', yetkiKey: 'cariTahsilatYetkisi' },
-  { turu: 'tahsilat', tip: 'kasa', baslik: 'Kasa Tahsilatı', icon: 'wallet-outline', yetkiKey: 'kasaTahsilatYetkisi' },
-  { turu: 'tahsilat', tip: 'cek', baslik: 'Çek Tahsilatı', icon: 'document-text-outline', yetkiKey: 'cekTahsilatYetkisi' },
-  { turu: 'tahsilat', tip: 'senet', baslik: 'Senet Tahsilatı', icon: 'receipt-outline', yetkiKey: 'senetTahsilatYetkisi' },
-];
-
 function uuidOlustur(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -104,6 +92,17 @@ function tutarSayisi(t: string): number {
 export default function TahsilatEkrani() {
   const Colors = useColors();
   const t = useT();
+  const ISLEM_MENUSU: IslemMenuItem[] = [
+    { turu: 'navigasyon', ekran: 'CariEkstreListesi', baslik: t('tahsilat.cariEkstre'), icon: 'document-text-outline' },
+    { turu: 'navigasyon', ekran: 'StokluCariEkstreListesi', baslik: t('tahsilat.stokluEkstre'), icon: 'list-outline' },
+    { turu: 'navigasyon', ekran: 'BekleyenSiparisler', baslik: t('tahsilat.bekleyenSiparisler'), icon: 'time-outline' },
+    { turu: 'pdf', baslik: t('tahsilat.tahsilatListesi'), icon: 'receipt-outline', dizaynAdi: 'Mobil_TahsilatDetayDizayn.repx', evrakTipi: 'TahsilatDetay' },
+    { turu: 'pdf', baslik: t('tahsilat.adresler'), icon: 'location-outline', dizaynAdi: 'Mobil_CariAdresDizayn.repx', evrakTipi: 'CariAdres' },
+    { turu: 'tahsilat', tip: 'cari', baslik: t('tahsilat.cariTahsilat'), icon: 'cash-outline', yetkiKey: 'cariTahsilatYetkisi' },
+    { turu: 'tahsilat', tip: 'kasa', baslik: t('tahsilat.kasaTahsilat'), icon: 'wallet-outline', yetkiKey: 'kasaTahsilatYetkisi' },
+    { turu: 'tahsilat', tip: 'cek', baslik: t('tahsilat.cekTahsilat'), icon: 'document-text-outline', yetkiKey: 'cekTahsilatYetkisi' },
+    { turu: 'tahsilat', tip: 'senet', baslik: t('tahsilat.senetTahsilat'), icon: 'receipt-outline', yetkiKey: 'senetTahsilatYetkisi' },
+  ];
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
@@ -811,7 +810,7 @@ export default function TahsilatEkrani() {
       <Modal visible={kasaPickerAcik} transparent animationType="fade" onRequestClose={() => setKasaPickerAcik(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setKasaPickerAcik(false)}>
           <View style={[styles.pickerKutu, { backgroundColor: Colors.card }]}>
-            <Text style={[styles.pickerBaslik, { color: Colors.text, borderBottomColor: Colors.border }]}>Kasa Seçin</Text>
+            <Text style={[styles.pickerBaslik, { color: Colors.text, borderBottomColor: Colors.border }]}>{t('tahsilat.kasaSecBaslik')}</Text>
             <FlatList
               data={kasaListesi}
               keyExtractor={(item) => item.kasaKodu}
@@ -841,7 +840,7 @@ export default function TahsilatEkrani() {
       >
         <Ionicons name="person-outline" size={18} color={secilenCari ? Colors.primary : Colors.textSecondary} />
         <Text style={[styles.cariText, { color: Colors.textSecondary }]} numberOfLines={1}>
-          {secilenCari ? 'Cari seçildi — değiştirmek için tıklayın' : 'Lütfen cari seçiniz...'}
+          {secilenCari ? t('tahsilat.cariSecildiTiklayin') : t('tahsilat.cariSeciniz')}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
@@ -856,11 +855,11 @@ export default function TahsilatEkrani() {
           >
             <View style={styles.cariBilgiToggleIcerik}>
               <View style={styles.cariBilgiSatir}>
-                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>Cari Kod</Text>
+                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>{t('tahsilat.cariKodEtiket')}</Text>
                 <Text style={[styles.cariBilgiDeger, { color: Colors.primary }]}>{secilenCari.cariKodu}</Text>
               </View>
               <View style={styles.cariBilgiSatir}>
-                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>Ünvan</Text>
+                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>{t('tahsilat.unvanEtiket')}</Text>
                 <Text style={[styles.cariBilgiDeger, { color: Colors.primary }]} numberOfLines={1}>{secilenCari.cariUnvan}</Text>
               </View>
             </View>
@@ -875,12 +874,12 @@ export default function TahsilatEkrani() {
             <View style={[styles.cariBilgiDetay, { borderTopColor: Colors.border }]}>
               {secilenCari.yetkili ? (
                 <View style={styles.cariBilgiSatir}>
-                  <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>Yetkili</Text>
+                  <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>{t('tahsilat.yetkiliEtiket')}</Text>
                   <Text style={[styles.cariBilgiDeger, { color: Colors.primary }]}>{secilenCari.yetkili}</Text>
                 </View>
               ) : null}
               <View style={styles.cariBilgiSatir}>
-                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>Bakiye</Text>
+                <Text style={[styles.cariBilgiEtiket, { color: Colors.textSecondary }]}>{t('tahsilat.bakiyeEtiket')}</Text>
                 <Text style={[styles.cariBilgiDeger, { color: (cariBakiye ?? 0) >= 0 ? Colors.error : Colors.success }]}>
                   {cariBakiye !== null ? sayiFormatla(cariBakiye) : '—'}
                 </Text>
@@ -899,8 +898,8 @@ export default function TahsilatEkrani() {
         >
           <Text style={[styles.islemlerBtnText, { color: Colors.headerText }]}>
             {aktifTip
-              ? `İşlemler · ${ISLEM_MENUSU.find((m) => m.turu === 'tahsilat' && m.tip === aktifTip)?.baslik ?? ''}`
-              : 'İşlemler'}
+              ? t('tahsilat.islemlerBaslik', { ad: ISLEM_MENUSU.find((m) => m.turu === 'tahsilat' && m.tip === aktifTip)?.baslik ?? '' })
+              : t('tahsilat.islemler')}
           </Text>
           <Ionicons name="chevron-down-outline" size={16} color={Colors.headerText} style={{ marginRight: 6 }} />
         </TouchableOpacity>
@@ -926,9 +925,9 @@ export default function TahsilatEkrani() {
         <Pressable style={styles.yuzerOverlay} onPress={() => toggleYuzerMenu(false)}>
           <View style={[styles.yuzerMenuKapsayici, { bottom: 90 + insets.bottom }]}>
             {[
-              { label: 'Kaydet', icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); kaydet(); }, disabled: kaydediliyor },
-              { label: 'PDF Göster', icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: false },
-              { label: 'Temizle', icon: 'trash-outline' as const, color: Colors.error, onPress: () => { toggleYuzerMenu(false); temizle(); }, disabled: kaydediliyor },
+              { label: t('tahsilat.kaydet'), icon: 'save-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); kaydet(); }, disabled: kaydediliyor },
+              { label: t('tahsilat.pdfGoster'), icon: 'document-text-outline' as const, color: Colors.primary, onPress: () => { toggleYuzerMenu(false); handlePdfGoster(); }, disabled: false },
+              { label: t('tahsilat.temizle'), icon: 'trash-outline' as const, color: Colors.error, onPress: () => { toggleYuzerMenu(false); temizle(); }, disabled: kaydediliyor },
             ].map((item, idx) => {
               const translateY = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
               const opacity = menuAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, idx < 1 ? 0.3 : 0.7, 1] });
@@ -967,7 +966,7 @@ export default function TahsilatEkrani() {
           {pdfYukleniyor ? (
             <View style={styles.pdfMerkez}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>PDF yükleniyor...</Text>
+              <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>{t('tahsilat.pdfYukleniyor')}</Text>
             </View>
           ) : pdfDosyaUri ? (
             <PdfViewer fileUri={pdfDosyaUri} style={{ flex: 1 }} />
@@ -1003,7 +1002,7 @@ export default function TahsilatEkrani() {
             >
               <View style={[styles.tarihModalBar, { borderBottomColor: Colors.border }]}>
                 <TouchableOpacity onPress={() => setTarihPickerAcik(false)}>
-                  <Text style={[styles.tarihModalVazgec, { color: Colors.textSecondary }]}>Vazgeç</Text>
+                  <Text style={[styles.tarihModalVazgec, { color: Colors.textSecondary }]}>{t('tahsilat.vazgec')}</Text>
                 </TouchableOpacity>
                 <Text style={[styles.tarihModalBaslik, { color: Colors.text }]}>Vade Tarihi</Text>
                 <TouchableOpacity onPress={() => setTarihPickerAcik(false)}>

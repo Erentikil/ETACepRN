@@ -692,7 +692,7 @@ export default function SiparisKapama() {
           color={secilenCari ? Colors.primary : Colors.textSecondary}
         />
         <Text style={[styles.secimBtnText, { color: Colors.textSecondary }, secilenCari && { color: Colors.text, fontWeight: '600' as const }]}>
-          {secilenCari ? secilenCari.cariUnvan : 'Cari ünvanı seçiniz...'}
+          {secilenCari ? secilenCari.cariUnvan : t('siparis.cariUnvaniSeciniz')}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
@@ -708,7 +708,7 @@ export default function SiparisKapama() {
         ) : (
           <>
             <Ionicons name="search-outline" size={18} color={'#fff'} />
-            <Text style={styles.araBtnText}>Ara</Text>
+            <Text style={styles.araBtnText}>{t('siparis.araBtn')}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -726,8 +726,8 @@ export default function SiparisKapama() {
           ) : (
             <EmptyState
               icon="document-text-outline"
-              baslik="Sipariş fişi bulunamadı"
-              aciklama="Cari veya evrak numarası ile arama yapınız"
+              baslik={t('siparis.fisBulunamadi')}
+              aciklama={t('siparis.fisBulunamadiAciklama')}
             />
           )
         }
@@ -1197,7 +1197,7 @@ export default function SiparisKapama() {
         <View style={styles.modalOverlay}>
           <View style={[styles.fisTipiModalKutu, { backgroundColor: Colors.card }]}>
             <View style={[styles.fisTipiModalBaslik, { borderBottomColor: Colors.border }]}>
-              <Text style={[styles.fisTipiModalBaslikText, { color: Colors.text }]}>Fiş Tipi Seçiniz</Text>
+              <Text style={[styles.fisTipiModalBaslikText, { color: Colors.text }]}>{t('siparis.fisTipiSecBaslik')}</Text>
               <TouchableOpacity onPress={() => setFisTipiModalGorunur(false)}>
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
