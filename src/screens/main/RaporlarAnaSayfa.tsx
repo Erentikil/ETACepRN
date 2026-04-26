@@ -148,8 +148,8 @@ export default function RaporlarAnaSayfa({ navigation }: Props) {
       onPress={() => raporSec(item)}
       activeOpacity={0.75}
     >
-      <View style={[styles.kartIkon, { backgroundColor: `${item.renk}22` }]}>
-        <Ionicons name={item.icon} size={26} color={item.renk} />
+      <View style={[styles.kartIkon, { backgroundColor: `${Colors.primary}22` }]}>
+        <Ionicons name={item.icon} size={26} color={Colors.primary} />
       </View>
       <Text style={[styles.kartBaslik, { color: Colors.text }]} numberOfLines={2}>
         {item.baslik}
