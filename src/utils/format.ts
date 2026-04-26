@@ -13,9 +13,9 @@ export function paraFormat(sayi: number, ondalik = 2): string {
   }).format(sayi);
 }
 
-/** Para birimi + sembol (örn. 1.234,56 ₺) */
+/** Para birimi + sembol (örn. 1.234,56 ₺). NBSP ( ) ile sembol satırı kayar değil. */
 export function paraTL(sayi: number, ondalik = 2): string {
-  return `${paraFormat(sayi, ondalik)} ₺`;
+  return `${paraFormat(sayi, ondalik)} ₺`;
 }
 
 /** Miktar: gereksiz sıfırları atar (örn. 1,5 veya 10) */

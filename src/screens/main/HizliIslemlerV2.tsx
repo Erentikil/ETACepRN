@@ -99,12 +99,14 @@ type StokSatiriProps = {
   onPress: (item: import('../../models').StokListesiBilgileri) => void;
   onLongPress: (item: import('../../models').StokListesiBilgileri) => void;
   onInfo: (item: import('../../models').StokListesiBilgileri) => void;
+  onToggleFavori: (stokKodu: string) => void;
+  favori: boolean;
   colors: ReturnType<typeof import('../../contexts/ThemeContext').useColors>;
   yuklemeTamamlandi: boolean;
   bilgiLabel: string;
 };
 
-const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colors, yuklemeTamamlandi, bilgiLabel }: StokSatiriProps) => {
+const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, onToggleFavori, favori, colors, yuklemeTamamlandi, bilgiLabel }: StokSatiriProps) => {
   const icerik = (
     <ReanimatedSwipeable
       renderRightActions={() => (
@@ -131,10 +133,26 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
           ) : null}
         </View>
         <View style={styles.stokSag}>
-          <Text style={[styles.stokFiyat, { color: colors.primary }]}>{paraTL(item.fiyat)}</Text>
-          <Text style={[styles.stokBakiye, { color: colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
-          <Text style={[styles.stokBakiye, { color: colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+          <Text
+            style={[styles.stokFiyat, { color: colors.primary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >{paraTL(item.fiyat)}</Text>
+          <Text style={[styles.stokBakiye, { color: colors.textSecondary }]} numberOfLines={1}>{miktarFormat(item.bakiye)}</Text>
+          <Text style={[styles.stokBakiye, { color: colors.textSecondary, marginTop: 0, fontSize: 10 }]} numberOfLines={1}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.favoriYildiz}
+          onPress={() => onToggleFavori(item.stokKodu)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={favori ? 'star' : 'star-outline'}
+            size={20}
+            color={favori ? colors.accent : colors.textSecondary}
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
     </ReanimatedSwipeable>
   );
@@ -149,6 +167,8 @@ const StokSatiri = React.memo(({ item, index, onPress, onLongPress, onInfo, colo
   prev.onPress === next.onPress &&
   prev.onLongPress === next.onLongPress &&
   prev.onInfo === next.onInfo &&
+  prev.onToggleFavori === next.onToggleFavori &&
+  prev.favori === next.favori &&
   prev.colors === next.colors &&
   prev.yuklemeTamamlandi === next.yuklemeTamamlandi &&
   prev.bilgiLabel === next.bilgiLabel
@@ -168,6 +188,11 @@ export default function HizliIslemlerV2() {
   const route = useRoute<RoutePropType>();
 
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
+  const favoriStoklar = useAppStore((s) => s.favoriStoklar);
+  const toggleFavoriStok = useAppStore((s) => s.toggleFavoriStok);
+  const favoriStokListesi = favoriStoklar[calisilanSirket] ?? [];
+  const favoriStokSet = useMemo(() => new Set(favoriStokListesi), [favoriStokListesi]);
+  const [sadeceFavoriStoklar, setSadeceFavoriStoklar] = useState(false);
 
   const taslakFisTipiYuklendi = useRef(false);
   const fisTipiManuelSecildi = useRef(false);
@@ -460,9 +485,13 @@ export default function HizliIslemlerV2() {
   }, [aramaMetni, stokListesi, aramaTipi]);
 
   // FlatList'e verilecek liste — barkod sonucu varsa onu göster
-  const gosterilenVeri = aramaTipi === 4
+  const gosterilenVeriHam = aramaTipi === 4
     ? (barkodSonuclari.length > 0 ? barkodSonuclari : stokListesi)
     : lokalFiltreli;
+  const gosterilenVeri = useMemo(
+    () => sadeceFavoriStoklar ? gosterilenVeriHam.filter((s) => favoriStokSet.has(s.stokKodu)) : gosterilenVeriHam,
+    [gosterilenVeriHam, sadeceFavoriStoklar, favoriStokSet]
+  );
 
   // Barkod araması — API'ye istek at
   const barkodAramaYap = useCallback(async (veriOverride?: string) => {
@@ -749,6 +778,9 @@ export default function HizliIslemlerV2() {
   const yuklemeTamamlandi = stokYuklemeDurumu === 'tamamlandi';
 
   const bilgiLabel = t('stok.bilgiButon');
+  const onToggleFavoriStokCb = useCallback((stokKodu: string) => {
+    toggleFavoriStok(calisilanSirket, stokKodu);
+  }, [calisilanSirket, toggleFavoriStok]);
   const renderStokSatiri = useCallback(({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <StokSatiri
       item={item}
@@ -756,11 +788,13 @@ export default function HizliIslemlerV2() {
       onPress={onStokPress}
       onLongPress={onStokLongPress}
       onInfo={onStokInfo}
+      onToggleFavori={onToggleFavoriStokCb}
+      favori={favoriStokSet.has(item.stokKodu)}
       colors={Colors}
       yuklemeTamamlandi={yuklemeTamamlandi}
       bilgiLabel={bilgiLabel}
     />
-  ), [onStokPress, onStokLongPress, onStokInfo, Colors, yuklemeTamamlandi, bilgiLabel]);
+  ), [onStokPress, onStokLongPress, onStokInfo, onToggleFavoriStokCb, favoriStokSet, Colors, yuklemeTamamlandi, bilgiLabel]);
 
   return (
     <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
@@ -870,6 +904,20 @@ export default function HizliIslemlerV2() {
             <Ionicons name="search" size={20} color="#fff" />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={[
+            styles.favoriChip,
+            { borderColor: Colors.border },
+            sadeceFavoriStoklar && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+          ]}
+          onPress={() => setSadeceFavoriStoklar((v) => !v)}
+        >
+          <Ionicons
+            name={sadeceFavoriStoklar ? 'star' : 'star-outline'}
+            size={14}
+            color={sadeceFavoriStoklar ? '#fff' : Colors.accent}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Arama tipi dropdown */}
@@ -952,6 +1000,8 @@ export default function HizliIslemlerV2() {
         ListEmptyComponent={
           yukleniyor ? (
             <SkeletonLoader satirSayisi={6} />
+          ) : sadeceFavoriStoklar ? (
+            <EmptyState icon="star-outline" baslik={t('favori.stokYok')} aciklama={t('favori.stokYokAciklama')} />
           ) : (
             <EmptyState icon="cube-outline" baslik="Stok bulunamadı" aciklama="Ürün listesi yüklenemedi veya boş" />
           )
@@ -1211,13 +1261,28 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  stokBilgi: { flex: 3.2 },
+  stokBilgi: { flex: 2.8 },
   stokKodu: { fontSize: 11, fontWeight: '600' },
   stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
   stokBarkod: { fontSize: 11, marginTop: 1 },
-  stokSag: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
+  stokSag: { flex: 1.2, alignItems: 'flex-end', justifyContent: 'center', minWidth: 90 },
   stokFiyat: { fontSize: 14, fontWeight: '700' },
   stokBakiye: { fontSize: 11, marginTop: 2 },
+  favoriYildiz: {
+    paddingLeft: 8,
+    paddingRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriChip: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
   ayirac: { height: 4 },
   infoBtn: {
     justifyContent: 'center',

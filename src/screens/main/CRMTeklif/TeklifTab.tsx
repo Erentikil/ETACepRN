@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
 import {
   View,
@@ -90,6 +90,11 @@ export default function TeklifTab({
   ];
   const navigation = useNavigation<NavProp>();
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
+  const favoriStoklar = useAppStore((s) => s.favoriStoklar);
+  const toggleFavoriStok = useAppStore((s) => s.toggleFavoriStok);
+  const favoriStokListesi = favoriStoklar[calisilanSirket] ?? [];
+  const favoriStokSet = useMemo(() => new Set(favoriStokListesi), [favoriStokListesi]);
+  const [sadeceFavoriStoklar, setSadeceFavoriStoklar] = useState(false);
 
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>(
     stokListesiCacheSirket === calisilanSirket ? stokListesiCache : []
@@ -391,6 +396,7 @@ export default function TeklifTab({
   useEffect(() => { sepetKalemlerRef.current = sepetKalemleri; }, [sepetKalemleri]);
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => {
+    const favori = favoriStokSet.has(item.stokKodu);
     const icerik = (
       <ReanimatedSwipeable
         renderRightActions={() => (
@@ -407,10 +413,22 @@ export default function TeklifTab({
             {item.barkod ? <Text style={[styles.stokBarkod, { color: Colors.textSecondary }]}>{item.barkod}</Text> : null}
           </View>
           <View style={styles.stokSag}>
-            <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
+            <Text
+              style={[styles.stokFiyat, { color: Colors.primary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >{paraTL(item.fiyat)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]} numberOfLines={1}>{miktarFormat(item.bakiye)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]} numberOfLines={1}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.favoriYildiz}
+            onPress={() => toggleFavoriStok(calisilanSirket, item.stokKodu)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name={favori ? 'star' : 'star-outline'} size={20} color={favori ? Colors.accent : Colors.textSecondary} />
+          </TouchableOpacity>
         </TouchableOpacity>
       </ReanimatedSwipeable>
     );
@@ -505,6 +523,20 @@ export default function TeklifTab({
             <Ionicons name="search" size={20} color="#fff" />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={[
+            styles.favoriChip,
+            { borderColor: Colors.border },
+            sadeceFavoriStoklar && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+          ]}
+          onPress={() => setSadeceFavoriStoklar((v) => !v)}
+        >
+          <Ionicons
+            name={sadeceFavoriStoklar ? 'star' : 'star-outline'}
+            size={14}
+            color={sadeceFavoriStoklar ? '#fff' : Colors.accent}
+          />
+        </TouchableOpacity>
       </View>
 
       {aramaTipiAcik && (
@@ -531,7 +563,7 @@ export default function TeklifTab({
 
       {/* Stok listesi */}
       <FlatList
-        data={filtreli}
+        data={sadeceFavoriStoklar ? filtreli.filter((s) => favoriStokSet.has(s.stokKodu)) : filtreli}
         keyExtractor={(item, idx) => item.stokKodu || String(idx)}
         renderItem={renderStokSatiri}
         style={styles.liste}
@@ -568,7 +600,9 @@ export default function TeklifTab({
         ListEmptyComponent={
           yukleniyor
             ? <SkeletonLoader satirSayisi={6} />
-            : <EmptyState icon="cube-outline" baslik={t('crmTeklif.stokBulunamadi')} aciklama={t('crmTeklif.stokBulunamadiAciklama')} />
+            : sadeceFavoriStoklar
+              ? <EmptyState icon="star-outline" baslik={t('favori.stokYok')} aciklama={t('favori.stokYokAciklama')} />
+              : <EmptyState icon="cube-outline" baslik={t('crmTeklif.stokBulunamadi')} aciklama={t('crmTeklif.stokBulunamadiAciklama')} />
         }
       />
 
@@ -700,13 +734,28 @@ const styles = StyleSheet.create({
   listeBaslikText: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
   liste: { flex: 1, paddingHorizontal: 10 },
   stokSatiri: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
-  stokBilgi: { flex: 3.2 },
+  stokBilgi: { flex: 2.8 },
   stokKodu: { fontSize: 11, fontWeight: '600' },
   stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
   stokBarkod: { fontSize: 11, marginTop: 1 },
-  stokSag: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
+  stokSag: { flex: 1.2, alignItems: 'flex-end', justifyContent: 'center', minWidth: 90 },
   stokFiyat: { fontSize: 14, fontWeight: '700' },
   stokBakiye: { fontSize: 11, marginTop: 2 },
+  favoriYildiz: {
+    paddingLeft: 8,
+    paddingRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriChip: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
   infoBtn: { justifyContent: 'center', alignItems: 'center', width: 70, gap: 2 },
   infoBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   altBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10, gap: 8 },

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   YetkiBilgileri,
   MenuYetkiBilgileri,
@@ -15,6 +16,7 @@ import type {
   CariKartBilgileri,
 } from '../models';
 import { TabloCekmeDurumu as TCD, KameraBarkodTipi as KBT, KameraBarkodOkuma as KBO } from '../models';
+import Config from '../constants/Config';
 
 interface AppState {
   // Çalışma modu
@@ -51,6 +53,10 @@ interface AppState {
   // Uyumluluk modu (Pro'ya özel) — V8: 3 kalem indirim, SQL: 5 kalem indirim
   uyumluluk: 'V8' | 'SQL';
 
+  // Favoriler — şirket bazlı (her veritabanı için ayrı liste)
+  favoriCariler: Record<string, string[]>;
+  favoriStoklar: Record<string, string[]>;
+
   // Actions
   setOnLineCalisma: (val: boolean) => void;
   setYetkiBilgileri: (val: YetkiBilgileri) => void;
@@ -67,6 +73,12 @@ interface AppState {
   setPendingCari: (cari: CariKartBilgileri, target: string) => void;
   clearPendingCari: () => void;
   setUyumluluk: (val: 'V8' | 'SQL') => void;
+  toggleFavoriCari: (sirket: string, cariKodu: string) => void;
+  toggleFavoriStok: (sirket: string, stokKodu: string) => void;
+  setFavoriler: (
+    favoriCariler: Record<string, string[]>,
+    favoriStoklar: Record<string, string[]>
+  ) => void;
   cikisYap: () => void;
 }
 
@@ -98,6 +110,34 @@ export const useAppStore = create<AppState>()((set) => ({
 
   uyumluluk: 'SQL',
   setUyumluluk: (val) => set({ uyumluluk: val }),
+
+  favoriCariler: {},
+  favoriStoklar: {},
+  setFavoriler: (favoriCariler, favoriStoklar) => set({ favoriCariler, favoriStoklar }),
+  toggleFavoriCari: (sirket, cariKodu) => {
+    if (!sirket || !cariKodu) return;
+    set((state) => {
+      const mevcut = state.favoriCariler[sirket] ?? [];
+      const yeniListe = mevcut.includes(cariKodu)
+        ? mevcut.filter((k) => k !== cariKodu)
+        : [...mevcut, cariKodu];
+      const guncel = { ...state.favoriCariler, [sirket]: yeniListe };
+      AsyncStorage.setItem(Config.STORAGE_KEYS.FAVORI_CARILER, JSON.stringify(guncel)).catch(() => {});
+      return { favoriCariler: guncel };
+    });
+  },
+  toggleFavoriStok: (sirket, stokKodu) => {
+    if (!sirket || !stokKodu) return;
+    set((state) => {
+      const mevcut = state.favoriStoklar[sirket] ?? [];
+      const yeniListe = mevcut.includes(stokKodu)
+        ? mevcut.filter((k) => k !== stokKodu)
+        : [...mevcut, stokKodu];
+      const guncel = { ...state.favoriStoklar, [sirket]: yeniListe };
+      AsyncStorage.setItem(Config.STORAGE_KEYS.FAVORI_STOKLAR, JSON.stringify(guncel)).catch(() => {});
+      return { favoriStoklar: guncel };
+    });
+  },
 
   setOnLineCalisma: (val) => set({ onLineCalisma: val }),
   setYetkiBilgileri: (val) => set({ yetkiBilgileri: val }),

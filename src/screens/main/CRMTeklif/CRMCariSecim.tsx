@@ -41,6 +41,11 @@ export default function CRMCariSecim() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+  const favoriCariler = useAppStore((s) => s.favoriCariler);
+  const toggleFavoriCari = useAppStore((s) => s.toggleFavoriCari);
+  const favoriListesi = favoriCariler[calisilanSirket] ?? [];
+  const favoriSet = useMemo(() => new Set(favoriListesi), [favoriListesi]);
+  const [sadeceFavoriler, setSadeceFavoriler] = useState(false);
 
   const FORM_ALANLARI: {
     alan: keyof CariEvrak;
@@ -153,14 +158,18 @@ export default function CRMCariSecim() {
 
   const filtreliCariler = useMemo(() => {
     const q = aramaMetni.toLowerCase().trim();
-    if (!q) return cariListesi;
-    return cariListesi.filter(
+    let liste = cariListesi;
+    if (sadeceFavoriler) {
+      liste = liste.filter((c) => favoriSet.has(c.cariKodu));
+    }
+    if (!q) return liste;
+    return liste.filter(
       (c) =>
         c.cariKodu.toLowerCase().includes(q) ||
         c.cariUnvan.toLowerCase().includes(q) ||
         (c.telefon ?? '').toLowerCase().includes(q)
     );
-  }, [aramaMetni, cariListesi]);
+  }, [aramaMetni, cariListesi, sadeceFavoriler, favoriSet]);
 
   // ─── Potansiyel Cariler tab ─────────────────────────────────────────────────
   const [crmMusteriListesi, setCrmMusteriListesi] = useState<CRMMusteriBilgileri[]>([]);
@@ -248,25 +257,42 @@ export default function CRMCariSecim() {
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
-  const renderCariSatiri = ({ item, index }: { item: CariKartBilgileri; index: number }) => (
-    <AnimatedListItem index={index}>
-      <TouchableOpacity style={[styles.satir, { backgroundColor: Colors.card }]} onPress={() => cariSec(item)}>
-        <View style={[styles.ikon, { backgroundColor: `${Colors.primary}15` }]}>
-          <Ionicons name="person-outline" size={20} color={Colors.primary} />
-        </View>
-        <View style={styles.bilgi}>
-          <Text style={[styles.unvan, { color: Colors.text }]}>{item.cariUnvan}</Text>
-          <Text style={[styles.kod, { color: Colors.textSecondary }]}>{item.cariKodu}</Text>
-          {item.telefon ? <Text style={[styles.telefon, { color: Colors.textSecondary }]}>{item.telefon}</Text> : null}
-        </View>
-        {item.bakiye != null && (
-          <Text style={[styles.bakiye, item.bakiye >= 0 ? { color: Colors.success } : { color: Colors.error }]}>
-            {paraTL(item.bakiye)}
-          </Text>
-        )}
-      </TouchableOpacity>
-    </AnimatedListItem>
-  );
+  const renderCariSatiri = ({ item, index }: { item: CariKartBilgileri; index: number }) => {
+    const favori = favoriSet.has(item.cariKodu);
+    return (
+      <AnimatedListItem index={index}>
+        <TouchableOpacity style={[styles.satir, { backgroundColor: Colors.card }]} onPress={() => cariSec(item)}>
+          <View style={[styles.ikon, { backgroundColor: `${Colors.primary}15` }]}>
+            <Ionicons name="person-outline" size={20} color={Colors.primary} />
+          </View>
+          <View style={styles.bilgi}>
+            <Text style={[styles.unvan, { color: Colors.text }]}>{item.cariUnvan}</Text>
+            <Text style={[styles.kod, { color: Colors.textSecondary }]}>{item.cariKodu}</Text>
+            {item.telefon ? <Text style={[styles.telefon, { color: Colors.textSecondary }]}>{item.telefon}</Text> : null}
+          </View>
+          {item.bakiye != null && (
+            <Text style={[styles.bakiye, item.bakiye >= 0 ? { color: Colors.success } : { color: Colors.error }]}>
+              {paraTL(item.bakiye)}
+            </Text>
+          )}
+          <TouchableOpacity
+            style={styles.favoriButon}
+            onPress={() => {
+              hafifTitresim();
+              toggleFavoriCari(calisilanSirket, item.cariKodu);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={favori ? 'star' : 'star-outline'}
+              size={22}
+              color={favori ? Colors.accent : Colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </AnimatedListItem>
+    );
+  };
 
   const renderCrmSatiri = ({ item, index }: { item: CRMMusteriBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -323,6 +349,25 @@ export default function CRMCariSecim() {
             <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
+        {sekme === 'cariler' && (
+          <TouchableOpacity
+            style={[
+              styles.favoriChip,
+              { borderColor: Colors.border },
+              sadeceFavoriler && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+            ]}
+            onPress={() => setSadeceFavoriler((v) => !v)}
+          >
+            <Ionicons
+              name={sadeceFavoriler ? 'star' : 'star-outline'}
+              size={14}
+              color={sadeceFavoriler ? '#fff' : Colors.accent}
+            />
+            <Text style={[styles.favoriChipText, { color: sadeceFavoriler ? '#fff' : Colors.text }]}>
+              {t('favori.sadeceFavoriler')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Liste */}
@@ -339,9 +384,21 @@ export default function CRMCariSecim() {
           ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
           ListEmptyComponent={
             <EmptyState
-              icon="people-outline"
-              baslik={aramaMetni ? t('crmTeklif.eslesenCariYok') : t('crmTeklif.cariListesiBos')}
-              aciklama={aramaMetni ? t('crmTeklif.farkliKriter') : t('crmTeklif.kayitliCariYok')}
+              icon={sadeceFavoriler && !aramaMetni ? 'star-outline' : 'people-outline'}
+              baslik={
+                sadeceFavoriler && !aramaMetni
+                  ? t('favori.cariYok')
+                  : aramaMetni
+                  ? t('crmTeklif.eslesenCariYok')
+                  : t('crmTeklif.cariListesiBos')
+              }
+              aciklama={
+                sadeceFavoriler && !aramaMetni
+                  ? t('favori.cariYokAciklama')
+                  : aramaMetni
+                  ? t('crmTeklif.farkliKriter')
+                  : t('crmTeklif.kayitliCariYok')
+              }
             />
           }
         />
@@ -482,6 +539,24 @@ const styles = StyleSheet.create({
   bakiye: { fontSize: 12, fontWeight: '600' },
   ilText: { fontSize: 12, fontWeight: '500' },
   ayirac: { height: 1, marginHorizontal: 14 },
+  favoriButon: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  favoriChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginLeft: 4,
+  },
+  favoriChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 
   // Header
   headerYeniButon: {

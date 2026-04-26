@@ -933,10 +933,14 @@ export const translations = {
     'rapor.bekSiparisler': 'Bek. Siparişler',
     'rapor.yakindaEklenecek': 'Bu rapor yakında eklenecek.',
 
-    // ========== Hakkında ==========
-    'hakkinda.versiyon': 'Versiyon',
-    'hakkinda.gelistirici': 'Geliştirici',
-    'hakkinda.iletisim': 'İletişim',
+    // ========== Favoriler ==========
+    'favori.ekle': 'Favorilere ekle',
+    'favori.kaldir': 'Favorilerden kaldır',
+    'favori.sadeceFavoriler': 'Sadece favoriler',
+    'favori.cariYok': 'Henüz favori cari yok',
+    'favori.cariYokAciklama': 'Bir cariye yıldız basın',
+    'favori.stokYok': 'Henüz favori stok yok',
+    'favori.stokYokAciklama': 'Bir stoka yıldız basın',
   },
   en: {
     // ========== Common ==========
@@ -1867,10 +1871,14 @@ export const translations = {
     'rapor.bekSiparisler': 'Pending Orders',
     'rapor.yakindaEklenecek': 'This report will be added soon.',
 
-    // ========== About ==========
-    'hakkinda.versiyon': 'Version',
-    'hakkinda.gelistirici': 'Developer',
-    'hakkinda.iletisim': 'Contact',
+    // ========== Favorites ==========
+    'favori.ekle': 'Add to favorites',
+    'favori.kaldir': 'Remove from favorites',
+    'favori.sadeceFavoriler': 'Favorites only',
+    'favori.cariYok': 'No favorite customers yet',
+    'favori.cariYokAciklama': 'Tap the star on a customer',
+    'favori.stokYok': 'No favorite items yet',
+    'favori.stokYokAciklama': 'Tap the star on an item',
   },
 } as const;
 

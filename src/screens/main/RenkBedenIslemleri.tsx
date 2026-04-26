@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
 import {
   View,
@@ -112,6 +112,11 @@ export default function RenkBedenIslemleri() {
   const route = useRoute<RoutePropType>();
 
   const { yetkiBilgileri, ftBaslikListesi, fiyatTipListesi, calisilanSirket, stokListesiCache, stokListesiCacheSirket, setStokListesiCache } = useAppStore();
+  const favoriStoklar = useAppStore((s) => s.favoriStoklar);
+  const toggleFavoriStok = useAppStore((s) => s.toggleFavoriStok);
+  const favoriStokListesi = favoriStoklar[calisilanSirket] ?? [];
+  const favoriStokSet = useMemo(() => new Set(favoriStokListesi), [favoriStokListesi]);
+  const [sadeceFavoriStoklar, setSadeceFavoriStoklar] = useState(false);
 
   // Stok ve barkod listeleri
   const [stokListesi, setStokListesi] = useState<StokListesiBilgileri[]>(
@@ -634,6 +639,7 @@ export default function RenkBedenIslemleri() {
   // Stok satırı render
   const renderStokSatiri = ({ item }: { item: StokListesiBilgileri }) => {
     const variantSayisi = barkodListesi.filter((b) => b.stokKodu === item.stokKodu).length;
+    const favori = favoriStokSet.has(item.stokKodu);
 
     return (
       <ReanimatedSwipeable
@@ -659,10 +665,22 @@ export default function RenkBedenIslemleri() {
             )}
           </View>
           <View style={styles.stokSag}>
-            <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim}</Text>
+            <Text
+              style={[styles.stokFiyat, { color: Colors.primary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >{paraTL(item.fiyat)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]} numberOfLines={1}>{miktarFormat(item.bakiye)}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]} numberOfLines={1}>{item.birim}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.favoriYildiz}
+            onPress={() => toggleFavoriStok(calisilanSirket, item.stokKodu)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name={favori ? 'star' : 'star-outline'} size={20} color={favori ? Colors.accent : Colors.textSecondary} />
+          </TouchableOpacity>
         </TouchableOpacity>
       </ReanimatedSwipeable>
     );
@@ -782,6 +800,20 @@ export default function RenkBedenIslemleri() {
         >
           <Ionicons name="search" size={20} color="#fff" />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.favoriChip,
+            { borderColor: Colors.border },
+            sadeceFavoriStoklar && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+          ]}
+          onPress={() => setSadeceFavoriStoklar((v) => !v)}
+        >
+          <Ionicons
+            name={sadeceFavoriStoklar ? 'star' : 'star-outline'}
+            size={14}
+            color={sadeceFavoriStoklar ? '#fff' : Colors.accent}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Arama tipi dropdown */}
@@ -826,7 +858,7 @@ export default function RenkBedenIslemleri() {
 
       {/* Stok listesi */}
       <FlatList
-        data={filtreli}
+        data={sadeceFavoriStoklar ? filtreli.filter((s) => favoriStokSet.has(s.stokKodu)) : filtreli}
         keyExtractor={(item, idx) => item.stokKodu || String(idx)}
         renderItem={renderStokSatiri}
         style={styles.liste}
@@ -837,6 +869,8 @@ export default function RenkBedenIslemleri() {
         ListEmptyComponent={
           yukleniyor ? (
             <SkeletonLoader satirSayisi={6} />
+          ) : sadeceFavoriStoklar ? (
+            <EmptyState icon="star-outline" baslik={t('favori.stokYok')} aciklama={t('favori.stokYokAciklama')} />
           ) : (
             <EmptyState icon="cube-outline" baslik={t('stok.listeBosBaslik')} aciklama={t('stok.listeBosAciklama')} />
           )
@@ -1103,7 +1137,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  stokBilgi: { flex: 3.2 },
+  stokBilgi: { flex: 2.8 },
   stokKodu: { fontSize: 11, fontWeight: '600' },
   stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
   variantBadge: {
@@ -1116,9 +1150,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
   },
-  stokSag: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
+  stokSag: { flex: 1.2, alignItems: 'flex-end', justifyContent: 'center', minWidth: 90 },
   stokFiyat: { fontSize: 14, fontWeight: '700' },
   stokBakiye: { fontSize: 11, marginTop: 2 },
+  favoriYildiz: {
+    paddingLeft: 8,
+    paddingRight: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriChip: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
   ayirac: { height: 4 },
   infoBtn: {
     justifyContent: 'center',

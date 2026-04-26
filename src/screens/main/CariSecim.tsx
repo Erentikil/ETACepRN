@@ -50,6 +50,11 @@ export default function CariSecim() {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
   const { calisilanSirket, yetkiBilgileri } = useAppStore();
+  const favoriCariler = useAppStore((s) => s.favoriCariler);
+  const toggleFavoriCari = useAppStore((s) => s.toggleFavoriCari);
+  const favoriListesi = favoriCariler[calisilanSirket] ?? [];
+  const favoriSet = useMemo(() => new Set(favoriListesi), [favoriListesi]);
+  const [sadeceFavoriler, setSadeceFavoriler] = useState(false);
 
   const CARI_ISLEM_SECENEKLERI: CariIslemSecenegi[] = [
     { key: 'CariEkstreListesi', label: t('cariSecim.cariEkstre'), icon: 'document-text-outline', aktif: true },
@@ -157,14 +162,18 @@ export default function CariSecim() {
 
   const filtreli = useMemo(() => {
     const q = aramaMetni.toLowerCase().trim();
-    if (!q) return tumCariListesi;
-    return tumCariListesi.filter(
+    let liste = tumCariListesi;
+    if (sadeceFavoriler) {
+      liste = liste.filter((c) => favoriSet.has(c.cariKodu));
+    }
+    if (!q) return liste;
+    return liste.filter(
       (c) =>
         c.cariKodu.toLowerCase().includes(q) ||
         c.cariUnvan.toLowerCase().includes(q) ||
         (c.telefon ?? '').toLowerCase().includes(q)
     );
-  }, [aramaMetni, tumCariListesi]);
+  }, [aramaMetni, tumCariListesi, sadeceFavoriler, favoriSet]);
 
   const [islemModalCari, setIslemModalCari] = useState<CariKartBilgileri | null>(null);
 
@@ -240,32 +249,49 @@ export default function CariSecim() {
     });
   };
 
-  const renderCariSatiri = ({ item, index }: { item: CariKartBilgileri; index: number }) => (
-    <AnimatedListItem index={index}>
-      <TouchableOpacity style={[styles.cariSatiri, { backgroundColor: Colors.card }]} onPress={() => cariSec(item)}>
-        <View style={[styles.cariIkon, { backgroundColor: Colors.inputBackground }]}>
-          <Ionicons name="person-outline" size={20} color={Colors.primary} />
-        </View>
-        <View style={styles.cariBilgi}>
-          <Text style={[styles.cariUnvan, { color: Colors.text }]}>{item.cariUnvan}</Text>
-          <Text style={[styles.cariKodu, { color: Colors.textSecondary }]}>{item.cariKodu}</Text>
-          {item.telefon ? <Text style={[styles.cariTelefon, { color: Colors.textSecondary }]}>{item.telefon}</Text> : null}
-          {item.bakiye != null && (
-            <Text style={[styles.cariBakiye, { color: item.bakiye >= 0 ? Colors.success : Colors.error }]}>
-              {paraTL(item.bakiye)}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.islemButon}
-          onPress={() => setIslemModalCari(item)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="add-circle" size={28} color={Colors.accent} />
+  const renderCariSatiri = ({ item, index }: { item: CariKartBilgileri; index: number }) => {
+    const favori = favoriSet.has(item.cariKodu);
+    return (
+      <AnimatedListItem index={index}>
+        <TouchableOpacity style={[styles.cariSatiri, { backgroundColor: Colors.card }]} onPress={() => cariSec(item)}>
+          <View style={[styles.cariIkon, { backgroundColor: Colors.inputBackground }]}>
+            <Ionicons name="person-outline" size={20} color={Colors.primary} />
+          </View>
+          <View style={styles.cariBilgi}>
+            <Text style={[styles.cariUnvan, { color: Colors.text }]}>{item.cariUnvan}</Text>
+            <Text style={[styles.cariKodu, { color: Colors.textSecondary }]}>{item.cariKodu}</Text>
+            {item.telefon ? <Text style={[styles.cariTelefon, { color: Colors.textSecondary }]}>{item.telefon}</Text> : null}
+            {item.bakiye != null && (
+              <Text style={[styles.cariBakiye, { color: item.bakiye >= 0 ? Colors.success : Colors.error }]}>
+                {paraTL(item.bakiye)}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.favoriButon}
+            onPress={() => {
+              hafifTitresim();
+              toggleFavoriCari(calisilanSirket, item.cariKodu);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={favori ? 'star' : 'star-outline'}
+              size={22}
+              color={favori ? Colors.accent : Colors.textSecondary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.islemButon}
+            onPress={() => setIslemModalCari(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="add-circle" size={28} color={Colors.accent} />
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
-    </AnimatedListItem>
-  );
+      </AnimatedListItem>
+    );
+  };
 
   return (
     <View style={[styles.ekran, { backgroundColor: Colors.background }]} onTouchStart={Keyboard.dismiss}>
@@ -285,6 +311,23 @@ export default function CariSecim() {
             <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={[
+            styles.favoriChip,
+            { borderColor: Colors.border },
+            sadeceFavoriler && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+          ]}
+          onPress={() => setSadeceFavoriler((v) => !v)}
+        >
+          <Ionicons
+            name={sadeceFavoriler ? 'star' : 'star-outline'}
+            size={14}
+            color={sadeceFavoriler ? '#fff' : Colors.accent}
+          />
+          <Text style={[styles.favoriChipText, { color: sadeceFavoriler ? '#fff' : Colors.text }]}>
+            {t('favori.sadeceFavoriler')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Yükleniyor */}
@@ -307,9 +350,21 @@ export default function CariSecim() {
           ItemSeparatorComponent={() => <View style={[styles.ayirac, { backgroundColor: Colors.border }]} />}
           ListEmptyComponent={
             <EmptyState
-              icon="people-outline"
-              baslik={aramaMetni ? t('cariSecim.eslesenYok') : t('cariSecim.listeBos')}
-              aciklama={aramaMetni ? t('cariSecim.farkliKriter') : t('cariSecim.kayitliCariYok')}
+              icon={sadeceFavoriler && !aramaMetni ? 'star-outline' : 'people-outline'}
+              baslik={
+                sadeceFavoriler && !aramaMetni
+                  ? t('favori.cariYok')
+                  : aramaMetni
+                  ? t('cariSecim.eslesenYok')
+                  : t('cariSecim.listeBos')
+              }
+              aciklama={
+                sadeceFavoriler && !aramaMetni
+                  ? t('favori.cariYokAciklama')
+                  : aramaMetni
+                  ? t('cariSecim.farkliKriter')
+                  : t('cariSecim.kayitliCariYok')
+              }
             />
           }
         />
@@ -482,6 +537,24 @@ const styles = StyleSheet.create({
   cariBakiye: { fontSize: 12, fontWeight: '600', marginTop: 2 },
   islemButon: {
     padding: 4,
+  },
+  favoriButon: {
+    padding: 4,
+    marginRight: 4,
+  },
+  favoriChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginLeft: 4,
+  },
+  favoriChipText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   ayirac: { height: 1, marginHorizontal: 14 },
   bosEkran: { alignItems: 'center', paddingTop: 60, gap: 12 },

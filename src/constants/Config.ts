@@ -35,6 +35,8 @@ export const Config = {
     CIHAZ_ID: 'cihazId',
     CIHAZ_ADI: 'cihazAdi',
     ANA_SAYFA_KART_SIRASI: 'anaSayfaKartSirasi',
+    FAVORI_CARILER: 'favoriCariler',
+    FAVORI_STOKLAR: 'favoriStoklar',
   },
 
   DEFAULT_API_URL: 'http://45.84.189.173:52723',

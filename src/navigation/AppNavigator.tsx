@@ -19,14 +19,39 @@ import { Config } from '../constants/Config';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+function safeParseFavori(json: string): Record<string, string[]> {
+  try {
+    const parsed = JSON.parse(json);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const sonuc: Record<string, string[]> = {};
+      for (const k of Object.keys(parsed)) {
+        if (Array.isArray(parsed[k])) {
+          sonuc[k] = parsed[k].filter((v: any) => typeof v === 'string');
+        }
+      }
+      return sonuc;
+    }
+  } catch {}
+  return {};
+}
+
 function AppStack() {
   const { colors, isDark } = useTheme();
   const t = useT();
   const setUyumluluk = useAppStore((s) => s.setUyumluluk);
+  const setFavoriler = useAppStore((s) => s.setFavoriler);
 
   useEffect(() => {
     AsyncStorage.getItem(Config.STORAGE_KEYS.UYUMLULUK).then((val) => {
       if (val === 'V8' || val === 'SQL') setUyumluluk(val);
+    });
+    Promise.all([
+      AsyncStorage.getItem(Config.STORAGE_KEYS.FAVORI_CARILER),
+      AsyncStorage.getItem(Config.STORAGE_KEYS.FAVORI_STOKLAR),
+    ]).then(([cariJson, stokJson]) => {
+      const cari = cariJson ? safeParseFavori(cariJson) : {};
+      const stok = stokJson ? safeParseFavori(stokJson) : {};
+      setFavoriler(cari, stok);
     });
   }, []);
 
