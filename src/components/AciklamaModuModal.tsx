@@ -20,10 +20,14 @@ interface Props {
   kdvDurum: number;
   onConfirm: (kalem: SepetKalem) => void;
   onClose: () => void;
+  // İlk N kalem indirim alanı gösterilir (1..N). Verilmezse 3.
+  maksimumIndirimSayisi?: number;
 }
 
-export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClose }: Props) {
+export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClose, maksimumIndirimSayisi }: Props) {
   const Colors = useColors();
+  const maxInd = maksimumIndirimSayisi ?? 3;
+  const ind3Goster = maxInd >= 3;
   const [stokKodu, setStokKodu] = useState('');
   const [stokCinsi, setStokCinsi] = useState('');
   const [birim, setBirim] = useState('AD');
@@ -70,7 +74,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
       kdvOrani: parseFloat(kdvOrani) || 0,
       kalemIndirim1: parseFloat(ind1) || 0,
       kalemIndirim2: parseFloat(ind2) || 0,
-      kalemIndirim3: parseFloat(ind3) || 0,
+      kalemIndirim3: ind3Goster ? (parseFloat(ind3) || 0) : 0,
       aciklama: aciklama.trim() || undefined,
     };
     onConfirm(kalem);
@@ -93,7 +97,7 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
     miktarSayi * fiyatSayi *
     (1 - ind1Sayi / 100) *
     (1 - ind2Sayi / 100) *
-    (1 - ind3Sayi / 100);
+    (ind3Goster ? (1 - ind3Sayi / 100) : 1);
   const kdvTutar = kdvHaricTutar * (kdvOraniSayi / 100);
   const toplamTutar = kdvDurum === 1 ? kdvHaricTutar : kdvHaricTutar + kdvTutar;
 
@@ -193,15 +197,17 @@ export default function AciklamaModuModal({ visible, kdvDurum, onConfirm, onClos
                   keyboardType="decimal-pad"
                 />
               </View>
-              <View style={styles.kucukAlani}>
-                <Text style={[styles.label, { color: Colors.textSecondary }]}>Ind.3 %</Text>
-                <TextInput
-                  style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
-                  value={ind3}
-                  onChangeText={setInd3}
-                  keyboardType="decimal-pad"
-                />
-              </View>
+              {ind3Goster && (
+                <View style={styles.kucukAlani}>
+                  <Text style={[styles.label, { color: Colors.textSecondary }]}>Ind.3 %</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: Colors.border, color: Colors.text, backgroundColor: Colors.inputBackground }]}
+                    value={ind3}
+                    onChangeText={setInd3}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              )}
             </View>
 
             <View style={styles.satir}>

@@ -668,6 +668,7 @@ export default function TeklifTab({
       <AciklamaModuModal
         visible={aciklamaModalAcik}
         kdvDurum={yetkiBilgileri?.kdvDurum ?? 0}
+        maksimumIndirimSayisi={2}
         onConfirm={(kalem) => { kalemEkle(kalem); setAciklamaModalAcik(false); }}
         onClose={() => setAciklamaModalAcik(false)}
       />
