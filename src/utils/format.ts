@@ -1,6 +1,6 @@
 /**
  * Sayı formatlama — Intl.NumberFormat ile cihazın bölgesel ayarına göre
- * Türkiye'de: 1.234,56 ₺  |  diğer bölgelerde: 1,234.56 ₺
+ * Türkiye'de: 1.234,56  |  diğer bölgelerde: 1,234.56
  */
 
 const TR_LOCALE = 'tr-TR';
@@ -13,9 +13,9 @@ export function paraFormat(sayi: number, ondalik = 2): string {
   }).format(sayi);
 }
 
-/** Para birimi + sembol (örn. 1.234,56 ₺). NBSP ( ) ile sembol satırı kayar değil. */
+/** Para birimi (TL — sembol yok). paraFormat ile aynı çıktı; geriye dönük uyumluluk için kalır. */
 export function paraTL(sayi: number, ondalik = 2): string {
-  return `${paraFormat(sayi, ondalik)} ₺`;
+  return paraFormat(sayi, ondalik);
 }
 
 /** Miktar: gereksiz sıfırları atar (örn. 1,5 veya 10) */

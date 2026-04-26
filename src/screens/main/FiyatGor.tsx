@@ -157,7 +157,7 @@ export default function FiyatGor() {
     return !k || k === 'TL' || k === 'TRY';
   };
   const fiyatGoster = (tutar: number, dovizKodu?: string) =>
-    isTL(dovizKodu) ? paraTL(tutar) : `${paraFormat(tutar)} ${dovizKodu}`;
+    isTL(dovizKodu) ? paraFormat(tutar) : `${paraFormat(tutar)} ${dovizKodu}`;
 
   const renderStokSatiri = ({ item, index }: { item: StokListesiBilgileri; index: number }) => (
     <AnimatedListItem index={index}>
@@ -269,9 +269,9 @@ export default function FiyatGor() {
 
       {/* Liste baslik */}
       <View style={[styles.listeBaslik, { backgroundColor: Colors.primary }]}>
-        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>KOD</Text>
-        <Text style={[styles.listeBaslikText, { flex: 2 }]}>CINS</Text>
-        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>FIYAT</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1.2 }]}>{t('stok.kod')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 2 }]}>{t('stok.cins')}</Text>
+        <Text style={[styles.listeBaslikText, { flex: 1, textAlign: 'right' }]}>{t('stok.fiyatBaslik')}</Text>
       </View>
 
       {/* Stok listesi */}
@@ -339,9 +339,11 @@ export default function FiyatGor() {
               ) : (
                 <>
                   <Text style={[styles.buyukFiyat, { color: Colors.primary }]}>{paraFormat(gosterilecekFiyat)}</Text>
-                  <Text style={[styles.dovizKodu, { color: Colors.textSecondary }, !isTL(gosterilecekDoviz) && styles.dovizKoduAccent]}>
-                    {isTL(gosterilecekDoviz) ? '₺' : gosterilecekDoviz}
-                  </Text>
+                  {!isTL(gosterilecekDoviz) && (
+                    <Text style={[styles.dovizKodu, { color: Colors.textSecondary }, styles.dovizKoduAccent]}>
+                      {gosterilecekDoviz}
+                    </Text>
+                  )}
                   {seciliFiyat && (
                     <Text style={styles.fiyatAdi}>{seciliFiyat.fiyatAdi}</Text>
                   )}

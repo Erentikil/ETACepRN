@@ -71,7 +71,7 @@ export default function KurBilgileri() {
           </View>
           <View style={styles.sagTaraf}>
             <Text style={[styles.kurDeger, { color: Colors.primary }]}>
-              {kurFormat(item.dovizKuru)} ₺
+              {kurFormat(item.dovizKuru)}
             </Text>
           </View>
         </View>

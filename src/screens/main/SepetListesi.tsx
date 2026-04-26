@@ -1246,15 +1246,15 @@ export default function SepetListesi() {
 
           {/* Miktar x Fiyat */}
           <Text style={[styles.kartMiktarFiyat, { color: Colors.text }]}>
-            {miktarFormat(item.miktar)} {item.birim}  × {paraFormat(item.birimFiyat)} ₺
+            {miktarFormat(item.miktar)} {item.birim}  × {paraFormat(item.birimFiyat)}
           </Text>
 
           {/* KDV bilgisi + Toplam fiyat */}
           <View style={styles.kartAltSatir}>
             <Text style={[styles.kartKdvBilgi, { color: Colors.textSecondary }]}>
-              {t('sepetListesi.kdvHaric')}: {paraFormat(netAfterGenel)} ₺   {t('onayDuzenleme.kdv')} %{efektifKdv}: {paraFormat(kdvTutari)} ₺
+              {t('sepetListesi.kdvHaric')}: {paraFormat(netAfterGenel)}   {t('onayDuzenleme.kdv')} %{efektifKdv}: {paraFormat(kdvTutari)}
             </Text>
-            <Text style={[styles.kartToplam, { color: Colors.primary }]}>{paraFormat(toplam)} ₺</Text>
+            <Text style={[styles.kartToplam, { color: Colors.primary }]}>{paraFormat(toplam)}</Text>
           </View>
         </View>
       </AnimatedListItem>
@@ -1267,16 +1267,16 @@ export default function SepetListesi() {
       <View style={[styles.ozetKart, { backgroundColor: Colors.card }]}>
         <View style={styles.ozetSatir}>
           <Text style={[styles.ozetLabel, { color: Colors.text }]}>{t('sepetListesi.kdvHaricToplam')}</Text>
-          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(kdvHaricToplam)} ₺</Text>
+          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(kdvHaricToplam)}</Text>
         </View>
         <View style={styles.ozetSatir}>
           <Text style={[styles.ozetLabel, { color: Colors.text }]}>{t('sepetListesi.kdvToplam')}</Text>
-          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(toplamlar.kdvToplam)} ₺</Text>
+          <Text style={[styles.ozetDeger, { color: Colors.text }]}>{paraFormat(toplamlar.kdvToplam)}</Text>
         </View>
         <View style={[styles.ozetAyirac, { backgroundColor: Colors.border }]} />
         <View style={styles.ozetSatir}>
           <Text style={[styles.ozetGenelLabel, { color: Colors.primary }]}>{t('sepetListesi.genelToplam')}</Text>
-          <Text style={[styles.ozetGenelDeger, { color: Colors.primary }]}>{paraFormat(toplamlar.genelToplam)} ₺</Text>
+          <Text style={[styles.ozetGenelDeger, { color: Colors.primary }]}>{paraFormat(toplamlar.genelToplam)}</Text>
         </View>
       </View>
     );
