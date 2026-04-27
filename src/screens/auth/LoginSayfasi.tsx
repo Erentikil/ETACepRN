@@ -123,6 +123,7 @@ export default function LoginSayfasi({ navigation }: Props) {
       const dbAdi = kayitliSirket || veriTabaniAdi;
 
       const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
+      console.log('[VersiyonKontrol] response:', JSON.stringify(versiyonSonuc, null, 2));
       const versiyonBilgi = versiyonSonuc.data;
 
       if (versiyonBilgi?.versiyonTipi !== Config.BEKLENEN_SUNUCU_VERSIYONU) {
