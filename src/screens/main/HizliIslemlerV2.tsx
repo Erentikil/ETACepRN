@@ -600,6 +600,8 @@ export default function HizliIslemlerV2() {
     let ind1 = item.kalemIndirim1 || 0;
     let ind2 = item.kalemIndirim2 || 0;
     let ind3 = item.kalemIndirim3 || 0;
+    let ind4 = item.kalemIndirim4 || 0;
+    let ind5 = item.kalemIndirim5 || 0;
     let fiyatNo = item.fiyatNo || 0;
 
     // Etkin fiyatNo varsa ve ürünün mevcut fiyatNo'sundan farklıysa, API'den o fiyatı çek
@@ -613,6 +615,8 @@ export default function HizliIslemlerV2() {
             ind1 = bulunan.kalemIndirim1;
             ind2 = bulunan.kalemIndirim2;
             ind3 = bulunan.kalemIndirim3;
+            ind4 = bulunan.kalemIndirim4 ?? 0;
+            ind5 = bulunan.kalemIndirim5 ?? 0;
             fiyatNo = etkinFiyatNo;
           }
         }
@@ -625,6 +629,8 @@ export default function HizliIslemlerV2() {
       ind1 = cariFiyat.kalemIndirim1;
       ind2 = cariFiyat.kalemIndirim2;
       ind3 = cariFiyat.kalemIndirim3;
+      ind4 = cariFiyat.kalemIndirim4 ?? 0;
+      ind5 = cariFiyat.kalemIndirim5 ?? 0;
       if (cariFiyat.fiyatNo && cariFiyat.fiyatNo.trim() !== '') {
         // fiyatNo yazıyorsa → seçili fiyatNo bu olacak, tutar stok fiyat listesinden gelecek
         const cfNo = parseInt(cariFiyat.fiyatNo.trim(), 10);
@@ -639,6 +645,8 @@ export default function HizliIslemlerV2() {
                 ind1 = bulunan.kalemIndirim1 || ind1;
                 ind2 = bulunan.kalemIndirim2 || ind2;
                 ind3 = bulunan.kalemIndirim3 || ind3;
+                ind4 = bulunan.kalemIndirim4 ?? ind4;
+                ind5 = bulunan.kalemIndirim5 ?? ind5;
               }
             }
           } catch { /* fiyat bulunamazsa mevcut fiyatla devam */ }
@@ -661,6 +669,8 @@ export default function HizliIslemlerV2() {
       kalemIndirim1: ind1,
       kalemIndirim2: ind2,
       kalemIndirim3: ind3,
+      kalemIndirim4: ind4,
+      kalemIndirim5: ind5,
       birim2: item.birim2,
       carpan: item.carpan,
       carpan2: item.carpan2,
