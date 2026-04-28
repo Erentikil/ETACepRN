@@ -1,7 +1,9 @@
+const IS_PRO = true;
+
 export const Config = {
   VERSIYON: '2.00.000',
   BEKLENEN_SUNUCU_VERSIYONU: '2.00.000',
-  IS_PRO: true,
+  IS_PRO,
   TELEFON_CIHAZ_KODU: '12345',
   TELEFON_CIHAZ_ADI: 'ReactNative',
   API_TIMEOUT: 30000,
@@ -39,8 +41,8 @@ export const Config = {
     FAVORI_STOKLAR: 'favoriStoklar',
   },
 
-  DEFAULT_API_URL: 'http://45.84.189.173:52723',
-  DEFAULT_API_URL2: 'http://212.252.132.158:4158',
+  DEFAULT_API_URL: IS_PRO ? 'http://212.252.132.158:4158' : 'http://45.84.189.173:52723',
+  DEFAULT_API_URL2: IS_PRO ? 'http://45.84.189.173:52723' : 'http://212.252.132.158:4158',
   DEFAULT_API_URL3: 'http://192.168.1.1/webapi',
 };
 

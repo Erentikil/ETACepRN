@@ -90,8 +90,8 @@ export default function Ayarlar({ navigation, route }: Props) {
       if (aktifApiStr === '2') setAktifApi('2');
       else if (aktifApiStr === '3') setAktifApi('3');
 
-      if (u1) setApiUrl(u1); else setApiUrl('http://45.84.189.173:52723');
-      if (u2) setApiUrl2(u2); else setApiUrl2('http://212.252.132.158:4158');
+      if (u1) setApiUrl(u1); else setApiUrl(Config.DEFAULT_API_URL);
+      if (u2) setApiUrl2(u2); else setApiUrl2(Config.DEFAULT_API_URL2);
       if (u3) setApiUrl3(u3);
       if (sirket) setCalisilanSirket(sirket);
       if (okumaModu === 'elle') setManuelTarama(true);
