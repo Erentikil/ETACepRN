@@ -1137,7 +1137,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  stokBilgi: { flex: 2.8 },
+  stokBilgi: { flex: 1, minWidth: 0, paddingRight: 4 },
   stokKodu: { fontSize: 11, fontWeight: '600' },
   stokCinsi: { fontSize: 14, fontWeight: '500', marginTop: 2 },
   variantBadge: {
@@ -1150,12 +1150,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
   },
-  stokSag: { flex: 1.2, alignItems: 'flex-end', justifyContent: 'center', minWidth: 90 },
+  stokSag: { width: 90, alignItems: 'flex-end', justifyContent: 'center' },
   stokFiyat: { fontSize: 14, fontWeight: '700' },
   stokBakiye: { fontSize: 11, marginTop: 2 },
   favoriYildiz: {
-    paddingLeft: 8,
-    paddingRight: 2,
+    width: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
