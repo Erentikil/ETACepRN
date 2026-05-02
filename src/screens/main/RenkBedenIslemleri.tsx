@@ -656,7 +656,7 @@ export default function RenkBedenIslemleri() {
           <View style={styles.stokSag}>
             <Text style={[styles.stokFiyat, { color: Colors.primary }]}>{paraTL(item.fiyat)}</Text>
             <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]}>{miktarFormat(item.bakiye)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
           </View>
         </TouchableOpacity>
       </ReanimatedSwipeable>

@@ -109,7 +109,7 @@ export default function SepetListesi() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RoutePropType>();
-  const { yetkiBilgileri, calisilanSirket, kdvBilgileri, fiyatTipListesi } = useAppStore();
+  const { yetkiBilgileri, calisilanSirket, kdvBilgileri, fiyatTipListesi, stokListesiCache, stokListesiCacheSirket } = useAppStore();
 
   // Mod tespiti
   const isCRMMode = !!route.params.crmModu;
@@ -326,6 +326,10 @@ export default function SepetListesi() {
   };
 
   const kalemDuzenle = (item: SepetKalem) => {
+    const cacheStok =
+      stokListesiCacheSirket === calisilanSirket
+        ? stokListesiCache.find((s) => s.stokKodu === item.stokKodu)
+        : undefined;
     const stok: StokListesiBilgileri = {
       stokID: 0,
       stokKodu: item.stokKodu,
@@ -336,7 +340,7 @@ export default function SepetListesi() {
       fiyatNo: item.seciliFiyatNo || 0,
       dovizKodu: '',
       dovizTuru: '',
-      bakiye: 0,
+      bakiye: cacheStok?.bakiye ?? 0,
       kdvOrani: item.kdvOrani,
       kalemIndirim1: item.kalemIndirim1,
       kalemIndirim2: item.kalemIndirim2,
