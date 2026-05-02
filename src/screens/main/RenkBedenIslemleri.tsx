@@ -672,7 +672,7 @@ export default function RenkBedenIslemleri() {
               minimumFontScale={0.75}
             >{paraTL(item.fiyat)}</Text>
             <Text style={[styles.stokBakiye, { color: Colors.textSecondary }]} numberOfLines={1}>{miktarFormat(item.bakiye)}</Text>
-            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]} numberOfLines={1}>{item.birim}</Text>
+            <Text style={[styles.stokBakiye, { color: Colors.textSecondary, marginTop: 0, fontSize: 10 }]} numberOfLines={1}>{item.birim2?.split(';')[0]?.trim() || item.birim}</Text>
           </View>
           <TouchableOpacity
             style={styles.favoriYildiz}
