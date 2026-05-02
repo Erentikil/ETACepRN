@@ -134,6 +134,12 @@ export default function CariSecim() {
   }, [navigation]);
 
   const yenile = async () => {
+    // Çıkış yapılmış / oturum henüz kurulmamış — istek atma
+    if (!calisilanSirket || !yetkiBilgileri) {
+      setTumCariListesi([]);
+      setYukleniyor(false);
+      return;
+    }
     setYukleniyor(true);
     try {
       const sonuc = await cariListesiniAl(
@@ -142,7 +148,7 @@ export default function CariSecim() {
         yetkiBilgileri?.kullaniciKodu ?? '',
         yetkiBilgileri?.saticiKontrolKolonu ?? ''
       );
-      
+
 
       if (sonuc.sonuc) {
         setTumCariListesi(sonuc.data);

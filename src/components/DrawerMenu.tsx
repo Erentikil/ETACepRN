@@ -55,7 +55,7 @@ export default function DrawerMenu({ navigation, state }: DrawerContentComponent
       baslik: t('menu.cariIletisim'),
       icon: 'location-outline',
       ekran: 'CariIletisim',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+      yetki: menuYetkiBilgileri?.cariIslemler ?? false,
     },
     {
       id: 'alimSatim',

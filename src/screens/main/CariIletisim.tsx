@@ -52,6 +52,12 @@ export default function CariIletisim() {
   const [adresYukleniyor, setAdresYukleniyor] = useState(false);
 
   const yenile = async () => {
+    // Çıkış yapılmış / oturum henüz kurulmamış — istek atma
+    if (!calisilanSirket || !yetkiBilgileri) {
+      setTumCariListesi([]);
+      setYukleniyor(false);
+      return;
+    }
     setYukleniyor(true);
     try {
       const sonuc = await cariListesiniAl(
@@ -77,7 +83,7 @@ export default function CariIletisim() {
   }, [calisilanSirket, yetkiBilgileri]);
 
   useEffect(() => {
-    if (!secilenCari) {
+    if (!secilenCari || !calisilanSirket) {
       setAdresListesi([]);
       return;
     }

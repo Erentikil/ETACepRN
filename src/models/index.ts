@@ -113,6 +113,7 @@ export interface MenuYetkiBilgileri {
   evrakDuzenle: boolean;
   barkodEkle: boolean;
   kontrolPanel: boolean;
+  cariIslemler: boolean;
 }
 
 export interface KameraYetkiBilgileri {

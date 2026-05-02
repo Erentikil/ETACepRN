@@ -107,6 +107,7 @@ export const translations = {
     'login.lisansBitiyor': 'Lisansınızın bitmesine {gun} gün kaldı.',
     'login.birHataOlustu': 'Bir hata oluştu.',
     'login.sunucuVersiyonUyumsuz': 'Sunucu versiyonu uyumsuz. Beklenen: {beklenen}, dönen: {donen}.',
+    'login.sirketSecilmedi': 'Geçerli bir şirket seçilemedi. Bağlantı ayarlarını kontrol edin.',
     'login.baglantiAyarlari': 'Bağlantı ayarları',
 
     // ========== Ayarlar ==========
@@ -1047,6 +1048,7 @@ export const translations = {
     'login.lisansBitiyor': '{gun} day(s) left until license expires.',
     'login.birHataOlustu': 'An error occurred.',
     'login.sunucuVersiyonUyumsuz': 'Server version mismatch. Expected: {beklenen}, got: {donen}.',
+    'login.sirketSecilmedi': 'No valid company could be selected. Please check the connection settings.',
     'login.baglantiAyarlari': 'Connection settings',
 
     // ========== Settings ==========

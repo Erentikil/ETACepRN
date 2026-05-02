@@ -62,7 +62,7 @@ export default function AnaSayfa({ navigation }: Props) {
 
   const tumHizliErisimler: HizliErisimKarti[] = [
     { id: 'hizli',         ceviriAnahtari: 'menu.alisSatis',       icon: 'flash-outline',             ekran: 'HizliIslemlerV2',     renk: '#1a5d3f', yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false },
-    { id: 'cariIletisim',  ceviriAnahtari: 'menu.cariIletisim',    icon: 'location-outline',          ekran: 'CariIletisim',        renk: '#1e3a6b', yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false },
+    { id: 'cariIletisim',  ceviriAnahtari: 'menu.cariIletisim',    icon: 'location-outline',          ekran: 'CariIletisim',        renk: '#1e3a6b', yetki: menuYetkiBilgileri?.cariIslemler ?? false },
     { id: 'fiyatGor',      ceviriAnahtari: 'menu.fiyatGor',        icon: 'pricetag-outline',          ekran: 'FiyatGor',            renk: '#c9a227', yetki: menuYetkiBilgileri?.fiyatGor ?? false },
     { id: 'siparisKapama', ceviriAnahtari: 'menu.siparisKapama',   icon: 'checkmark-circle-outline',  ekran: 'SiparisKapama',       renk: '#4a2c6e', yetki: menuYetkiBilgileri?.siparisKapama ?? false },
     { id: 'ziyaret',       ceviriAnahtari: 'menu.crmTeklif',       icon: 'people-outline',            ekran: 'ZiyaretIslemleri',    renk: '#1d5e5f', yetki: menuYetkiBilgileri?.crm ?? false },

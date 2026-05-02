@@ -40,6 +40,13 @@ type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'Login'>;
 };
 
+// Sunucudan dönen şirket adının GUID/hash benzeri olup olmadığını kontrol eder
+// (örn. "4bd9fa1582243d212e79cdcea7941cc232" — 20+ karakter saf hex).
+function isHashBenzeri(s: string | null | undefined): boolean {
+  if (!s) return false;
+  return /^[a-f0-9]{20,}$/i.test(s);
+}
+
 export default function LoginSayfasi({ navigation }: Props) {
   const Colors = useColors();
   const { isDark } = useTheme();
@@ -89,14 +96,27 @@ export default function LoginSayfasi({ navigation }: Props) {
         const sonuc = await sirketBilgileriniAl('');
         if (sonuc.sonuc) {
           setSirketBilgileri(sonuc.data);
+          const liste = sonuc.data.sirketListesi ?? [];
+          const gercekListe = liste.filter((s) => !isHashBenzeri(s));
+          const varsayilan = !isHashBenzeri(sonuc.data.varsayilanSirket ?? '')
+            ? sonuc.data.varsayilanSirket
+            : '';
+          const kayitliGecerli = kayitliSirket && !isHashBenzeri(kayitliSirket)
+            ? kayitliSirket
+            : '';
           const secilenSirket =
-            kayitliSirket ||
-            sonuc.data.varsayilanSirket ||
-            sonuc.data.sirketListesi?.[0] ||
+            kayitliGecerli ||
+            varsayilan ||
+            gercekListe[0] ||
+            liste[0] ||
             '';
-          if (secilenSirket) {
+          if (secilenSirket && !isHashBenzeri(secilenSirket)) {
             setVeriTabaniAdi(secilenSirket);
             await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, secilenSirket);
+          } else if (kayitliSirket && isHashBenzeri(kayitliSirket)) {
+            // Daha önceden hatalı kaydedilmiş hash → temizle
+            await AsyncStorage.removeItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
+            setVeriTabaniAdi('');
           }
         }
       } catch {
@@ -120,7 +140,34 @@ export default function LoginSayfasi({ navigation }: Props) {
 
     try {
       const kayitliSirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
-      const dbAdi = kayitliSirket || veriTabaniAdi;
+      let dbAdi = kayitliSirket || veriTabaniAdi;
+
+      // Kayıtlı/seçili şirket hash benzeriyse veya bossa, sirket listesinden gerçek bir tane seç
+      if (!dbAdi || isHashBenzeri(dbAdi)) {
+        try {
+          const sirketListSonuc = await sirketBilgileriniAl('');
+          if (sirketListSonuc.sonuc) {
+            const liste = sirketListSonuc.data.sirketListesi ?? [];
+            const gercekListe = liste.filter((s) => !isHashBenzeri(s));
+            const yeni =
+              (!isHashBenzeri(sirketListSonuc.data.varsayilanSirket ?? '')
+                ? sirketListSonuc.data.varsayilanSirket
+                : '') ||
+              gercekListe[0] ||
+              '';
+            if (yeni) {
+              dbAdi = yeni;
+              setVeriTabaniAdi(yeni);
+              await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, yeni);
+            }
+          }
+        } catch { /* sessizce geç */ }
+      }
+
+      if (!dbAdi || isHashBenzeri(dbAdi)) {
+        setHata(t('login.sirketSecilmedi'));
+        return;
+      }
 
       const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
       console.log('[VersiyonKontrol] response:', JSON.stringify(versiyonSonuc, null, 2));
