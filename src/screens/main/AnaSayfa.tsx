@@ -64,7 +64,7 @@ export default function AnaSayfa({ navigation }: Props) {
       icon: 'location-outline',
       ekran: 'CariIletisim',
       renk: '#00acc1',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+      yetki: menuYetkiBilgileri?.cariIslemler ?? false,
     },
     {
       id: 'fiyatGor',

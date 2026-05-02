@@ -52,7 +52,7 @@ export default function DrawerMenu({ navigation }: DrawerContentComponentProps) 
       baslik: 'Cari İletişim',
       icon: 'location-outline',
       ekran: 'CariIletisim',
-      yetki: menuYetkiBilgileri?.alisSatisIslemler ?? false,
+      yetki: menuYetkiBilgileri?.cariIslemler ?? false,
     },
     {
       id: 'alimSatim',
