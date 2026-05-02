@@ -4,12 +4,12 @@
     "slug": "etamobilpro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/ETA_Mobil_Pro_gold_cropped.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,
@@ -33,10 +33,11 @@
       }
     },
     "android": {
-      "icon": "./assets/ETA_Mobil_Pro_gold_cropped.png",
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/ETA_Mobil_Pro_gold_cropped.png",
-        "backgroundColor": "#0a0a0a"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
+        "backgroundColor": "#000000"
       },
       "package": "com.horizonyazilim.etamobilpro",
       "usesCleartextTraffic": true,
