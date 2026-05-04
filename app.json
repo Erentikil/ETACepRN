@@ -28,6 +28,14 @@
           "mailto",
           "maps",
           "comgooglemaps",
+          "yandexmaps",
+          "tel",
+          "telprompt",
+          "whatsapp",
+          "sms",
+          "mailto",
+          "maps",
+          "comgooglemaps",
           "yandexmaps"
         ]
       }
@@ -43,6 +51,7 @@
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.CAMERA"
       ]
     },
@@ -62,6 +71,12 @@
         }
       ]
     ],
-    "owner": "erentikik"
+    "owner": "erentikik",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/105eb735-4ba2-4592-a9af-c4f613b2087e"
+    }
   }
 }

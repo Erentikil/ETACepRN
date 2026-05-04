@@ -57,7 +57,7 @@ export default function LoginSayfasi({ navigation }: Props) {
   const [beniHatirla, setBeniHatirla] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [hata, setHata] = useState('');
-  const [veriTabaniAdi, setVeriTabaniAdi] = useState('');
+
 
   const {
     setYetkiBilgileri,
@@ -87,7 +87,6 @@ export default function LoginSayfasi({ navigation }: Props) {
         setKullaniciKodu('ETA');
         setSifre('ETA');
       }
-      if (kayitliSirket) setVeriTabaniAdi(kayitliSirket);
       setOnLineCalisma(calisma !== 'Hibrit');
 
       // Varsayılan API axiosInstance içinde fallback olarak uygulanıyor,
@@ -111,12 +110,9 @@ export default function LoginSayfasi({ navigation }: Props) {
             liste[0] ||
             '';
           if (secilenSirket && !isHashBenzeri(secilenSirket)) {
-            setVeriTabaniAdi(secilenSirket);
             await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, secilenSirket);
           } else if (kayitliSirket && isHashBenzeri(kayitliSirket)) {
-            // Daha önceden hatalı kaydedilmiş hash → temizle
             await AsyncStorage.removeItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
-            setVeriTabaniAdi('');
           }
         }
       } catch {
@@ -138,42 +134,33 @@ export default function LoginSayfasi({ navigation }: Props) {
     setHata('');
     setYukleniyor(true);
 
+    const t0 = Date.now();
+    const log = (msg: string) => console.log(`[Login +${Date.now() - t0}ms] ${msg}`);
+
     try {
-      const kayitliSirket = await AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET);
-      let dbAdi = kayitliSirket || veriTabaniAdi;
+      // Phase 1: Versiyon kontrolü + şirket listesi paralel
+      log('Phase 1 başladı (versiyonKontrol + sirketListesi)');
+      const [versiyonSonuc, sirketSonuc] = await Promise.all([
+        versiyonBilgileriniOku(Config.VERSIYON),
+        sirketBilgileriniAl(''),
+      ]);
+      log(`Phase 1 bitti → versiyon: ${versiyonSonuc.sonuc}, sirket: ${sirketSonuc.sonuc}`);
 
-      // Kayıtlı/seçili şirket hash benzeriyse veya bossa, sirket listesinden gerçek bir tane seç
-      if (!dbAdi || isHashBenzeri(dbAdi)) {
-        try {
-          const sirketListSonuc = await sirketBilgileriniAl('');
-          if (sirketListSonuc.sonuc) {
-            const liste = sirketListSonuc.data.sirketListesi ?? [];
-            const gercekListe = liste.filter((s) => !isHashBenzeri(s));
-            const yeni =
-              (!isHashBenzeri(sirketListSonuc.data.varsayilanSirket ?? '')
-                ? sirketListSonuc.data.varsayilanSirket
-                : '') ||
-              gercekListe[0] ||
-              '';
-            if (yeni) {
-              dbAdi = yeni;
-              setVeriTabaniAdi(yeni);
-              await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, yeni);
-            }
-          }
-        } catch { /* sessizce geç */ }
-      }
-
-      if (!dbAdi || isHashBenzeri(dbAdi)) {
+      // dbAdi her zaman sunucudan gelen varsayilanSirket
+      const dbAdi = sirketSonuc.data?.varsayilanSirket || '';
+      if (!dbAdi) {
         setHata(t('login.sirketSecilmedi'));
         return;
       }
+      if (sirketSonuc.sonuc && sirketSonuc.data) {
+        setSirketBilgileri(sirketSonuc.data);
+        setCalisilanSirket(dbAdi);
+        await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, dbAdi);
+      }
 
-      const versiyonSonuc = await versiyonBilgileriniOku(Config.VERSIYON);
-      console.log('[VersiyonKontrol] response:', JSON.stringify(versiyonSonuc, null, 2));
       const versiyonBilgi = versiyonSonuc.data;
-
-      if (versiyonBilgi?.versiyonTipi !== Config.BEKLENEN_SUNUCU_VERSIYONU) {
+      // data: null → sunucu parse hatası; gerçek versiyon uyumsuzluğu değil
+      if (versiyonBilgi !== null && versiyonBilgi?.versiyonTipi !== Config.BEKLENEN_SUNUCU_VERSIYONU) {
         setHata(
           t('login.sunucuVersiyonUyumsuz', {
             beklenen: Config.BEKLENEN_SUNUCU_VERSIYONU,
@@ -182,91 +169,78 @@ export default function LoginSayfasi({ navigation }: Props) {
         );
         return;
       }
-
-      setVersiyon(versiyonBilgi);
-
-      if (!versiyonSonuc.sonuc) {
-        if (versiyonBilgi.kalanGunSayisi <= 0) {
-          toast.error(t('login.lisansBitti'));
-          return;
-        }
-        if (versiyonBilgi.kalanGunSayisi <= 10) {
-          toast.warning(t('login.lisansBitiyor', { gun: versiyonBilgi.kalanGunSayisi }));
+      if (versiyonBilgi) {
+        setVersiyon(versiyonBilgi);
+        if (!versiyonSonuc.sonuc) {
+          if (versiyonBilgi.kalanGunSayisi <= 0) {
+            toast.error(t('login.lisansBitti'));
+            return;
+          }
+          if (versiyonBilgi.kalanGunSayisi <= 10) {
+            toast.warning(t('login.lisansBitiyor', { gun: versiyonBilgi.kalanGunSayisi }));
+          }
         }
       }
 
-      // 1. Yetki bilgilerini al
-      const yetkiSonuc = await yetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi);
+      // Phase 2: Yetki + menü + veri paralel
+      log('Phase 2 başladı (5 istek paralel)');
+      const [yetkiSonuc, menuSonuc, kdvSonuc, fisSonuc, fiyatSonuc] = await Promise.all([
+        yetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi),
+        menuYetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi).catch(() => ({ sonuc: false as const, data: null, mesaj: '' })),
+        kdvKisimBilgileriniAl(dbAdi).catch(() => ({ sonuc: false as const, data: null })),
+        fisTipleriniAl(dbAdi).catch(() => ({ sonuc: false as const, data: null })),
+        fiyatTipleriniAl(dbAdi).catch(() => ({ sonuc: false as const, data: null })),
+      ]);
+      log(`Phase 2 bitti → yetki: ${yetkiSonuc.sonuc}`);
+
       if (!yetkiSonuc.sonuc) {
         setHata(yetkiSonuc.mesaj || t('login.hataliBilgi'));
         return;
       }
       setYetkiBilgileri(yetkiSonuc.data);
 
-      // 2. Menü yetkilerini al
-      const menuSonuc = await menuYetkiBilgileriniAl(kullaniciKodu, sifre, dbAdi);
-      if (menuSonuc.sonuc) {
+      if (menuSonuc.sonuc && menuSonuc.data) {
         setMenuYetkiBilgileri(menuSonuc.data);
       }
 
-      // 3. Versiyon kontrolü
-     
-
-      // 4. Şirket bilgilerini al
-      const sirketSonuc = await sirketBilgileriniAl(dbAdi);
-      if (sirketSonuc.sonuc) {
-        setSirketBilgileri(sirketSonuc.data);
-        const sirket = dbAdi || sirketSonuc.data.varsayilanSirket;
-        setCalisilanSirket(sirket);
-        await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, sirket);
+      if (kdvSonuc.sonuc && kdvSonuc.data) {
+        setKdvBilgileri(kdvSonuc.data);
       }
 
-      // 5. KDV bilgileri
-      try {
-        const kdvSonuc = await kdvKisimBilgileriniAl(dbAdi);
-        if (kdvSonuc.sonuc && kdvSonuc.data) setKdvBilgileri(kdvSonuc.data);
-      } catch { }
-
-      // 6. Fiş tipleri — yetkiBilgileri'ne göre default ft override
-      try {
-        const fisSonuc = await fisTipleriniAl(dbAdi);
-        if (fisSonuc.sonuc && fisSonuc.data) {
-          const yetki = yetkiSonuc.data;
-          for (const ftb of fisSonuc.data) {
-            let yetkiKodu = -1;
-            switch (ftb.evrakTipi) {
-              case 'Fatura':
-                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.faturaAlis : yetki.faturasatis;
-                break;
-              case 'İrsaliye':
-                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.irsaliyeAlis : yetki.irsaliyeSatis;
-                break;
-              case 'Sipariş':
-                yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.siparisAcmaAlis : yetki.siparisAcmaSatis;
-                break;
-              case 'Sipariş Kapama':
-                yetkiKodu = yetki.siparisKapama;
-                break;
-              case 'Stok':
-                if (ftb.alimSatim.trim() === 'Giriş') yetkiKodu = yetki.stokGiris;
-                else if (ftb.alimSatim.trim() === 'Çıkış') yetkiKodu = yetki.stokCikis;
-                else if (ftb.alimSatim.trim() === 'Sayım') yetkiKodu = yetki.sayim;
-                break;
-            }
-            if (yetkiKodu >= 0) {
-              const eslesen = ftb.ftListe.find((ft) => ft.fisTipiKodu === yetkiKodu);
-              if (eslesen) ftb.ft = eslesen;
-            }
+      if (fisSonuc.sonuc && fisSonuc.data) {
+        const yetki = yetkiSonuc.data;
+        for (const ftb of fisSonuc.data) {
+          let yetkiKodu = -1;
+          switch (ftb.evrakTipi) {
+            case 'Fatura':
+              yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.faturaAlis : yetki.faturasatis;
+              break;
+            case 'İrsaliye':
+              yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.irsaliyeAlis : yetki.irsaliyeSatis;
+              break;
+            case 'Sipariş':
+              yetkiKodu = ftb.alimSatim.trim() === 'Alış' ? yetki.siparisAcmaAlis : yetki.siparisAcmaSatis;
+              break;
+            case 'Sipariş Kapama':
+              yetkiKodu = yetki.siparisKapama;
+              break;
+            case 'Stok':
+              if (ftb.alimSatim.trim() === 'Giriş') yetkiKodu = yetki.stokGiris;
+              else if (ftb.alimSatim.trim() === 'Çıkış') yetkiKodu = yetki.stokCikis;
+              else if (ftb.alimSatim.trim() === 'Sayım') yetkiKodu = yetki.sayim;
+              break;
           }
-          setFtBaslikListesi(fisSonuc.data);
+          if (yetkiKodu >= 0) {
+            const eslesen = ftb.ftListe.find((ft) => ft.fisTipiKodu === yetkiKodu);
+            if (eslesen) ftb.ft = eslesen;
+          }
         }
-      } catch { }
+        setFtBaslikListesi(fisSonuc.data);
+      }
 
-      // 7. Fiyat tipleri
-      try {
-        const fiyatSonuc = await fiyatTipleriniAl(dbAdi);
-        if (fiyatSonuc.sonuc) setFiyatTipListesi(fiyatSonuc.data);
-      } catch { }
+      if (fiyatSonuc.sonuc && fiyatSonuc.data) {
+        setFiyatTipListesi(fiyatSonuc.data);
+      }
 
       // Beni hatırla
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KULLANICI_KODU, kullaniciKodu);

@@ -30,6 +30,7 @@ import { useAppStore } from '../../store/appStore';
 import ThemedButton from '../../components/ThemedButton';
 import DropdownSecim from '../../components/DropdownSecim';
 import { sirketBilgileriniAl } from '../../api/authApi';
+import { invalidateApiInstance } from '../../api/axiosInstance';
 import * as Device from 'expo-device';
 
 type Props = {
@@ -164,6 +165,7 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL2, apiUrl2.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL3, apiUrl3.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.AKTIF_API, aktifApi);
+      invalidateApiInstance();
       const sonuc = await sirketBilgileriniAl("");
       if (sonuc.sonuc) {
         setSirketListesi(sonuc.data.sirketListesi);
@@ -191,6 +193,7 @@ export default function Ayarlar({ navigation, route }: Props) {
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL2, apiUrl2.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.API_URL3, apiUrl3.trim());
       await AsyncStorage.setItem(Config.STORAGE_KEYS.AKTIF_API, aktifApi);
+      invalidateApiInstance();
       await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, calisilanSirket);
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_OKUMA, manuelTarama ? 'elle' : 'otomatik');
       await AsyncStorage.setItem(Config.STORAGE_KEYS.KAMERA_BASLANGIC_ZOOM, baslangicZoom.toString());

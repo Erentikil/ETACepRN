@@ -3,17 +3,43 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '../constants/Config';
 
 let apiInstance: AxiosInstance | null = null;
+let cachedBaseURL: string | null = null;
+// Promise cache: aynı anda gelen çağrılar tek bir AsyncStorage okuma paylaşır
+let baseURLPromise: Promise<string> | null = null;
+
+async function resolveBaseURL(): Promise<string> {
+  if (!baseURLPromise) {
+    baseURLPromise = (async () => {
+      const aktifApi = await AsyncStorage.getItem(Config.STORAGE_KEYS.AKTIF_API);
+      const urlKey =
+        aktifApi === '3' ? Config.STORAGE_KEYS.API_URL3
+        : aktifApi === '2' ? Config.STORAGE_KEYS.API_URL2
+        : Config.STORAGE_KEYS.API_URL;
+      const defaultURL =
+        aktifApi === '3' ? Config.DEFAULT_API_URL3
+        : aktifApi === '2' ? Config.DEFAULT_API_URL2
+        : Config.DEFAULT_API_URL;
+      return (await AsyncStorage.getItem(urlKey)) || defaultURL;
+    })();
+  }
+  return baseURLPromise;
+}
+
+/** Ayarlar ekranından URL değiştiğinde çağrılır — cache'i sıfırlar. */
+export function invalidateApiInstance(): void {
+  apiInstance = null;
+  cachedBaseURL = null;
+  baseURLPromise = null;
+}
 
 export async function getApiInstance(): Promise<AxiosInstance> {
-  const aktifApi = await AsyncStorage.getItem(Config.STORAGE_KEYS.AKTIF_API);
-  const urlKey = aktifApi === '3' ? Config.STORAGE_KEYS.API_URL3
-    : aktifApi === '2' ? Config.STORAGE_KEYS.API_URL2
-    : Config.STORAGE_KEYS.API_URL;
-  const defaultURL = aktifApi === '3' ? Config.DEFAULT_API_URL3
-    : aktifApi === '2' ? Config.DEFAULT_API_URL2
-    : Config.DEFAULT_API_URL;
-  const baseURL = (await AsyncStorage.getItem(urlKey)) || defaultURL;
+  const baseURL = await resolveBaseURL();
 
+  if (apiInstance && cachedBaseURL === baseURL) {
+    return apiInstance;
+  }
+
+  cachedBaseURL = baseURL;
   apiInstance = axios.create({
     baseURL,
     timeout: Config.API_TIMEOUT,
@@ -22,7 +48,6 @@ export async function getApiInstance(): Promise<AxiosInstance> {
     },
   });
 
-  // Response interceptor
   apiInstance.interceptors.response.use(
     (response) => response,
     (error) => {
