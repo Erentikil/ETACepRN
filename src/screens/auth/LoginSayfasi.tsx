@@ -138,16 +138,18 @@ export default function LoginSayfasi({ navigation }: Props) {
     const log = (msg: string) => console.log(`[Login +${Date.now() - t0}ms] ${msg}`);
 
     try {
-      // Phase 1: Versiyon kontrolü + şirket listesi paralel
-      log('Phase 1 başladı (versiyonKontrol + sirketListesi)');
-      const [versiyonSonuc, sirketSonuc] = await Promise.all([
+      // Phase 1: Versiyon kontrolü + şirket listesi + kayıtlı şirket paralel
+      log('Phase 1 başladı (versiyonKontrol + sirketListesi + kayitliSirket)');
+      const [versiyonSonuc, sirketSonuc, kayitliSirketRaw] = await Promise.all([
         versiyonBilgileriniOku(Config.VERSIYON),
         sirketBilgileriniAl(''),
+        AsyncStorage.getItem(Config.STORAGE_KEYS.CALISILANL_SIRKET),
       ]);
       log(`Phase 1 bitti → versiyon: ${versiyonSonuc.sonuc}, sirket: ${sirketSonuc.sonuc}`);
 
-      // dbAdi her zaman sunucudan gelen varsayilanSirket
-      const dbAdi = sirketSonuc.data?.varsayilanSirket || '';
+      // dbAdi: kullanıcının Ayarlar'da seçtiği şirket öncelikli, yoksa sunucudan gelen varsayilanSirket
+      const kayitliSirket = kayitliSirketRaw && !isHashBenzeri(kayitliSirketRaw) ? kayitliSirketRaw : '';
+      const dbAdi = kayitliSirket || sirketSonuc.data?.varsayilanSirket || '';
       if (!dbAdi) {
         setHata(t('login.sirketSecilmedi'));
         return;
@@ -155,7 +157,10 @@ export default function LoginSayfasi({ navigation }: Props) {
       if (sirketSonuc.sonuc && sirketSonuc.data) {
         setSirketBilgileri(sirketSonuc.data);
         setCalisilanSirket(dbAdi);
-        await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, dbAdi);
+        // Sadece kayıtlı şirket yoksa AsyncStorage'a yaz — kullanıcı seçimini ezme
+        if (!kayitliSirket) {
+          await AsyncStorage.setItem(Config.STORAGE_KEYS.CALISILANL_SIRKET, dbAdi);
+        }
       }
 
       const versiyonBilgi = versiyonSonuc.data;

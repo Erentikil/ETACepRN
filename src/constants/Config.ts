@@ -41,7 +41,7 @@ export const Config = {
     FAVORI_STOKLAR: 'favoriStoklar',
   },
 
-  DEFAULT_API_URL: IS_PRO ? 'http://212.252.132.158:4161' : 'http://45.84.189.173:52723',
+  DEFAULT_API_URL: IS_PRO ? 'http://212.252.132.158:4158' : 'http://45.84.189.173:52723',
   DEFAULT_API_URL2: IS_PRO ? 'http://45.84.189.173:52724' : 'http://212.252.132.158:4158',
   DEFAULT_API_URL3: 'http://192.168.1.1/webapi',
 };
