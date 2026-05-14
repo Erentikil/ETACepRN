@@ -1,4 +1,5 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiInstance, buildUrl } from './axiosInstance';
 import { Config } from '../constants/Config';
 import * as Application from 'expo-application';
@@ -26,7 +27,10 @@ export async function getCihazKodu(): Promise<string> {
   return _cihazKodu;
 }
 
-const cihazAdi = Config.TELEFON_CIHAZ_ADI;
+export async function getCihazAdi(): Promise<string> {
+  const kayitli = await AsyncStorage.getItem(Config.STORAGE_KEYS.CIHAZ_ADI);
+  return kayitli?.trim() || Config.TELEFON_CIHAZ_ADI;
+}
 
 // ─── Versiyon Kontrolü ────────────────────────────────────────────────────────
 export async function versiyonBilgileriniOku(
@@ -34,6 +38,7 @@ export async function versiyonBilgileriniOku(
 ): Promise<Sonuc<VersiyonBilgileri>> {
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
+  const cihazAdi = await getCihazAdi();
   const url = buildUrl('VersiyonKontrol', versiyon, cihazKodu, cihazAdi);
   const res = await api.get<Sonuc<VersiyonBilgileri>>(url);
   return res.data;
@@ -136,7 +141,7 @@ export async function fiyatTipleriniAl(
 // ─── Cihaz Kayıt ─────────────────────────────────────────────────────────────
 export async function cihazKaydet(): Promise<void> {
   const deviceIdentifier = await getCihazKodu();
-  const deviceName = Platform.OS === 'ios' ? 'iPhone' : 'Android';
+  const deviceName = await getCihazAdi();
   const platform = Platform.OS === 'ios' ? 'iOS' : 'Android';
 
   const res = await axios.post<{ success: boolean; message?: string }>(
