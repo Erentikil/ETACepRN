@@ -40,7 +40,9 @@ export async function versiyonBilgileriniOku(
   const cihazKodu = await getCihazKodu();
   const cihazAdi = await getCihazAdi();
   const url = buildUrl('VersiyonKontrol', versiyon, cihazKodu, cihazAdi);
+  console.log('[VersiyonKontrol] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<VersiyonBilgileri>>(url);
+  console.log('[VersiyonKontrol] response:', res.data);
   return res.data;
 }
 
@@ -59,8 +61,9 @@ export async function yetkiBilgileriniAl(
     cihazKodu,
     veriTabaniAdi
   );
+  console.log('[YetkiBilgileriniAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<YetkiBilgileri>>(url);
-  
+  console.log('[YetkiBilgileriniAl] response:', res.data);
   return res.data;
 }
 
@@ -79,7 +82,9 @@ export async function menuYetkiBilgileriniAl(
     cihazKodu,
     veriTabaniAdi
   );
+  console.log('[MenuYetkiBilgileriniAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<MenuYetkiBilgileri>>(url);
+  console.log('[MenuYetkiBilgileriniAl] response:', res.data);
   return res.data;
 }
 
@@ -100,7 +105,9 @@ export async function sirketBilgileriniAl(veriTabaniAdi: string): Promise<Sonuc<
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('SirketIsimleriniAl', cihazKodu, veriTabaniAdi);
+  console.log('[SirketIsimleriniAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<SirketBilgileri>>(url);
+  console.log('[SirketIsimleriniAl] response:', res.data);
   return res.data;
 }
 
@@ -111,7 +118,9 @@ export async function kdvKisimBilgileriniAl(
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('KDVKartlariniAl', cihazKodu, veriTabaniAdi);
+  console.log('[KDVKartlariniAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<KDVBilgileri>>(url);
+  console.log('[KDVKartlariniAl] response:', res.data);
   return res.data;
 }
 
@@ -122,9 +131,10 @@ export async function fisTipleriniAl(
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('FisTipleriniAl', cihazKodu, veriTabaniAdi);
+  console.log('[FisTipleriniAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<FisTipiGrup[]>>(url);
+  console.log('[FisTipleriniAl] response:', res.data);
   return res.data;
-  
 }
 
 // ─── Fiyat Tipleri ───────────────────────────────────────────────────────────
@@ -134,7 +144,9 @@ export async function fiyatTipleriniAl(
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('FiyatTipiAl', cihazKodu, veriTabaniAdi);
+  console.log('[FiyatTipiAl] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<FiyatTipiBilgileri[]>>(url);
+  console.log('[FiyatTipiAl] response:', res.data);
   return res.data;
 }
 
