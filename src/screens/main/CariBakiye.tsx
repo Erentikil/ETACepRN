@@ -116,7 +116,7 @@ export default function CariBakiye() {
           <View style={[styles.satir, { backgroundColor: Colors.card }]}>
             <View style={styles.satırSol}>
               <Text style={[styles.cariKodu, { color: Colors.primary }]}>{item.cariKodu}</Text>
-              <Text style={[styles.cariUnvan, { color: Colors.textSecondary }]} numberOfLines={1}>{item.cariUnvan}</Text>
+              <Text style={[styles.cariUnvan, { color: Colors.textSecondary }]} numberOfLines={2}>{item.cariUnvan}</Text>
             </View>
             <Text
               style={[
