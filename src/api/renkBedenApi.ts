@@ -76,6 +76,7 @@ export async function evrakRBKaydet(
     renkKodu: k.renkKodu,
     bedenKodu: k.bedenKodu,
     carpan: k.carpan,
+    aciklama: k.aciklama ?? '',
   }));
 
   const body = {

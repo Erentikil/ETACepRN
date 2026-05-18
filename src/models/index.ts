@@ -750,6 +750,7 @@ export interface SepetRBKalem {
   fiyatNo: number;
   bakiye: number;
   guidID: string;
+  aciklama?: string;
 }
 
 // ─── Cari Kart Kaydet ────────────────────────────────────────────────────────

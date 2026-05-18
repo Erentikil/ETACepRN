@@ -464,12 +464,14 @@ export default function RenkBedenIslemleri() {
     miktar: number,
     fiyatOverride?: number,
     ind1 = 0, ind2 = 0, ind3 = 0, ind4 = 0, ind5 = 0,
-    birimOverride?: string
+    birimOverride?: string,
+    stokCinsiOverride?: string,
+    aciklama?: string
   ) => {
     hafifTitresim();
     const kalem: SepetRBKalem = {
       stokKodu: stok.stokKodu,
-      stokCinsi: stok.stokCinsi,
+      stokCinsi: stokCinsiOverride?.trim() || stok.stokCinsi,
       barkod: variant.barkod,
       birim: birimOverride || stok.birim,
       miktar,
@@ -491,6 +493,7 @@ export default function RenkBedenIslemleri() {
       fiyatNo: 0,
       bakiye: 0,
       guidID: '',
+      aciklama: aciklama ?? '',
     };
 
     setSepetKalemleri((prev) => {
@@ -534,7 +537,9 @@ export default function RenkBedenIslemleri() {
       kalem.kalemIndirim3,
       kalem.kalemIndirim4 ?? 0,
       kalem.kalemIndirim5 ?? 0,
-      kalem.birim
+      kalem.birim,
+      kalem.stokCinsi,
+      kalem.aciklama
     );
     setMiktarModalStok(null);
     setPendingVariant(null);
