@@ -1,6 +1,5 @@
 import React, { useCallback, useImperativeHandle, useRef, useState, forwardRef, useEffect } from 'react';
-import { Text, TouchableOpacity, StyleSheet, Platform, Modal } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '../contexts/ThemeContext';
@@ -22,7 +21,6 @@ let globalRef: ToastHandle | null = null;
 const ToastInner = forwardRef<ToastHandle>((_, ref) => {
   const Colors = useColors();
   const insets = useSafeAreaInsets();
-  const translateY = useSharedValue(-150);
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState<ToastType>('info');
   const [message, setMessage] = useState('');
@@ -36,9 +34,8 @@ const ToastInner = forwardRef<ToastHandle>((_, ref) => {
   };
 
   const hide = useCallback(() => {
-    translateY.value = withTiming(-150, { duration: 250 }, () => {
-      runOnJS(setVisible)(false);
-    });
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setVisible(false);
   }, []);
 
   const show = useCallback((t: ToastType, msg: string, duration = 3000) => {
@@ -46,32 +43,27 @@ const ToastInner = forwardRef<ToastHandle>((_, ref) => {
     setType(t);
     setMessage(msg);
     setVisible(true);
-    translateY.value = -150;
-    translateY.value = withTiming(0, { duration: 300 });
-    timerRef.current = setTimeout(hide, duration);
-  }, [hide]);
+    timerRef.current = setTimeout(() => setVisible(false), duration);
+  }, []);
 
   useImperativeHandle(ref, () => ({ show }), [show]);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   if (!visible) return null;
 
   const cfg = CONFIG[type];
 
   // Modal içine sarılı — RN Modal ayrı native pencere katmanında olduğu için
-  // toast aksi halde açık modalların arkasında kalıyor.
+  // toast aksi halde açık modalların arkasında kalıyor. Modal'ın kendi fade
+  // animasyonu kullanılıyor (Reanimated Modal içinde güvenilir çalışmıyor).
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent>
-      <Animated.View
+    <Modal visible transparent animationType="fade" statusBarTranslucent>
+      <View
         pointerEvents="box-none"
-        style={[
-          styles.container,
-          { paddingTop: insets.top + 8 },
-          animStyle,
-        ]}
+        style={[styles.container, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
           style={[styles.toast, { backgroundColor: cfg.color }]}
@@ -81,7 +73,7 @@ const ToastInner = forwardRef<ToastHandle>((_, ref) => {
           <Ionicons name={cfg.icon} size={22} color="#fff" />
           <Text style={styles.message} numberOfLines={3}>{message}</Text>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </Modal>
   );
 });
@@ -114,8 +106,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 9999,
-    elevation: 9999,
     paddingHorizontal: 12,
   },
   toast: {

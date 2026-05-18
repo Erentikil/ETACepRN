@@ -396,6 +396,7 @@ export default function BarkodEkleme() {
               value={katsayi}
               onChangeText={setKatsayi}
               keyboardType="numeric"
+              selectTextOnFocus
             />
 
             {/* Birim */}
