@@ -64,6 +64,17 @@ export default function BarkodEkleme() {
   const [katsayi, setKatsayi] = useState('1');
   const [birimYukleniyor, setBirimYukleniyor] = useState(false);
 
+  // Modal içi mesaj — RN Modal ayrı native katman olduğu için toast modalın
+  // arkasında kalıyor; bu yüzden kaydet sonucu modalın içinde gösteriliyor.
+  const [modalMesaj, setModalMesaj] = useState<{ tip: 'success' | 'error' | 'warning'; metin: string } | null>(null);
+  const modalMesajTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const modalMesajGoster = (tip: 'success' | 'error' | 'warning', metin: string) => {
+    if (modalMesajTimerRef.current) clearTimeout(modalMesajTimerRef.current);
+    setModalMesaj({ tip, metin });
+    modalMesajTimerRef.current = setTimeout(() => setModalMesaj(null), 3500);
+  };
+
   // Stok info modal
   const [infoStoku, setInfoStoku] = useState<StokListesiBilgileri | null>(null);
 
@@ -84,6 +95,7 @@ export default function BarkodEkleme() {
     setKatsayi('1');
     setSecilenBirimNo(0);
     setBirimListesi([]);
+    setModalMesaj(null);
     setModalGorunur(true);
     (async () => {
       setBirimYukleniyor(true);
@@ -105,6 +117,8 @@ export default function BarkodEkleme() {
   // Modal kapandiktan sonra scanner acilacaksa ac
   const handleModalKapat = () => {
     setModalGorunur(false);
+    if (modalMesajTimerRef.current) clearTimeout(modalMesajTimerRef.current);
+    setModalMesaj(null);
     if (!bekleyenScanRef.current) {
       setSecilenStok(null);
     }
@@ -163,7 +177,7 @@ export default function BarkodEkleme() {
     if (!secilenStok) return;
     const barkod = barkodDeger.trim();
     if (!barkod) {
-      toast.warning(t('barkod.barkodGir'));
+      modalMesajGoster('warning', t('barkod.barkodGir'));
       return;
     }
     setKaydediliyor(true);
@@ -183,13 +197,13 @@ export default function BarkodEkleme() {
         calisilanSirket
       );
       if (sonuc.sonuc) {
-        toast.success(t('barkod.barkodKaydedildi'));
+        modalMesajGoster('success', t('barkod.barkodKaydedildi'));
         setBarkodDeger('');
       } else {
-        toast.error(sonuc.mesaj || t('barkod.kaydedilemedi'));
+        modalMesajGoster('error', sonuc.mesaj || t('barkod.kaydedilemedi'));
       }
     } catch (e: any) {
-      toast.error(t('barkod.kaydederkenHata', { detay: e?.message ?? e }));
+      modalMesajGoster('error', t('barkod.kaydederkenHata', { detay: e?.message ?? e }));
     } finally {
       setKaydediliyor(false);
     }
@@ -343,6 +357,32 @@ export default function BarkodEkleme() {
         >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: Colors.card }]}>
+            {/* Modal içi mesaj — en üstte */}
+            {modalMesaj && (
+              <View
+                style={[
+                  styles.modalMesaj,
+                  {
+                    backgroundColor:
+                      modalMesaj.tip === 'success' ? Colors.success
+                      : modalMesaj.tip === 'error' ? Colors.error
+                      : Colors.accent,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    modalMesaj.tip === 'success' ? 'checkmark-circle'
+                    : modalMesaj.tip === 'error' ? 'close-circle'
+                    : 'warning'
+                  }
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.modalMesajText}>{modalMesaj.metin}</Text>
+              </View>
+            )}
+
             {/* Modal baslik */}
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
@@ -652,6 +692,21 @@ const styles = StyleSheet.create({
   birimWrap: {
     marginBottom: 16,
     zIndex: 10,
+  },
+  modalMesaj: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
+  modalMesajText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   kaydetBtn: {
     flexDirection: 'row',
