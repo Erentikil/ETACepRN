@@ -1,5 +1,5 @@
 import React, { useCallback, useImperativeHandle, useRef, useState, forwardRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, Platform, Modal } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,23 +61,28 @@ const ToastInner = forwardRef<ToastHandle>((_, ref) => {
 
   const cfg = CONFIG[type];
 
+  // Modal içine sarılı — RN Modal ayrı native pencere katmanında olduğu için
+  // toast aksi halde açık modalların arkasında kalıyor.
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + 8 },
-        animStyle,
-      ]}
-    >
-      <TouchableOpacity
-        style={[styles.toast, { backgroundColor: cfg.color }]}
-        activeOpacity={0.9}
-        onPress={hide}
+    <Modal visible transparent animationType="none" statusBarTranslucent>
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.container,
+          { paddingTop: insets.top + 8 },
+          animStyle,
+        ]}
       >
-        <Ionicons name={cfg.icon} size={22} color="#fff" />
-        <Text style={styles.message} numberOfLines={3}>{message}</Text>
-      </TouchableOpacity>
-    </Animated.View>
+        <TouchableOpacity
+          style={[styles.toast, { backgroundColor: cfg.color }]}
+          activeOpacity={0.9}
+          onPress={hide}
+        >
+          <Ionicons name={cfg.icon} size={22} color="#fff" />
+          <Text style={styles.message} numberOfLines={3}>{message}</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </Modal>
   );
 });
 
