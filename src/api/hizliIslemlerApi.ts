@@ -344,6 +344,25 @@ export async function evrakKaydet(
   return res.data;
 }
 
+// ─── Stok Birimlerini Bul ────────────────────────────────────────────────────
+// GET /StokBirimleriniBul/{stokKodu}/{telefonCihazKodu}/{veriTabaniAdi}
+export interface StokBirim {
+  stokKodu: string;
+  birimNo: number;
+  birimAdi: string;
+}
+
+export async function stokBirimleriniBul(
+  stokKodu: string,
+  veriTabaniAdi: string
+): Promise<Sonuc<StokBirim[]>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('StokBirimleriniBul', stokKodu, cihazKodu, veriTabaniAdi);
+  const res = await api.get<Sonuc<StokBirim[]>>(url);
+  return res.data;
+}
+
 // ─── Barkod Kaydet ──────────────────────────────────────────────────────────
 // POST "BarkodKaydetSirket"
 export async function barkodKaydet(

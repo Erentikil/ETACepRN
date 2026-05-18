@@ -15,9 +15,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore } from '../../store/appStore';
-import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, barkodKaydet } from '../../api/hizliIslemlerApi';
+import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, barkodKaydet, stokBirimleriniBul, type StokBirim } from '../../api/hizliIslemlerApi';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import StokInfoModal from '../../components/StokInfoModal';
+import DropdownSecim from '../../components/DropdownSecim';
 import { useTarayiciAyarlari } from '../../hooks/useTarayiciAyarlari';
 import { useColors } from '../../contexts/ThemeContext';
 import { useT } from '../../i18n/I18nContext';
@@ -57,6 +58,12 @@ export default function BarkodEkleme() {
   const [scannerAcik, setScannerAcik] = useState(false);
   const bekleyenScanRef = useRef(false);
 
+  // Birim & katsayı state
+  const [birimListesi, setBirimListesi] = useState<StokBirim[]>([]);
+  const [secilenBirimNo, setSecilenBirimNo] = useState(0);
+  const [katsayi, setKatsayi] = useState('1');
+  const [birimYukleniyor, setBirimYukleniyor] = useState(false);
+
   // Stok info modal
   const [infoStoku, setInfoStoku] = useState<StokListesiBilgileri | null>(null);
 
@@ -70,13 +77,29 @@ export default function BarkodEkleme() {
     })();
   }, []);
 
-  // Stok secildiginde modal ac ve barkod inputunu sifirla
+  // Stok secildiginde modal ac, alanlari sifirla ve birimleri cek
   useEffect(() => {
-    if (secilenStok) {
-      setBarkodDeger('');
-      setModalGorunur(true);
-    }
-  }, [secilenStok]);
+    if (!secilenStok) return;
+    setBarkodDeger('');
+    setKatsayi('1');
+    setSecilenBirimNo(0);
+    setBirimListesi([]);
+    setModalGorunur(true);
+    (async () => {
+      setBirimYukleniyor(true);
+      try {
+        const sonuc = await stokBirimleriniBul(secilenStok.stokKodu, calisilanSirket);
+        if (sonuc.data && sonuc.data.length > 0) {
+          setBirimListesi(sonuc.data);
+          setSecilenBirimNo(sonuc.data[0].birimNo);
+        }
+      } catch {
+        // Birim alinamazsa sessizce gec — kullanici yine de kaydedebilir
+      } finally {
+        setBirimYukleniyor(false);
+      }
+    })();
+  }, [secilenStok, calisilanSirket]);
 
   // Modal kapandiktan sonra scanner acilacaksa ac
   const handleModalKapat = () => {
@@ -144,15 +167,16 @@ export default function BarkodEkleme() {
     }
     setKaydediliyor(true);
     try {
+      const secilenBirim = birimListesi.find((b) => b.birimNo === secilenBirimNo);
       const sonuc = await barkodKaydet(
         {
           stokKodu: secilenStok.stokKodu,
           barkod,
-          birimNo: 0,
-          katsayi: 1,
+          birimNo: secilenBirimNo,
+          katsayi: parseFloat(katsayi.replace(',', '.')) || 1,
           itemNo: 0,
           fiyatTipi: '0',
-          birimAdi: secilenStok.birim,
+          birimAdi: secilenBirim?.birimAdi || secilenStok.birim,
           fiyatAdi: '0',
         },
         calisilanSirket
@@ -360,6 +384,28 @@ export default function BarkodEkleme() {
               >
                 <Ionicons name="barcode-outline" size={24} color={'#fff'} />
               </TouchableOpacity>
+            </View>
+
+            {/* Katsayı */}
+            <Text style={[styles.barkodLabel, { color: Colors.text }]}>{t('barkod.katsayi')}</Text>
+            <TextInput
+              style={[styles.katsayiInput, { borderColor: Colors.primary, color: Colors.text, backgroundColor: Colors.inputBackground }]}
+              placeholder="1"
+              placeholderTextColor={Colors.textSecondary}
+              value={katsayi}
+              onChangeText={setKatsayi}
+              keyboardType="numeric"
+            />
+
+            {/* Birim */}
+            <Text style={[styles.barkodLabel, { color: Colors.text }]}>{t('barkod.birim')}</Text>
+            <View style={styles.birimWrap}>
+              <DropdownSecim
+                value={secilenBirimNo > 0 ? secilenBirimNo.toString() : ''}
+                options={birimListesi.map((b) => ({ label: b.birimAdi, value: b.birimNo.toString() }))}
+                placeholder={birimYukleniyor ? t('barkod.birimYukleniyor') : t('barkod.birimSeciniz')}
+                onChange={(v) => setSecilenBirimNo(parseInt(v, 10))}
+              />
             </View>
 
             {/* Kaydet butonu */}
@@ -592,6 +638,18 @@ const styles = StyleSheet.create({
   barkodScanBtn: {
     borderRadius: 10,
     padding: 12,
+  },
+  katsayiInput: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  birimWrap: {
+    marginBottom: 16,
+    zIndex: 10,
   },
   kaydetBtn: {
     flexDirection: 'row',
