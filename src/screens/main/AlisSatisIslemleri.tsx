@@ -17,7 +17,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { sepetToplamlariniHesapla, type SepetAyarlari } from '../../utils/sepetHesap';
 import { useSepetAyarlariStore } from '../../store/sepetAyarlariStore';
 import { useAppStore } from '../../store/appStore';
-import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl } from '../../api/hizliIslemlerApi';
+import { stokKartlariniKodCinsBarkoddanBul, barkoddanStokKodunuBul, tekStokFiyatBilgisiniAl, cariFiyatBilgileriniAl, barkodKatsayisiniAl } from '../../api/hizliIslemlerApi';
 import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/aktifSepetStorage';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -129,6 +129,8 @@ export default function AlisSatisIslemleri() {
   }, [sepetKalemleri.length]);
 
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
+  // Modal'a barkod katsayısı taşımak için (barkodla gelindiğinde başlangıç miktarı)
+  const [modalBaslangicMiktar, setModalBaslangicMiktar] = useState(1);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
@@ -407,13 +409,15 @@ export default function AlisSatisIslemleri() {
           setStokListesi(sonuc.data);
           if (sonuc.data.length === 1) {
             const stok = sonuc.data[0];
+            const katsayi = await barkodKatsayisiniAl(veri, calisilanSirket);
             if (!secilenCari) {
               toast.warning(t('stok.cariSecmedenEklenemez'));
             } else if (miktarliGiris) {
+              setModalBaslangicMiktar(katsayi);
               setModalUrunu(stok);
               modalAcilacak = true;
             } else {
-              hizliEkle(stok);
+              hizliEkle(stok, katsayi);
             }
           }
         } else {
@@ -498,7 +502,7 @@ export default function AlisSatisIslemleri() {
   })();
 
   // Hızlı sepete ekle
-  const hizliEkle = async (item: StokListesiBilgileri) => {
+  const hizliEkle = async (item: StokListesiBilgileri, miktar: number = 1) => {
     if (!secilenCari) {
       toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
@@ -569,7 +573,7 @@ export default function AlisSatisIslemleri() {
       stokCinsi: item.stokCinsi,
       barkod: item.barkod,
       birim: item.birim2?.split(';')[0]?.trim() || item.birim || '',
-      miktar: 1,
+      miktar,
       birimFiyat: fiyat * carpan,
       kdvOrani: item.kdvOrani,
       kalemIndirim1: ind1,
@@ -679,6 +683,7 @@ export default function AlisSatisIslemleri() {
         style={[styles.stokSatiri, { backgroundColor: Colors.card }]}
         onPress={() => hizliEkle(item)}
         onLongPress={() => {
+          setModalBaslangicMiktar(1);
           setModalUrunu(item);
         }}
         delayLongPress={400}
@@ -943,14 +948,16 @@ export default function AlisSatisIslemleri() {
             return;
           }
           hafifTitresim();
-          barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+          barkoddanStokKodunuBul(barkod, calisilanSirket).then(async (sonuc) => {
             if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
               const stok = sonuc.data[0];
               setStokListesi(sonuc.data);
+              const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
               if (miktarliGiris) {
+                setModalBaslangicMiktar(katsayi);
                 setModalUrunu(stok);
               } else {
-                hizliEkle(stok);
+                hizliEkle(stok, katsayi);
               }
             } else {
               toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
@@ -983,8 +990,9 @@ export default function AlisSatisIslemleri() {
         cariKodu={secilenCari?.cariKodu}
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
+        initialMiktar={modalBaslangicMiktar}
         onConfirm={kalemEkle}
-        onClose={() => { setModalUrunu(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
+        onClose={() => { setModalUrunu(null); setModalBaslangicMiktar(1); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
     </View>
   );

@@ -27,7 +27,7 @@ import {
   evrakAcmaHareketleriniAl,
   siparisKapamaKaydet,
 } from '../../api/siparisKapamaApi';
-import { fisTipleriniAl, generateGuid, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
+import { fisTipleriniAl, generateGuid, barkoddanStokKodunuBul, barkodKatsayisiniAl } from '../../api/hizliIslemlerApi';
 import { evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
 import { useT } from '../../i18n/I18nContext';
@@ -536,11 +536,12 @@ export default function SiparisKapama() {
   const miktarModalAc = (
     hedef:
       | { tip: 'acma'; ashb: AcmaSiparisHareketBilgileri }
-      | { tip: 'kapama'; kalem: KapamaSepetKalem }
+      | { tip: 'kapama'; kalem: KapamaSepetKalem },
+    baslangicMiktar: number = 1
   ) => {
     setModalHedef(hedef);
     setModalMiktar(
-      hedef.tip === 'kapama' ? String(hedef.kalem.miktar) : '1'
+      hedef.tip === 'kapama' ? String(hedef.kalem.miktar) : String(baslangicMiktar)
     );
     setMiktarModalGorunur(true);
   };
@@ -849,7 +850,7 @@ export default function SiparisKapama() {
               value={aramaMetni}
               onChangeText={setAramaMetni}
               returnKeyType="search"
-              onSubmitEditing={() => {
+              onSubmitEditing={async () => {
                 if (aramaTipi !== 4) return;
                 const barkod = aramaMetni.trim();
                 if (!barkod) return;
@@ -857,15 +858,16 @@ export default function SiparisKapama() {
                   toast.warning('Önce sipariş listesini yükleyiniz.');
                   return;
                 }
+                const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
                 const bulunan = stokKodunaBul(barkod);
                 if (bulunan) {
                   const kalan = kalanMiktar(bulunan);
                   if (kalan <= 0) {
                     toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
                   } else if (miktarliGiris) {
-                    miktarModalAc({ tip: 'acma', ashb: bulunan });
+                    miktarModalAc({ tip: 'acma', ashb: bulunan }, katsayi);
                   } else {
-                    siparisEkle(bulunan, 1);
+                    siparisEkle(bulunan, katsayi);
                   }
                   setAramaMetni('');
                 } else {
@@ -878,9 +880,9 @@ export default function SiparisKapama() {
                         if (kalan <= 0) {
                           toast.warning('Bu kalemin tüm siparişleri tamamlandı.');
                         } else if (miktarliGiris) {
-                          miktarModalAc({ tip: 'acma', ashb: apiBulunan });
+                          miktarModalAc({ tip: 'acma', ashb: apiBulunan }, katsayi);
                         } else {
-                          siparisEkle(apiBulunan, 1);
+                          siparisEkle(apiBulunan, katsayi);
                         }
                       } else {
                         toast.warning(`"${barkod}" barkodlu ürün açık siparişlerde bulunamadı.`);
@@ -1241,7 +1243,7 @@ export default function SiparisKapama() {
         onClose={() => setBarkodModalGorunur(false)}
         manuelOkuma={manuelOkuma}
         baslangicZoom={baslangicZoom}
-        onDetected={(barkod) => {
+        onDetected={async (barkod) => {
           setBarkodModalGorunur(false);
           if (barkodAcmaIcin) {
             // Açma hareketleri tabı: listede stokKodu ile ara, bulunamazsa API ile barkoddan stok kodu bul
@@ -1250,6 +1252,7 @@ export default function SiparisKapama() {
               toast.warning('Önce sipariş listesini yükleyiniz.');
               return;
             }
+            const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
             const islemYap = (ashb: AcmaSiparisHareketBilgileri) => {
               const kalan = kalanMiktar(ashb);
               if (kalan <= 0) {
@@ -1257,9 +1260,9 @@ export default function SiparisKapama() {
                 return;
               }
               if (miktarliGiris) {
-                miktarModalAc({ tip: 'acma', ashb });
+                miktarModalAc({ tip: 'acma', ashb }, katsayi);
               } else {
-                siparisEkle(ashb, 1);
+                siparisEkle(ashb, katsayi);
               }
             };
             const lokalde = stokKodunaBul(barkod);

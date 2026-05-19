@@ -201,6 +201,48 @@ export async function barkoddanStokKodunuBul(
   return res.data;
 }
 
+// ─── Barkoddan Barkod Bilgilerini Bul ────────────────────────────────────────
+// GET /BarkoddanBarkodBilgileriniBul/{barkod}/{telefonCihazKodu}/{veriTabaniAdi}
+// Barkoda bağlı katsayı/birim/renk-beden bilgisini döndürür.
+export interface BarkodBilgisi {
+  barkod: string;
+  stokKodu: string;
+  katsayi: number;
+  birim: string;
+  renkKodu: number;
+  renk: string;
+  bedenKodu: number;
+  beden: string;
+}
+
+export async function barkoddanBarkodBilgileriniBul(
+  barkod: string,
+  veriTabaniAdi: string
+): Promise<Sonuc<BarkodBilgisi>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const url = buildUrl('BarkoddanBarkodBilgileriniBul', barkod, cihazKodu, veriTabaniAdi);
+  const res = await api.get<Sonuc<BarkodBilgisi>>(url);
+  return res.data;
+}
+
+/**
+ * Barkoda bağlı katsayıyı döndürür. Katsayı 0 veya alınamazsa 1 döner.
+ * Sadece miktar çarpanı için kullanılır — birim her zaman varsayılan kalır.
+ */
+export async function barkodKatsayisiniAl(
+  barkod: string,
+  veriTabaniAdi: string
+): Promise<number> {
+  try {
+    const sonuc = await barkoddanBarkodBilgileriniBul(barkod, veriTabaniAdi);
+    const k = sonuc.data?.katsayi ?? 0;
+    return k > 0 ? k : 1;
+  } catch {
+    return 1;
+  }
+}
+
 // ─── Stok Kartlarını Kod/Cins/Barkoddan Bul ──────────────────────────────────
 // MAUI: "StokKartlariniKodCinsBarkoddanBul/{veri}/{tip}/{cihazKodu}/{veriTabaniAdi}"
 // tip: 0 = ile, 1 = başlayan, 2 = biten, 3 = içinde geçen
@@ -359,7 +401,9 @@ export async function stokBirimleriniBul(
   const api = await getApiInstance();
   const cihazKodu = await getCihazKodu();
   const url = buildUrl('StokBirimleriniBul', stokKodu, cihazKodu, veriTabaniAdi);
+  console.log('[StokBirimleriniBul] URL:', api.defaults.baseURL + '/' + url);
   const res = await api.get<Sonuc<StokBirim[]>>(url);
+  console.log('[StokBirimleriniBul] response:', JSON.stringify(res.data));
   return res.data;
 }
 

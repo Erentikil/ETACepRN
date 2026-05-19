@@ -18,7 +18,7 @@ import type { RootStackParamList, DrawerParamList } from '../../navigation/types
 import { sepetToplamlariniHesapla, type SepetAyarlari } from '../../utils/sepetHesap';
 import { useSepetAyarlariStore } from '../../store/sepetAyarlariStore';
 import { useAppStore } from '../../store/appStore';
-import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul } from '../../api/hizliIslemlerApi';
+import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul, barkodKatsayisiniAl } from '../../api/hizliIslemlerApi';
 import { stokListesiniGetir } from '../../utils/stokListesiYukleyici';
 import { evrakiSil } from '../../utils/bekleyenEvraklarStorage';
 import { aktifSepetKaydet, aktifSepetTemizle, aktifSepetAl } from '../../utils/aktifSepetStorage';
@@ -212,6 +212,8 @@ export default function HizliIslemlerV2() {
   const [seciliFisTipi, setSeciliFisTipi] = useState<FisTipiBaslik | null>(null);
   const [sepetKalemleri, setSepetKalemleri] = useState<SepetKalem[]>([]);
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
+  // Modal'a barkod katsayısı taşımak için (barkodla gelindiğinde başlangıç miktarı)
+  const [modalBaslangicMiktar, setModalBaslangicMiktar] = useState(1);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
@@ -513,13 +515,15 @@ export default function HizliIslemlerV2() {
         setBarkodSonuclari(sonuc.data);
         if (sonuc.data.length === 1) {
           const stok = sonuc.data[0];
+          const katsayi = await barkodKatsayisiniAl(veri, calisilanSirket);
           if (miktarliGiris) {
+            setModalBaslangicMiktar(katsayi);
             setModalUrunu(stok);
             modalAcilacak = true;
           } else if (!secilenCari) {
             toast.warning(t('stok.cariSecmedenEklenemez'));
           } else {
-            hizliEkle(stok);
+            hizliEkle(stok, katsayi);
           }
         }
       } else {
@@ -586,7 +590,7 @@ export default function HizliIslemlerV2() {
 
   // Hızlı sepete ekle (onPress) — miktar:1, varsayılan fiyat, indirim yok
   // Sepet her zaman 1. birim (ADET) üzerinden çalışır
-  const hizliEkle = async (item: StokListesiBilgileri) => {
+  const hizliEkle = async (item: StokListesiBilgileri, miktar: number = 1) => {
     if (!secilenCari) {
       toast.warning(t('stok.cariSecmedenEklenemez'));
       return;
@@ -663,7 +667,7 @@ export default function HizliIslemlerV2() {
       stokCinsi: item.stokCinsi,
       barkod: item.barkod,
       birim: ilkBirim,
-      miktar: 1,
+      miktar,
       birimFiyat: fiyat * ilkCarpan,
       kdvOrani: item.kdvOrani,
       kalemIndirim1: ind1,
@@ -778,6 +782,7 @@ export default function HizliIslemlerV2() {
 
   const onStokLongPress = useCallback((item: StokListesiBilgileri) => {
     if (isOnayliReadOnly) return;
+    setModalBaslangicMiktar(1);
     setModalUrunu(item);
   }, [isOnayliReadOnly]);
 
@@ -1090,7 +1095,7 @@ export default function HizliIslemlerV2() {
         onClose={() => setScannerAcik(false)}
         manuelOkuma={manuelOkuma}
         baslangicZoom={baslangicZoom}
-        onDetected={(barkod) => {
+        onDetected={async (barkod) => {
           setScannerAcik(false);
           if (!secilenCari) {
             toast.warning(t('stok.cariSecmedenEklenemez'));
@@ -1099,24 +1104,24 @@ export default function HizliIslemlerV2() {
           hafifTitresim();
           const bulunan = stokListesi.find((s) => s.barkod === barkod);
           if (bulunan) {
+            const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
             if (miktarliGiris) {
+              setModalBaslangicMiktar(katsayi);
               setModalUrunu(bulunan);
-            } else if (!secilenCari) {
-              toast.warning(t('stok.cariSecmedenEklenemez'));
             } else {
-              hizliEkle(bulunan);
+              hizliEkle(bulunan, katsayi);
             }
           } else {
             // Lokalde bulunamadı — API'ye sor
-            barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+            barkoddanStokKodunuBul(barkod, calisilanSirket).then(async (sonuc) => {
               if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
                 const stok = sonuc.data[0];
+                const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
                 if (miktarliGiris) {
+                  setModalBaslangicMiktar(katsayi);
                   setModalUrunu(stok);
-                } else if (!secilenCari) {
-                  toast.warning(t('stok.cariSecmedenEklenemez'));
                 } else {
-                  hizliEkle(stok);
+                  hizliEkle(stok, katsayi);
                 }
               } else {
                 toast.warning(`"${barkod}" barkodlu ürün bulunamadı.`);
@@ -1149,8 +1154,9 @@ export default function HizliIslemlerV2() {
         cariKodu={secilenCari?.cariKodu}
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
+        initialMiktar={modalBaslangicMiktar}
         onConfirm={kalemEkle}
-        onClose={() => { setModalUrunu(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
+        onClose={() => { setModalUrunu(null); setModalBaslangicMiktar(1); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
     </View>
   );

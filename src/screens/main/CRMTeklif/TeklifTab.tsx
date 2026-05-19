@@ -18,7 +18,7 @@ import type { RootStackParamList } from '../../../navigation/types';
 import { sepetToplamlariniHesapla, type SepetAyarlari } from '../../../utils/sepetHesap';
 import { useSepetAyarlariStore } from '../../../store/sepetAyarlariStore';
 import { useAppStore } from '../../../store/appStore';
-import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul } from '../../../api/hizliIslemlerApi';
+import { tekStokFiyatBilgisiniAl, barkoddanStokKodunuBul, barkodKatsayisiniAl } from '../../../api/hizliIslemlerApi';
 import { stokListesiniGetir } from '../../../utils/stokListesiYukleyici';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import UrunMiktariBelirleModal from '../../../components/UrunMiktariBelirleModal';
@@ -107,6 +107,8 @@ export default function TeklifTab({
   const [aramaTipiAcik, setAramaTipiAcik] = useState(false);
   const aramaInputRef = useRef<TextInput>(null);
   const [modalUrunu, setModalUrunu] = useState<StokListesiBilgileri | null>(null);
+  // Modal'a barkod katsayısı taşımak için (barkodla gelindiğinde başlangıç miktarı)
+  const [modalBaslangicMiktar, setModalBaslangicMiktar] = useState(1);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [scannerAcik, setScannerAcik] = useState(false);
   const [miktarliGiris, setMiktarliGiris] = useState(false);
@@ -202,9 +204,10 @@ export default function TeklifTab({
         setFiltreli(sonuc.data);
         if (sonuc.data.length === 1) {
           const stok = sonuc.data[0];
-          if (miktarliGiris) { setModalUrunu(stok); modalAcilacak = true; }
+          const katsayi = await barkodKatsayisiniAl(veri, calisilanSirket);
+          if (miktarliGiris) { setModalBaslangicMiktar(katsayi); setModalUrunu(stok); modalAcilacak = true; }
           else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
-          else hizliEkle(stok);
+          else hizliEkle(stok, katsayi);
         }
       } else {
         toast.warning(t('crmTeklif.urunBulunamadi', { kod: veri }));
@@ -232,8 +235,8 @@ export default function TeklifTab({
     return fNo;
   })();
 
-  // Hizli ekle
-  const hizliEkle = async (item: StokListesiBilgileri) => {
+  // Hizli ekle — miktar barkod katsayısı olabilir (varsayılan 1)
+  const hizliEkle = async (item: StokListesiBilgileri, miktar: number = 1) => {
     if (!secilenCari) {
       toast.warning(t('crmTeklif.cariSecUyari'));
       return;
@@ -281,7 +284,7 @@ export default function TeklifTab({
 
     const kalem: SepetKalem = {
       stokKodu: item.stokKodu, stokCinsi: item.stokCinsi, barkod: item.barkod,
-      birim: ilkBirim, miktar: 1, birimFiyat: fiyat * ilkCarpan, kdvOrani: item.kdvOrani,
+      birim: ilkBirim, miktar, birimFiyat: fiyat * ilkCarpan, kdvOrani: item.kdvOrani,
       kalemIndirim1: ind1, kalemIndirim2: ind2, kalemIndirim3: ind3,
       birim2: item.birim2, carpan: item.carpan, carpan2: item.carpan2, seciliFiyatNo: fiyatNo,
     };
@@ -406,7 +409,7 @@ export default function TeklifTab({
           </TouchableOpacity>
         )}
       >
-        <TouchableOpacity style={[styles.stokSatiri, { backgroundColor: Colors.card }]} onPress={() => hizliEkle(item)} onLongPress={() => setModalUrunu(item)} delayLongPress={400}>
+        <TouchableOpacity style={[styles.stokSatiri, { backgroundColor: Colors.card }]} onPress={() => hizliEkle(item)} onLongPress={() => { setModalBaslangicMiktar(1); setModalUrunu(item); }} delayLongPress={400}>
           <View style={styles.stokBilgi}>
             <Text style={[styles.stokKodu, { color: Colors.textSecondary }]}>{item.stokKodu}</Text>
             <Text style={[styles.stokCinsi, { color: Colors.text }]}>{item.stokCinsi}</Text>
@@ -649,7 +652,7 @@ export default function TeklifTab({
         onClose={() => setScannerAcik(false)}
         manuelOkuma={manuelOkuma}
         baslangicZoom={baslangicZoom}
-        onDetected={(barkod) => {
+        onDetected={async (barkod) => {
           setScannerAcik(false);
           if (!secilenCari) {
             toast.warning(t('crmTeklif.cariSecUyari'));
@@ -658,16 +661,16 @@ export default function TeklifTab({
           hafifTitresim();
           const bulunan = stokListesi.find((s) => s.barkod === barkod);
           if (bulunan) {
-            if (miktarliGiris) setModalUrunu(bulunan);
-            else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
-            else hizliEkle(bulunan);
+            const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
+            if (miktarliGiris) { setModalBaslangicMiktar(katsayi); setModalUrunu(bulunan); }
+            else hizliEkle(bulunan, katsayi);
           } else {
-            barkoddanStokKodunuBul(barkod, calisilanSirket).then((sonuc) => {
+            barkoddanStokKodunuBul(barkod, calisilanSirket).then(async (sonuc) => {
               if (sonuc.sonuc && sonuc.data && sonuc.data.length > 0) {
                 const stok = sonuc.data[0];
-                if (miktarliGiris) setModalUrunu(stok);
-                else if (!secilenCari) toast.warning(t('crmTeklif.cariSecUyari'));
-                else hizliEkle(stok);
+                const katsayi = await barkodKatsayisiniAl(barkod, calisilanSirket);
+                if (miktarliGiris) { setModalBaslangicMiktar(katsayi); setModalUrunu(stok); }
+                else hizliEkle(stok, katsayi);
               } else {
                 toast.warning(t('crmTeklif.urunBulunamadi', { kod: barkod }));
               }
@@ -695,8 +698,9 @@ export default function TeklifTab({
         zorlaFiyatNo={etkinFiyatNo}
         cariFiyatListesi={cariFiyatListesi}
         maksimumIndirimSayisi={2}
+        initialMiktar={modalBaslangicMiktar}
         onConfirm={kalemEkle}
-        onClose={() => { setModalUrunu(null); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
+        onClose={() => { setModalUrunu(null); setModalBaslangicMiktar(1); if (aramaTipi === 4) setTimeout(() => aramaInputRef.current?.focus(), 100); }}
       />
 
       <AciklamaModuModal
