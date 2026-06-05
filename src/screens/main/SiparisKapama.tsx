@@ -169,6 +169,8 @@ export default function SiparisKapama() {
         setAktifTab('acma');
         setAramaMetni('');
         setEvrakNo('');
+        setKaydedildi(false);
+        setKaydedilenRefNo(null);
         setSecilenCari(pending.cari);
         cariDonus.current = true;
         if (_savedGrup) {
@@ -189,6 +191,8 @@ export default function SiparisKapama() {
       setSecilenFisler([]);
       setAktifTab('acma');
       setAramaMetni('');
+      setKaydedildi(false);
+      setKaydedilenRefNo(null);
     }, [])
   );
 
@@ -579,11 +583,15 @@ export default function SiparisKapama() {
           onPress: () => {
             setKapamaSepeti([]);
             setAcmaListesi([]);
+            setKaydedildi(false);
+            setKaydedilenRefNo(null);
             setAdim('fisListesi');
           },
         },
       ]);
     } else {
+      setKaydedildi(false);
+      setKaydedilenRefNo(null);
       setAdim('fisListesi');
     }
   };
