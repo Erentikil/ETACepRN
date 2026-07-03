@@ -30,7 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import type { RootStackParamList, DrawerParamList } from '../../navigation/types';
 import { useAppStore } from '../../store/appStore';
-import { cariBakiyeAl, islemTipleriniAl, tahsilatKaydet, kasaTahsilatKaydet, cekSenetKaydet } from '../../api/tahsilatApi';
+import { cariBakiyeAl, islemTipleriniAl, tahsilatKaydet, tediyeKaydet, kasaTahsilatKaydet, cekSenetKaydet } from '../../api/tahsilatApi';
 import { kasaKartListesiniAl, evrakPdfAl } from '../../api/raporApi';
 import { useColors } from '../../contexts/ThemeContext';
 import { useT } from '../../i18n/I18nContext';
@@ -41,7 +41,7 @@ import type { CariKartBilgileri, IslemTipleri, KasaKartBilgileri } from '../../m
 type NavProp = StackNavigationProp<RootStackParamList>;
 type RoutePropType = RouteProp<DrawerParamList, 'Tahsilatlar'>;
 
-type TahsilatTipi = 'cari' | 'kasa' | 'cek' | 'senet';
+type TahsilatTipi = 'cari' | 'tediye' | 'kasa' | 'cek' | 'senet';
 
 type IslemMenuItem =
   | { turu: 'tahsilat'; tip: TahsilatTipi; baslik: string; icon: keyof typeof Ionicons.glyphMap; yetkiKey?: string }
@@ -99,6 +99,7 @@ export default function TahsilatEkrani() {
     { turu: 'pdf', baslik: t('tahsilat.tahsilatListesi'), icon: 'receipt-outline', dizaynAdi: 'Mobil_TahsilatDetayDizayn.repx', evrakTipi: 'TahsilatDetay' },
     { turu: 'pdf', baslik: t('tahsilat.adresler'), icon: 'location-outline', dizaynAdi: 'Mobil_CariAdresDizayn.repx', evrakTipi: 'CariAdres' },
     { turu: 'tahsilat', tip: 'cari', baslik: t('tahsilat.cariTahsilat'), icon: 'cash-outline', yetkiKey: 'cariTahsilatYetkisi' },
+    { turu: 'tahsilat', tip: 'tediye', baslik: t('tahsilat.cariTediye'), icon: 'cash-outline', yetkiKey: 'cariTahsilatYetkisi' },
     { turu: 'tahsilat', tip: 'kasa', baslik: t('tahsilat.kasaTahsilat'), icon: 'wallet-outline', yetkiKey: 'kasaTahsilatYetkisi' },
     { turu: 'tahsilat', tip: 'cek', baslik: t('tahsilat.cekTahsilat'), icon: 'document-text-outline', yetkiKey: 'cekTahsilatYetkisi' },
     { turu: 'tahsilat', tip: 'senet', baslik: t('tahsilat.senetTahsilat'), icon: 'receipt-outline', yetkiKey: 'senetTahsilatYetkisi' },
@@ -370,6 +371,7 @@ export default function TahsilatEkrani() {
     try {
       const evrakTipiStr =
         aktifTip === 'cari' ? 'CariTahsilat'
+        : aktifTip === 'tediye' ? 'CariTediye'
         : aktifTip === 'kasa' ? 'KasaTahsilat'
         : aktifTip === 'cek' ? 'ÇekTahsilat'
         : 'SenetTahsilat';
@@ -430,7 +432,7 @@ export default function TahsilatEkrani() {
       toast.error(t('tahsilat.kasaSec'));
       return false;
     }
-    if ((aktifTip === 'cari' || aktifTip === 'kasa') && !secilenIslem) {
+    if ((aktifTip === 'cari' || aktifTip === 'tediye' || aktifTip === 'kasa') && !secilenIslem) {
       toast.error(t('tahsilat.islemTipiSec'));
       return false;
     }
@@ -450,8 +452,9 @@ export default function TahsilatEkrani() {
     try {
       let sonuc;
 
-      if (aktifTip === 'cari') {
-        sonuc = await tahsilatKaydet({
+      if (aktifTip === 'cari' || aktifTip === 'tediye') {
+        const kayitFn = aktifTip === 'tediye' ? tediyeKaydet : tahsilatKaydet;
+        sonuc = await kayitFn({
           guid: uuidOlustur(),
           kullaniciKodu: yetkiBilgileri?.kullaniciKodu ?? '',
           veriTabaniAdi: calisilanSirket,
@@ -566,7 +569,7 @@ export default function TahsilatEkrani() {
     temizle();
     if (item.tip === 'kasa' && kasaIslemTipi) {
       setSecilenIslem(kasaIslemTipi);
-    } else if (item.tip === 'cari' && islemListesi.length > 0) {
+    } else if ((item.tip === 'cari' || item.tip === 'tediye') && islemListesi.length > 0) {
       setSecilenIslem(islemListesi[0]);
     }
   };
@@ -739,6 +742,7 @@ export default function TahsilatEkrani() {
     if (!aktifTip) return null;
     switch (aktifTip) {
       case 'cari': return renderCariForm();
+      case 'tediye': return renderCariForm();
       case 'kasa': return renderKasaForm();
       case 'cek': return renderCekForm();
       case 'senet': return renderSenetForm();

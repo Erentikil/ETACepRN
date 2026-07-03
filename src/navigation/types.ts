@@ -42,7 +42,7 @@ export type DrawerParamList = {
   AlisSatisIslemleri: { secilenCari?: CariKartBilgileri; taslakEvrak?: BekleyenEvrakKaydi } | undefined;
   RenkBedenIslemleri: { secilenCari?: CariKartBilgileri } | undefined;
   SiparisKapama: { secilenCari?: CariKartBilgileri } | undefined;
-  Tahsilatlar: { secilenCari?: CariKartBilgileri; tahsilatTipi?: 'cari' | 'kasa' | 'cek' | 'senet' } | undefined;
+  Tahsilatlar: { secilenCari?: CariKartBilgileri; tahsilatTipi?: 'cari' | 'tediye' | 'kasa' | 'cek' | 'senet' } | undefined;
   Raporlar: undefined;
   BekleyenEvraklar: undefined;
   CariEkstreListesi: { secilenCari?: CariKartBilgileri; kaynakEkran?: string } | undefined;

@@ -39,6 +39,20 @@ export async function tahsilatKaydet(
   return res.data;
 }
 
+// POST /TediyeSirket — Tahsilat ile aynı body yapısı, ayrı endpoint
+export async function tediyeKaydet(
+  evrak: TahsilatEvrak
+): Promise<Sonuc<number>> {
+  const api = await getApiInstance();
+  const cihazKodu = await getCihazKodu();
+  const payload = {
+    ...evrak,
+    telefonCihazKodu: cihazKodu,
+  };
+  const res = await api.post<Sonuc<number>>('TediyeSirket', payload);
+  return res.data;
+}
+
 // POST /KasaTahsilatSirket
 export async function kasaTahsilatKaydet(
   evrak: KasaTahsilatEvrak

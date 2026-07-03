@@ -37,7 +37,7 @@ type CariIslemSecenegi = {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   aktif: boolean;
-  tahsilatTipi?: 'cari' | 'kasa' | 'cek' | 'senet';
+  tahsilatTipi?: 'cari' | 'tediye' | 'kasa' | 'cek' | 'senet';
   yetkiKey?: 'cariTahsilatYetkisi' | 'kasaTahsilatYetkisi' | 'cekTahsilatYetkisi' | 'senetTahsilatYetkisi';
 };
 
@@ -63,6 +63,7 @@ export default function CariSecim() {
     { key: 'TahsilatListesi', label: t('cariSecim.tahsilatListesi'), icon: 'receipt-outline', aktif: true },
     { key: 'Adresler', label: t('cariSecim.adresler'), icon: 'location-outline', aktif: true },
     { key: 'Tahsilatlar', label: t('cariSecim.cariTahsilat'), icon: 'cash-outline', aktif: true, tahsilatTipi: 'cari', yetkiKey: 'cariTahsilatYetkisi' },
+    { key: 'Tahsilatlar', label: t('cariSecim.cariTediye'), icon: 'cash-outline', aktif: true, tahsilatTipi: 'tediye', yetkiKey: 'cariTahsilatYetkisi' },
     { key: 'Tahsilatlar', label: t('cariSecim.kasaTahsilati'), icon: 'wallet-outline', aktif: true, tahsilatTipi: 'kasa', yetkiKey: 'kasaTahsilatYetkisi' },
     { key: 'Tahsilatlar', label: t('cariSecim.cekTahsilati'), icon: 'card-outline', aktif: true, tahsilatTipi: 'cek', yetkiKey: 'cekTahsilatYetkisi' },
     { key: 'Tahsilatlar', label: t('cariSecim.senetTahsilati'), icon: 'document-outline', aktif: true, tahsilatTipi: 'senet', yetkiKey: 'senetTahsilatYetkisi' },
