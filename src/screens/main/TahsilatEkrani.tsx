@@ -962,7 +962,7 @@ export default function TahsilatEkrani() {
             <TouchableOpacity onPress={() => setPdfModalAcik(false)}>
               <Ionicons name="close" size={28} color={Colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>Tahsilat PDF</Text>
+            <Text style={[styles.pdfBarBaslik, { color: Colors.text }]}>{aktifTip === 'tediye' ? 'Tediye PDF' : 'Tahsilat PDF'}</Text>
             <TouchableOpacity onPress={handlePdfPaylas} disabled={!pdfDosyaUri}>
               <Ionicons name="share-outline" size={24} color={pdfDosyaUri ? Colors.primary : Colors.textSecondary} />
             </TouchableOpacity>
