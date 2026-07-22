@@ -143,8 +143,9 @@ export default function BarcodeScannerModal({ visible, onDetected, onClose, manu
                   zoom={zoom}
                   barcodeScannerSettings={{
                     barcodeTypes: [
-                      'ean13', 'ean8', 'code128', 'code39',
-                      'qr', 'upc_a', 'upc_e', 'itf14',
+                      'ean13', 'ean8', 'code128', 'code39', 'code93',
+                      'qr', 'upc_a', 'upc_e', 'itf14', 'codabar',
+                      'datamatrix', 'pdf417', 'aztec',
                     ],
                   }}
                   onBarcodeScanned={handleBarkod}
